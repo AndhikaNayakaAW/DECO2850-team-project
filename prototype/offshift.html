@@ -54,7 +54,15 @@
   --p-physio-soft:#1F3A2A; --p-socio-soft:#3B3220; --p-psycho-soft:#2F2D5C; --p-ideo-soft:#3E2338;
   --uni3d:#6E6C96;
 }
-html{color-scheme:light dark}
+:root:not([data-theme="dark"]){
+  --ground:#F4F2EE;--surface:#FFFFFF;--surface-2:#FAF9F7;--ink:#292733;--ink-2:#6B6877;--line:#DFDCE5;
+  --accent:#6555A6;--accent-ink:#FFFFFF;--accent-soft:#ECE8FA;--lamp:#A16B1D;--lamp-soft:#FFF1D5;
+  --ok:#4E8067;--ok-soft:#E4F1E8;--warn:#A16B1D;--warn-soft:#FFF1D5;--bad:#A7534D;--bad-soft:#F9E5E3;
+  --phone-bg:#F5F4FA;--shadow:0 18px 45px rgba(56,44,74,.12);--shadow-sm:0 5px 18px rgba(56,44,74,.08);
+  --glare:rgba(255,255,255,.4);--p-physio:#4E8067;--p-socio:#A16B1D;--p-psycho:#6555A6;--p-ideo:#8A4B76;
+  --p-physio-soft:#E4F1E8;--p-socio-soft:#FFF1D5;--p-psycho-soft:#ECE8FA;--p-ideo-soft:#F3E4ED;--uni3d:#69739A;
+}
+html{color-scheme:light}
 body{margin:0;background:var(--ground);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 h1,h2,h3,h4{font-family:"Bricolage Grotesque","Atkinson Hyperlegible",system-ui,sans-serif;text-wrap:balance;margin:0;line-height:1.12;font-weight:700;letter-spacing:-.015em}
 p{margin:0}
@@ -342,11 +350,31 @@ tbody tr:hover{background:var(--surface-2)}
 .tasks b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-size:16px;margin-bottom:6px}
 .tasks .w{color:var(--ink-2);font-size:13.5px;margin-top:6px}
 footer{max-width:1180px;margin:0 auto;padding:0 24px 40px;color:var(--ink-2);font-size:13px;border-top:1px solid var(--line);padding-top:20px}
+.iteration-label{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.06em;color:var(--ink-2);padding:3px 7px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
+.top-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.impact-panel{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:2px}
+.impact-tile{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--surface);text-align:left;cursor:pointer;min-height:82px;transition:transform .2s,box-shadow .2s,border-color .2s}
+.impact-tile:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm);border-color:var(--accent)}
+.impact-tile:first-child{grid-column:1/-1;background:var(--accent-soft)}
+.impact-tile b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-size:15px}
+.impact-tile strong{display:block;margin-top:5px;font-size:16px}
+.impact-tile small{display:block;color:var(--ink-2);font-size:12px;margin-top:2px}
+.impact-tile[data-state="warn"] strong{color:var(--warn)}
+.impact-tile[data-state="bad"] strong{color:var(--bad)}
+.impact-tile[data-state="ok"] strong{color:var(--ok)}
+.decision-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.decision-grid button{min-height:46px}
+.modal-backdrop{position:fixed;inset:0;background:rgba(28,27,46,.38);z-index:40;display:grid;place-items:center;padding:18px}
+.modal{width:min(100%,520px);max-height:90vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:var(--shadow)}
+.modal-head{display:flex;justify-content:space-between;gap:12px;align-items:start;margin-bottom:14px}.modal-head button{border:0;background:transparent;font-size:24px;cursor:pointer}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{display:flex;flex-direction:column;gap:4px}.field.full{grid-column:1/-1}.field label{font-size:12px;font-weight:700;color:var(--ink-2)}.field input,.field select,.field textarea{font:inherit;border:1px solid var(--line);border-radius:9px;padding:9px;background:var(--surface-2);color:var(--ink)}.field textarea{min-height:105px;resize:vertical}.modal .btn-row{margin-top:14px}.privacy-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.privacy-grid .card{font-size:13px}
+.care-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:4px}.care-strip div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:11px;font-size:13px}.care-strip b{display:block;color:var(--accent);font-family:"Bricolage Grotesque",sans-serif;margin-bottom:3px}
+@media (max-width:520px){.form-grid,.privacy-grid{grid-template-columns:1fr}.field.full{grid-column:auto}}
+@media (max-width:760px){.care-strip{grid-template-columns:repeat(2,1fr)}}
 </style>
 
 <header class="top">
-  <div class="brand"><b>Offshift</b><span>DECO2850 · Care studio · Pleasure Framework pass</span></div>
-  <nav class="tabs" role="tablist" aria-label="Sections">
+  <div class="brand"><b>Offshift</b><span>DECO2850 · Care studio · Pleasure Framework pass</span><span class="iteration-label">Iteration 1 working concept</span></div>
+  <div class="top-actions"><button class="btn neutral" id="theme-toggle" type="button" aria-label="Switch theme">Light mode</button><button class="btn neutral" id="reset-demo" type="button">Reset demo</button></div><nav class="tabs" role="tablist" aria-label="Sections">
     <button role="tab" data-tab="proto" aria-selected="true">Prototype</button>
     <button role="tab" data-tab="exp" aria-selected="false">Experiences</button>
     <button role="tab" data-tab="persona" aria-selected="false">Persona</button>
@@ -362,6 +390,7 @@ footer{max-width:1180px;margin:0 auto;padding:0 24px 40px;color:var(--ink-2);fon
     <div class="eyebrow">Step 4 · Prototype, revisited through psycho-pleasure</div>
     <h1 class="page">The roster is theirs. The week is yours.</h1>
     <p class="lede">Offshift sits beside the employer's roster app. It never talks to the manager. It cares for the one moment every participant described carrying alone: a shift offer arrives, and you have to decide and reply. Start with the week below, then tap through the phone. The notes beside it explain each design move and which interview it came from. All names and figures are example data for the persona, Dinda.</p>
+    <div class="care-strip" aria-label="Care in the interaction"><div><b>Worker control</b>Supports rather than decides.</div><div><b>Privacy</b>Nothing is shared automatically.</div><div><b>Rest counts</b>Protected rest is a real commitment.</div><div><b>No judgement</b>Accept and decline stay equal.</div></div>
   </div>
 
   <div class="hero3d">
@@ -391,6 +420,7 @@ footer{max-width:1180px;margin:0 auto;padding:0 24px 40px;color:var(--ink-2);fon
         <button data-screen="checkin" aria-current="false">Check-in</button>
         <button data-screen="money" aria-current="false">Money &amp; rest</button>
         <button data-screen="me" aria-current="false">Me</button>
+        <button class="btn ghost" type="button" id="new-offer">+ New offer</button>
       </div>
 
       <div class="phone-stage">
@@ -435,12 +465,22 @@ footer{max-width:1180px;margin:0 auto;padding:0 24px 40px;color:var(--ink-2);fon
             <div class="check warn rv"><div class="ck">Body</div><div>Tuesday's close is still in your legs. You rated it <b>Tired</b>. Tonight would be your second close in three days, and Friday starts at 10.</div></div>
             <div class="check warn rv"><div class="ck">Week</div><div>Your tute ends 3:00. The 412 takes about 35 minutes, so you'd arrive around 3:50 with no time to eat.</div></div>
             <div class="check ok rv"><div class="ck">Money</div><div>This fortnight's essentials (<span class="mono">$760</span>) are covered by Saturday. Tonight adds about <span class="mono">$160</span> on top.</div></div>
+            <div class="eyebrow rv">Pause → Compare → Reflect</div>
+            <div class="impact-panel rv" id="impact-panel" aria-label="Shift impact comparison">
+              <button class="impact-tile" data-impact="study" type="button"><b>Study</b><strong>Checking…</strong><small>Commitments around this shift</small></button>
+              <button class="impact-tile" data-impact="travel" type="button"><b>Travel</b><strong>35 min estimate</strong><small>Previous commitment → shift</small></button>
+              <button class="impact-tile" data-impact="income" type="button"><b>Income</b><strong>Approx. $160</strong><small>Estimated paid hours × rate</small></button>
+              <button class="impact-tile" data-impact="rest" type="button"><b>Rest</b><strong>10h 30m window</strong><small>Before the next commitment</small></button>
+              <button class="impact-tile" data-impact="personal" type="button"><b>Personal</b><strong>Plans stay visible</strong><small>No category is ranked for you</small></button>
+            </div>
+            <button class="btn ghost rv" type="button" id="edit-offer">Edit shift details</button>
             <p class="quiet rv">Either answer is fine. Choose for the week, not just for tonight.</p>
             <div class="btn-col rv">
               <button class="btn" onclick="chooseReply('no')">Not tonight</button>
               <button class="btn ghost" onclick="chooseReply('alt')">Offer another time</button>
               <button class="btn neutral" onclick="chooseReply('yes')">Take it</button>
             </div>
+            <div class="decision-grid rv"><button class="btn neutral" type="button" data-decision="swap">Request swap</button><button class="btn neutral" type="button" data-decision="later">Decide later</button></div>
           </div>
 
           <!-- REPLY -->
@@ -966,6 +1006,7 @@ footer{max-width:1180px;margin:0 auto;padding:0 24px 40px;color:var(--ink-2);fon
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="offshift.logic.js"></script>
 <script>
 (function(){
   var reduced=false,hoverable=true;
@@ -1388,6 +1429,45 @@ footer{max-width:1180px;margin:0 auto;padding:0 24px 40px;color:var(--ink-2);fon
     resize();placeCamera();start();
   }
   try{initWeek3D()}catch(e){fallback2d()}
+})();
+</script>
+
+<script>
+(function(){
+  var logic=window.OffshiftLogic;
+  if(!logic)return;
+  var STORE='offshift-iteration-1-state';
+  var initial={offer:{day:'Thu',start:'16:00',end:'21:00',location:'Pandora · Queen Street',rate:32,break:0,travel:35,status:'offer'},
+    commitments:[{id:'class-thu',day:'Thu',start:'13:00',end:'15:00',title:'Tute',kind:'study'},{id:'dinner-thu',day:'Thu',start:'19:30',end:'21:30',title:'Dinner plan',kind:'personal'},{id:'lecture-fri',day:'Fri',start:'10:00',end:'16:00',title:'Shift',kind:'work'},{id:'rest-sun',day:'Sun',start:'00:00',end:'23:59',title:'Protected rest',kind:'rest',importance:'protected'}],
+    priorities:['study','income','rest','travel','personal'],decision:null,reminders:[],reflections:[],imported:[]};
+  function copy(v){return JSON.parse(JSON.stringify(v))}function read(){try{return Object.assign(copy(initial),JSON.parse(localStorage.getItem(STORE)||'{}'))}catch(e){return copy(initial)}}function write(){try{localStorage.setItem(STORE,JSON.stringify(state))}catch(e){}}
+  var state=read();
+  function events(){return state.commitments.concat(state.offer.status==='offer'?[state.offer]:[])}
+  function impact(){return logic.shiftImpact(state.offer,events())}
+  function duration(m){if(m===null||m===undefined)return 'No next commitment';var h=Math.floor(Math.max(0,m)/60),min=Math.max(0,m)%60;return h?(h+'h '+(min?min+'m':'')):min+'m'}
+  function tile(key,value,detail,kind){var el=document.querySelector('[data-impact="'+key+'"]');if(!el)return;el.querySelector('strong').textContent=value;el.querySelector('small').textContent=detail;el.dataset.state=kind||''}
+  function updateImpact(){var x=impact(),study=x.conflicts.filter(function(c){return c.kind==='study'||c.title==='Tute'}),personal=x.conflicts.filter(function(c){return c.kind==='personal'});tile('study',study.length?'Overlap: '+study[0].title:'No direct overlap',study.length?'Review the commitment before replying':'No study event in the shift window',study.length?'bad':'ok');tile('travel',state.offer.travel+' min estimated',x.travelBuffer===null?'No previous event to compare':Math.max(0,x.travelBuffer)+' min buffer',x.travelBuffer!==null&&x.travelBuffer<30?'warn':'ok');tile('income','Approx. $'+x.income,duration(x.paidMinutes)+' paid · $'+state.offer.rate+'/h','ok');tile('rest',duration(x.restMinutes),x.restMinutes===null?'No next commitment': 'before the next scheduled event',x.restMinutes!==null&&x.restMinutes<600?'warn':'ok');tile('personal',personal.length?'Overlap: '+personal[0].title:'No direct overlap',personal.length?'Review your personal plan':'Personal plans remain your call',personal.length?'bad':'ok')}
+  function modal(title,body){var root=document.getElementById('offshift-modal-root');if(!root){root=document.createElement('div');root.id='offshift-modal-root';document.body.appendChild(root)}root.innerHTML='<div class="modal-backdrop" data-close-modal><div class="modal" role="dialog" aria-modal="true" aria-label="'+title+'"><div class="modal-head"><h2>'+title+'</h2><button type="button" data-close-modal aria-label="Close">×</button></div>'+body+'</div></div>'}
+  function close(){var root=document.getElementById('offshift-modal-root');if(root)root.innerHTML=''}
+  function offerForm(){var o=state.offer;modal('Shift offer details','<form id="offer-form" class="form-grid"><div class="field"><label for="offer-day">Day</label><select id="offer-day"><option>Mon</option><option>Tue</option><option>Wed</option><option selected>Thu</option><option>Fri</option><option>Sat</option><option>Sun</option></select></div><div class="field"><label for="offer-location">Location</label><input id="offer-location" required value="'+o.location+'"></div><div class="field"><label for="offer-start">Start</label><input id="offer-start" type="time" required value="'+o.start+'"></div><div class="field"><label for="offer-end">Finish</label><input id="offer-end" type="time" required value="'+o.end+'"></div><div class="field"><label for="offer-rate">Hourly rate (estimate)</label><input id="offer-rate" type="number" min="0" step=".5" required value="'+o.rate+'"></div><div class="field"><label for="offer-break">Unpaid break (minutes)</label><input id="offer-break" type="number" min="0" max="240" value="'+o.break+'"></div><div class="field"><label for="offer-travel">Travel duration (minutes)</label><input id="offer-travel" type="number" min="0" max="300" value="'+o.travel+'"></div><div class="field full"><label for="offer-note">Optional note</label><textarea id="offer-note">'+(o.note||'')+'</textarea></div><div class="field full"><button type="button" class="btn ghost" id="import-calendar">Import from calendar <span class="quiet">(demo data)</span></button></div><div class="btn-row full"><button class="btn" type="submit">Save offer</button><button class="btn neutral" type="button" data-close-modal>Cancel</button></div></form>');document.getElementById('offer-day').value=o.day}
+  function importCalendar(){modal('Import calendar · demo data','<p class="quiet">Choose local example events. No real calendar connection is used.</p><form id="import-form"><label class="chip"><input type="checkbox" value="study" checked> Thursday tutorial · 1–3 pm</label><label class="chip"><input type="checkbox" value="personal"> Dinner plan · 7:30–9:30 pm</label><div class="btn-row" style="margin-top:14px"><button class="btn" type="submit">Import selected</button><button class="btn neutral" type="button" data-close-modal>Cancel</button></div></form>')}
+  function commitmentForm(){modal('Add calendar commitment','<form id="commitment-form" class="form-grid"><div class="field"><label for="commit-day">Day</label><select id="commit-day"><option>Mon</option><option>Tue</option><option selected>Thu</option><option>Fri</option><option>Sat</option><option>Sun</option></select></div><div class="field"><label for="commit-title">Name</label><input id="commit-title" required placeholder="Gym, study, dinner"></div><div class="field"><label for="commit-start">Start</label><input id="commit-start" type="time" value="18:00" required></div><div class="field"><label for="commit-end">Finish</label><input id="commit-end" type="time" value="20:00" required></div><div class="field full"><label for="commit-kind">Importance</label><select id="commit-kind"><option value="personal">Flexible</option><option value="personal">Important</option><option value="rest">Protected</option></select></div><button class="btn full" type="submit">Add commitment</button></form>')}
+  function response(kind){if(kind==='later'){var choice=prompt('Reminder in minutes: 30, 60 or custom','30');if(choice&&Number(choice)>0){state.reminders.push({offer:state.offer.id||'jess-offer',minutes:Number(choice),at:Date.now()});state.decision='Decide later';write();renderWeekState();toast('Reminder saved locally. No notification was sent.')}return}if(kind==='swap'){state.decision='Request swap';write();renderWeekState();oldChoose('alt');toast('Demo swap request ready to edit.');return}if(kind==='decline'){state.decision='Decline';write();renderWeekState();oldChoose('no');return}if(kind==='accept'){state.decision='Accept';state.offer.status='accepted';write();var ask=document.getElementById('ask');if(ask)ask.hidden=true;renderWeekState();toast('Shift accepted and added to this prototype week. No message was sent.');return}if(kind==='negotiate'){state.decision='Negotiate';write();renderWeekState();oldChoose('alt')}}
+  function renderWeekState(){var ask=document.getElementById('ask');if(ask)ask.hidden=state.offer.status!=='offer';var agenda=document.querySelector('[data-screen="week"] .agenda');if(agenda&&!document.getElementById('prototype-state')){var note=document.createElement('div');note.id='prototype-state';note.className='card soft';agenda.parentNode.insertBefore(note,agenda)}var status=document.getElementById('prototype-state');if(status){status.hidden=!state.decision;status.innerHTML=state.decision==='Decide later'?'<b>Pending decision.</b> Reminder saved locally.':state.decision==='Accept'?'<b>Accepted.</b> Added to your prototype week.':'<b>'+state.decision+'.</b> Your draft stays editable in Reply.'}}
+  function privacy(){modal('Privacy / data','<div class="privacy-grid"><div class="card"><b>Personal schedule</b><br>Private</div><div class="card"><b>Body/rest reflection</b><br>Private</div><div class="card"><b>Financial information</b><br>Private</div><div class="card"><b>Employer access</b><br>None</div><div class="card"><b>Automatically shared</b><br>Nothing</div><div class="card"><b>Messages</b><br>Only when you choose</div></div><div class="btn-row" style="margin-top:14px"><button class="btn" id="export-data" type="button">Export data</button><button class="btn neutral" id="clear-data" type="button">Clear my data</button></div>')}
+  function exportData(){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));a.download='offshift-prototype-data.json';a.click();toast('Prototype data exported.');close()}
+  function reset(){state=copy(initial);write();location.reload()}
+  function applyPriorities(){var buttons=document.querySelectorAll('[data-prio2]');buttons.forEach(function(b){b.setAttribute('aria-pressed',state.priorities[0]===b.dataset.prio2?'true':'false');b.addEventListener('click',function(){state.priorities=[b.dataset.prio2].concat(state.priorities.filter(function(p){return p!==b.dataset.prio2}));write();buttons.forEach(function(x){x.setAttribute('aria-pressed',state.priorities[0]===x.dataset.prio2?'true':'false')});toast(b.textContent+' is shown first. No recommendation is made.')})})}
+  document.getElementById('theme-toggle').addEventListener('click',function(){var dark=document.documentElement.getAttribute('data-theme')==='dark';document.documentElement.setAttribute('data-theme',dark?'light':'dark');this.textContent=dark?'Light mode':'Dark mode';try{localStorage.setItem('offshift-theme',dark?'light':'dark')}catch(e){}});try{var savedTheme=localStorage.getItem('offshift-theme');if(savedTheme){document.documentElement.setAttribute('data-theme',savedTheme);document.getElementById('theme-toggle').textContent=savedTheme==='dark'?'Dark mode':'Light mode'}}catch(e){}
+  document.getElementById('reset-demo').addEventListener('click',function(){if(confirm('Reset the exhibition demo scenario?'))reset()});
+  document.getElementById('new-offer').addEventListener('click',offerForm);document.getElementById('edit-offer').addEventListener('click',offerForm);document.querySelectorAll('[data-impact]').forEach(function(b){b.addEventListener('click',function(){toast(b.querySelector('b').textContent+' shows a trade-off, not a verdict.')})});document.querySelectorAll('[data-decision]').forEach(function(b){b.addEventListener('click',function(){response(b.dataset.decision)})});
+  document.addEventListener('click',function(e){if(e.target.matches('.modal-backdrop')||e.target.closest('button[data-close-modal]'))close();if(e.target.closest('#import-calendar'))importCalendar();if(e.target.closest('#export-data'))exportData();if(e.target.closest('#clear-data')&&confirm('Clear local prototype data?')){localStorage.removeItem(STORE);reset()}if(e.target.closest('[data-add-commitment]'))commitmentForm();if(e.target.closest('[data-privacy]'))privacy()});
+  document.addEventListener('submit',function(e){if(e.target.id==='offer-form'){e.preventDefault();var start=document.getElementById('offer-start').value,end=document.getElementById('offer-end').value;if(logic.minutes(end)<=logic.minutes(start)){toast('Finish time must be after start time.');return}state.offer.day=document.getElementById('offer-day').value;state.offer.location=document.getElementById('offer-location').value;state.offer.start=start;state.offer.end=end;state.offer.rate=Number(document.getElementById('offer-rate').value);state.offer.break=Number(document.getElementById('offer-break').value||0);state.offer.travel=Number(document.getElementById('offer-travel').value||0);state.offer.note=document.getElementById('offer-note').value;write();close();updateImpact();toast('Offer updated. Impact cards recalculated.')}if(e.target.id==='import-form'){e.preventDefault();var checks=e.target.querySelectorAll('input:checked');checks.forEach(function(c){var item=c.value==='study'?{id:'import-study-'+Date.now(),day:'Thu',start:'13:00',end:'15:00',title:'Imported tutorial',kind:'study'}:{id:'import-personal-'+Date.now(),day:'Thu',start:'19:30',end:'21:30',title:'Imported dinner',kind:'personal'};state.commitments.push(item);state.imported.push(item.id)});write();close();updateImpact();toast('Selected demo events imported.')}if(e.target.id==='commitment-form'){e.preventDefault();var start=document.getElementById('commit-start').value,end=document.getElementById('commit-end').value;if(logic.minutes(end)<=logic.minutes(start)){toast('Finish time must be after start time.');return}state.commitments.push({id:'commit-'+Date.now(),day:document.getElementById('commit-day').value,start:start,end:end,title:document.getElementById('commit-title').value,kind:document.getElementById('commit-kind').value});write();close();updateImpact();toast('Commitment added.')}});
+  var oldChoose=window.chooseReply;window.chooseReply=function(kind){if(kind==='yes')response('accept');else if(kind==='no')response('decline');else if(kind==='alt')response('negotiate');else oldChoose(kind)};
+  var oldFinish=window.finishCheckin;window.finishCheckin=function(){oldFinish();state.reflections.push({body:window.__offshiftBody||'selected',at:Date.now()});write()};
+  var me=document.querySelector('[data-screen="me"]');if(me){var priorityBox=me.querySelector('[data-prio]');if(priorityBox){var wrap=priorityBox.parentNode;['study','income','rest','travel','personal'].forEach(function(k){var b=document.createElement('button');b.className='chip';b.type='button';b.dataset.prio2=k;b.textContent=k.charAt(0).toUpperCase()+k.slice(1);wrap.appendChild(b)});applyPriorities()}var privacyCard=me.querySelector('.privacy');if(privacyCard){var p=document.createElement('button');p.className='btn ghost';p.type='button';p.dataset.privacy='true';p.textContent='Privacy / data';privacyCard.appendChild(p)}}
+  var week=document.querySelector('[data-screen="week"] .agenda');if(week){var add=document.createElement('button');add.className='btn ghost';add.type='button';add.dataset.addCommitment='true';add.textContent='+ Add commitment';week.parentNode.appendChild(add)}
+  updateImpact();renderWeekState();
 })();
 </script>
 
