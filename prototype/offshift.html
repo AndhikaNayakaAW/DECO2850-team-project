@@ -1,0 +1,1394 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Offshift</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+:root{
+  --ground:#EEF0F5;
+  --surface:#FFFFFF;
+  --surface-2:#F6F7FA;
+  --ink:#1C1B2E;
+  --ink-2:#5C5B74;
+  --line:#D9DBE6;
+  --accent:#454283;
+  --accent-ink:#FFFFFF;
+  --accent-soft:#E4E3F5;
+  --lamp:#B8801A;
+  --lamp-soft:#FBF0D6;
+  --ok:#2F7A4B; --ok-soft:#DFF0E5;
+  --warn:#B06A14; --warn-soft:#FBEBD3;
+  --bad:#B4403A; --bad-soft:#F8E1DE;
+  --phone-bg:#F3F3F8;
+  --shadow:0 24px 60px rgba(28,27,46,.16);
+  --shadow-sm:0 6px 18px rgba(28,27,46,.07);
+  --glare:rgba(255,255,255,.28);
+  --p-physio:#2F7A4B; --p-socio:#B8801A; --p-psycho:#454283; --p-ideo:#8A3F6E;
+  --p-physio-soft:#DFF0E5; --p-socio-soft:#FBF0D6; --p-psycho-soft:#E4E3F5; --p-ideo-soft:#F3E2EC;
+  --uni3d:#7A78A0;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#14132A; --surface:#1F1E39; --surface-2:#26254A; --ink:#ECEBF7; --ink-2:#ABA9C8; --line:#3A3960;
+    --accent:#A9A6F0; --accent-ink:#14132A; --accent-soft:#2F2D5C;
+    --lamp:#E6B450; --lamp-soft:#3B3220;
+    --ok:#74CB93; --ok-soft:#1F3A2A; --warn:#E5A24A; --warn-soft:#3F2E17; --bad:#EA7A72; --bad-soft:#42211F;
+    --phone-bg:#191834; --shadow:0 24px 60px rgba(0,0,0,.55); --shadow-sm:0 6px 18px rgba(0,0,0,.35);
+    --glare:rgba(255,255,255,.10);
+    --p-physio:#74CB93; --p-socio:#E6B450; --p-psycho:#A9A6F0; --p-ideo:#DA8CC0;
+    --p-physio-soft:#1F3A2A; --p-socio-soft:#3B3220; --p-psycho-soft:#2F2D5C; --p-ideo-soft:#3E2338;
+    --uni3d:#6E6C96;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#14132A; --surface:#1F1E39; --surface-2:#26254A; --ink:#ECEBF7; --ink-2:#ABA9C8; --line:#3A3960;
+  --accent:#A9A6F0; --accent-ink:#14132A; --accent-soft:#2F2D5C;
+  --lamp:#E6B450; --lamp-soft:#3B3220;
+  --ok:#74CB93; --ok-soft:#1F3A2A; --warn:#E5A24A; --warn-soft:#3F2E17; --bad:#EA7A72; --bad-soft:#42211F;
+  --phone-bg:#191834; --shadow:0 24px 60px rgba(0,0,0,.55); --shadow-sm:0 6px 18px rgba(0,0,0,.35);
+  --glare:rgba(255,255,255,.10);
+  --p-physio:#74CB93; --p-socio:#E6B450; --p-psycho:#A9A6F0; --p-ideo:#DA8CC0;
+  --p-physio-soft:#1F3A2A; --p-socio-soft:#3B3220; --p-psycho-soft:#2F2D5C; --p-ideo-soft:#3E2338;
+  --uni3d:#6E6C96;
+}
+html{color-scheme:light dark}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+h1,h2,h3,h4{font-family:"Bricolage Grotesque","Atkinson Hyperlegible",system-ui,sans-serif;text-wrap:balance;margin:0;line-height:1.12;font-weight:700;letter-spacing:-.015em}
+p{margin:0}
+ul,ol{margin:0;padding-left:1.15em}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+.eyebrow{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-2)}
+.lede{max-width:65ch;color:var(--ink-2);font-size:17px}
+.quiet{color:var(--ink-2);font-size:13.5px}
+.page{font-size:clamp(32px,4.5vw,48px);font-weight:800;letter-spacing:-.025em}
+
+/* motion vocabulary */
+@keyframes rise{from{opacity:0;transform:translateY(12px)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}}
+@keyframes inRight{from{opacity:0;transform:translateX(64px) scale(.98)}}
+@keyframes outLeft{to{opacity:0;transform:translateX(-44px) scale(.98)}}
+@keyframes inLeft{from{opacity:0;transform:translateX(-64px) scale(.98)}}
+@keyframes outRight{to{opacity:0;transform:translateX(44px) scale(.98)}}
+@keyframes inDeep{from{opacity:0;transform:scale(.93) translateY(14px)}}
+@keyframes outDeep{to{opacity:0;transform:scale(1.03)}}
+@keyframes barY{from{transform:scaleY(0)}}
+@keyframes growW{from{width:0}}
+@keyframes ring{0%,100%{box-shadow:0 0 0 0 var(--accent-soft),var(--shadow-sm)}50%{box-shadow:0 0 0 8px var(--accent-soft),var(--shadow-sm)}}
+@keyframes glow{0%,100%{box-shadow:0 0 0 3px var(--p-psycho-soft)}50%{box-shadow:0 0 0 7px var(--p-psycho-soft)}}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.07)}100%{transform:scale(1)}}
+@keyframes unfold{from{opacity:0;transform:translateY(10px) scale(.97)}}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,14px)}}
+@keyframes blink{50%{opacity:0}}
+@keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+
+/* top bar */
+.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--ground) 90%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 24px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.brand b{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:22px;letter-spacing:-.02em}
+.brand span{color:var(--ink-2);font-size:13px}
+.tabs{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:4px;overflow-x:auto;max-width:100%}
+.tabs button{border:0;background:transparent;color:var(--ink-2);font-weight:700;font-size:14px;padding:8px 14px;border-radius:999px;cursor:pointer;white-space:nowrap;transition:background .25s,color .25s,transform .15s}
+.tabs button:active{transform:scale(.96)}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+
+main{max-width:1180px;margin:0 auto;padding:36px 24px 96px}
+.tab{display:flex;flex-direction:column;gap:20px}
+.tab.enter{animation:fadeUp .45s cubic-bezier(.2,.8,.2,1) both}
+.head{display:flex;flex-direction:column;gap:10px}
+section.block{display:flex;flex-direction:column;gap:14px;margin-top:20px}
+section.block>h2{font-size:24px}
+
+/* tags */
+.tag{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.04em;padding:2px 6px;border:1px solid var(--line);border-radius:6px;color:var(--ink-2);background:var(--surface)}
+.pl{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:6px;font-weight:500}
+.pl.physio{background:var(--p-physio-soft);color:var(--p-physio)}
+.pl.socio{background:var(--p-socio-soft);color:var(--p-socio)}
+.pl.psycho{background:var(--p-psycho-soft);color:var(--p-psycho)}
+.pl.ideo{background:var(--p-ideo-soft);color:var(--p-ideo)}
+
+/* tilt (3D pointer tracking) */
+.tiltable{transition:transform .6s cubic-bezier(.2,.8,.2,1),box-shadow .6s;will-change:transform;position:relative}
+.tiltable.tilting{transition:transform .06s linear,box-shadow .6s}
+.tiltable::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:radial-gradient(circle at var(--gx,50%) var(--gy,50%),var(--glare),transparent 42%);opacity:0;transition:opacity .35s;z-index:5}
+.tiltable.tilting::after{opacity:1}
+
+/* ---------- 3D week hero ---------- */
+.hero3d{margin-top:6px;border:1px solid var(--line);border-radius:24px;background:var(--surface);overflow:hidden;box-shadow:var(--shadow-sm)}
+.hero3d-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;padding:20px 24px 0}
+.hero3d-head h2{font-size:23px}
+.hero3d-head .quiet{margin-top:4px}
+.legend3d{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2);align-items:center;padding-bottom:4px}
+.legend3d i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.legend3d .uni{background:var(--uni3d)} .legend3d .shift{background:var(--accent)} .legend3d .offer{background:var(--lamp)} .legend3d .rest{background:var(--ok);opacity:.55}
+.stage{position:relative;height:clamp(360px,40vw,470px);touch-action:pan-y;cursor:grab;user-select:none;-webkit-user-select:none}
+.stage.dragging{cursor:grabbing}
+.stage::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 78%,var(--accent-soft),transparent 62%);opacity:.55;pointer-events:none;z-index:0}
+.stage canvas{display:block;width:100%;height:100%;position:relative;z-index:1}
+.labels{position:absolute;inset:0;pointer-events:none;z-index:2}
+.dlab{position:absolute;transform:translate(-50%,0);font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-2);text-align:center;line-height:1.15;white-space:nowrap}
+.dlab b{display:block;font-size:11px;letter-spacing:.09em;font-weight:500}
+.dlab.today{color:var(--accent)}
+.dlab.today b::after{content:" · today"}
+.hlab{position:absolute;transform:translate(-100%,-50%);font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-2);padding-right:8px}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--ground);padding:8px 11px;border-radius:10px;font-size:12.5px;line-height:1.35;max-width:250px;transform:translate(-50%,calc(-100% - 16px));box-shadow:var(--shadow-sm);z-index:3}
+.tip b{display:block;font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.02em}
+.tip.offer{background:var(--lamp);color:#1C1B2E}
+.stage .hint{position:absolute;right:14px;bottom:12px;z-index:2;font-size:12px;color:var(--ink-2);background:color-mix(in srgb,var(--surface) 80%,transparent);padding:4px 9px;border-radius:999px;pointer-events:none;transition:opacity .4s}
+.stage.touched .hint{opacity:0}
+.fallback{position:absolute;inset:0;display:grid;grid-template-columns:repeat(7,1fr);gap:8px;padding:26px 16px 40px 52px;z-index:1}
+.fb-col{position:relative;border-left:1px dashed var(--line)}
+.fb-col.rest{background:var(--ok-soft);border-radius:8px}
+.fb-blk{position:absolute;left:6px;right:6px;border-radius:5px}
+.fb-blk.uni{background:var(--uni3d)} .fb-blk.shift{background:var(--accent)} .fb-blk.offer{background:var(--lamp);border:2px dashed var(--ink)}
+.fb-lab{position:absolute;bottom:-30px;left:0;right:0;text-align:center;font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-2)}
+.fb-h{position:absolute;left:14px;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-2);transform:translateY(-50%)}
+
+/* ---------- prototype grid ---------- */
+.proto-grid{display:grid;grid-template-columns:minmax(300px,392px) minmax(0,1fr);gap:44px;align-items:start;margin-top:22px}
+@media (max-width:860px){.proto-grid{grid-template-columns:1fr;gap:28px}}
+.screen-nav{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.screen-nav button{border:1px solid var(--line);background:var(--surface);color:var(--ink-2);font-size:13px;font-weight:700;padding:6px 11px;border-radius:999px;cursor:pointer;transition:background .25s,color .25s,transform .15s}
+.screen-nav button:active{transform:scale(.95)}
+.screen-nav button[aria-current="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+.screen-nav .flow{color:var(--ink-2);font-size:12px;align-self:center;padding:0 2px}
+
+.phone-stage{perspective:1400px}
+.phone{width:100%;max-width:392px;height:min(760px,88vh);background:var(--phone-bg);border:1px solid var(--line);border-radius:38px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;position:relative;transform-style:preserve-3d}
+.phone-status{display:flex;justify-content:space-between;padding:14px 22px 6px;font-size:12px;color:var(--ink-2)}
+.screens{flex:1;overflow-y:auto;overscroll-behavior:contain;position:relative}
+.screen{padding:12px 18px 24px;display:flex;flex-direction:column;gap:14px;transform-origin:50% 40%}
+.screen.anim-out{position:absolute;inset:0;pointer-events:none}
+.screen.in-right{animation:inRight .45s cubic-bezier(.2,.8,.2,1) both}
+.screen.out-left{animation:outLeft .35s cubic-bezier(.4,0,.6,1) both}
+.screen.in-left{animation:inLeft .45s cubic-bezier(.2,.8,.2,1) both}
+.screen.out-right{animation:outRight .35s cubic-bezier(.4,0,.6,1) both}
+.screen.in-deep{animation:inDeep .45s cubic-bezier(.2,.8,.2,1) both}
+.screen.out-deep{animation:outDeep .3s cubic-bezier(.4,0,.6,1) both}
+.screen.play .rv{animation:rise .55s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*60ms + 140ms)}
+.screen.play .check::before{animation:barY .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*60ms + 380ms);transform-origin:top}
+.screen.play .bar .earned{animation:growW 1s .4s cubic-bezier(.2,.8,.2,1) both}
+.screen.play .bar .booked{animation:growW .6s 1.25s cubic-bezier(.2,.8,.2,1) both}
+.s-title{font-family:"Bricolage Grotesque",sans-serif;font-size:25px;font-weight:700;letter-spacing:-.02em;line-height:1.1;text-wrap:balance}
+.s-sub{color:var(--ink-2);font-size:14px}
+.s-head{display:flex;flex-direction:column;gap:5px}
+.back{align-self:flex-start;border:0;background:transparent;color:var(--accent);font-weight:700;font-size:13px;padding:0;cursor:pointer}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px;font-size:14px}
+.card .k{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+.card.soft{background:var(--lamp-soft);border-color:transparent}
+.card.soft.unfold{animation:unfold .5s cubic-bezier(.2,.8,.2,1) both}
+.card.privacy{background:var(--accent-soft);border-color:transparent}
+.tile-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:3px}
+.tile .k{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+.tile .v{font-family:"Bricolage Grotesque",sans-serif;font-size:19px;font-weight:700;letter-spacing:-.01em}
+.tile .v.ok{color:var(--ok)} .tile .v.warn{color:var(--warn)} .tile .v.bad{color:var(--bad)}
+.tile .d{font-size:12.5px;color:var(--ink-2);line-height:1.4}
+.ask{text-align:left;cursor:pointer;box-shadow:var(--shadow-sm);border-color:var(--accent);gap:10px;animation:ring 2.6s ease-in-out infinite;transition:transform .25s}
+.ask:hover{transform:translateY(-2px)}
+.ask-from{display:flex;align-items:center;gap:10px}
+.ask-from .who{display:flex;flex-direction:column;line-height:1.2}
+.ask-from b{font-size:14px}
+.ask-from .when{font-size:12px;color:var(--ink-2)}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:700;flex:none}
+.ask p{font-size:14.5px}
+.ask .go{color:var(--accent);font-weight:700;font-size:13.5px}
+.agenda{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow:hidden}
+.row{display:grid;grid-template-columns:44px 1fr;gap:10px;padding:9px 12px;border-top:1px solid var(--line);font-size:13px;align-items:start;transition:background .2s}
+.row:first-child{border-top:0}
+.row:hover{background:var(--surface-2)}
+.row.today,.row.today:hover{background:var(--accent-soft)}
+.row .dn{display:flex;flex-direction:column;line-height:1.15}
+.row .dn b{font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+.row .dn span{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-2)}
+.row .items{display:flex;flex-direction:column;gap:3px}
+.it{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.it i{width:8px;height:8px;border-radius:3px;flex:none;display:inline-block}
+.it.uni i{background:var(--uni3d)} .it.shift i{background:var(--accent)} .it.offer i{background:transparent;border:2px dashed var(--lamp);animation:breathe 2s ease-in-out infinite} .it.rest i{background:var(--ok)}
+.it .t{font-family:"IBM Plex Mono",monospace;font-size:12.5px}
+.it .n{color:var(--ink-2);font-size:12.5px}
+.it .n.warn{color:var(--warn)}
+.check{display:grid;grid-template-columns:52px 1fr;gap:10px;padding:12px 13px;border-radius:14px;border:1px solid var(--line);background:var(--surface);font-size:13.5px;line-height:1.45;position:relative;transition:transform .25s,box-shadow .25s}
+.check:hover{transform:translateX(3px);box-shadow:var(--shadow-sm)}
+.check::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:0 3px 3px 0}
+.check.ok::before{background:var(--ok)} .check.warn::before{background:var(--warn)} .check.bad::before{background:var(--bad)}
+.check .ck{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding-top:3px}
+.check.ok .ck{color:var(--ok)} .check.warn .ck{color:var(--warn)} .check.bad .ck{color:var(--bad)}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:14px;padding:11px 14px;border-radius:12px;cursor:pointer;text-align:center;transition:transform .15s,filter .2s}
+.btn:hover{filter:brightness(1.06)}
+.btn:active{transform:scale(.97)}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.neutral{background:var(--surface);border-color:var(--line);color:var(--ink)}
+.btn-col{display:flex;flex-direction:column;gap:8px}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13px;cursor:pointer;line-height:1.2;transition:background .2s,border-color .2s,color .2s,transform .15s}
+.chip:active{transform:scale(.95)}
+.chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:700}
+.chip.static{cursor:default;background:var(--surface)}
+.opts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.opt{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 6px;font-weight:700;font-size:14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:background .2s,border-color .2s,color .2s,transform .2s}
+.opt:hover{transform:translateY(-2px)}
+.opt small{font-weight:400;color:var(--ink-2);font-size:11.5px}
+.opt[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);animation:pop .35s cubic-bezier(.2,.8,.2,1)}
+.msg{font-size:14.5px;line-height:1.5;border-color:var(--accent)}
+.msg .from{font-size:11px;color:var(--ink-2);font-family:"IBM Plex Mono",monospace;letter-spacing:.06em;text-transform:uppercase}
+.msg p{min-height:3.2em}
+.msg p.typing::after{content:"";display:inline-block;width:2px;height:1em;background:var(--accent);margin-left:2px;vertical-align:-2px;animation:blink 1s steps(2) infinite}
+.bar-k{display:flex;justify-content:space-between;font-size:13px}
+.bar{height:12px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden;display:flex}
+.bar .earned{background:var(--accent);height:100%}
+.bar .booked{background:var(--accent-soft);height:100%;border-left:2px solid var(--accent)}
+.legend{display:flex;gap:14px;font-size:12.5px;color:var(--ink-2);flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.legend i.e{background:var(--accent)} .legend i.b{background:var(--accent-soft);border:1px solid var(--accent)}
+.list{gap:0;padding:4px 14px}
+.list .lr{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line);font-size:13.5px}
+.list .lr:first-child{border-top:0}
+.list .lr span{color:var(--ink-2)}
+.phone-nav{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:var(--surface);padding:8px 8px 14px}
+.phone-nav button{border:0;background:transparent;color:var(--ink-2);font-size:11.5px;font-weight:700;padding:6px 4px;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:color .25s}
+.phone-nav button i{width:18px;height:6px;border-radius:3px;background:currentColor;opacity:.35;display:block;transition:opacity .25s,transform .35s cubic-bezier(.2,.8,.2,1);transform:scaleX(.6)}
+.phone-nav button[aria-current="true"]{color:var(--accent)}
+.phone-nav button[aria-current="true"] i{opacity:1;transform:scaleX(1)}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:999px;font-size:13.5px;box-shadow:var(--shadow);z-index:30;animation:toastIn .3s cubic-bezier(.2,.8,.2,1) both}
+
+/* notes column */
+.notes{display:flex;flex-direction:column;gap:14px;position:sticky;top:84px}
+.note{display:flex;flex-direction:column;gap:12px}
+.note.show{animation:rise .5s cubic-bezier(.2,.8,.2,1) both}
+.note h3{font-size:26px;letter-spacing:-.02em}
+.note .grid{display:grid;grid-template-columns:96px 1fr;gap:10px 16px;font-size:15px;line-height:1.5}
+.note .grid dt{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);padding-top:4px}
+.note .grid dd{margin:0}
+.note blockquote{margin:0;padding:8px 0 8px 14px;border-left:3px solid var(--line);color:var(--ink);font-style:italic}
+.note blockquote .tag{font-style:normal;margin-left:6px}
+.note .q{display:flex;flex-direction:column;gap:6px}
+@media (max-width:860px){.notes{position:static}}
+@media (max-width:520px){.note .grid{grid-template-columns:1fr;gap:4px 0}.note .grid dd{margin-bottom:8px}}
+
+/* ---------- experiences tab ---------- */
+.exp-groups{display:flex;flex-direction:column;gap:28px;margin-top:8px}
+.exp-group h2{font-size:22px;margin-bottom:10px}
+.exp-list{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.exp{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:start;transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s}
+.exp:hover{transform:translateY(-3px);box-shadow:var(--shadow-sm)}
+.tab.enter .exp{animation:rise .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*30ms)}
+.exp .id{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-2);padding-top:3px}
+.exp p{font-size:15px;line-height:1.45}
+.exp .meta{grid-column:2;display:flex;gap:5px;flex-wrap:wrap}
+.not-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;list-style:none;padding:0}
+.not-list li{border:1px dashed var(--bad);border-radius:14px;padding:12px 14px;font-size:14.5px;color:var(--ink);background:var(--bad-soft)}
+.not-list li b{display:block;font-size:13px;color:var(--bad);letter-spacing:.04em;text-transform:uppercase;font-family:"IBM Plex Mono",monospace;margin-bottom:4px}
+.legend-pl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--ink-2)}
+
+/* ---------- persona tab ---------- */
+.persona-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin-top:8px}
+.p-card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;grid-column:span 4}
+.tab.enter .p-card{animation:rise .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*70ms)}
+.p-card h3{font-size:18px}
+.p-card ul{display:flex;flex-direction:column;gap:6px;font-size:14.5px;line-height:1.45}
+.p-card.id{grid-column:span 12;display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start;background:var(--accent);color:var(--accent-ink);border-color:transparent;overflow:hidden}
+.p-card.id .p-avatar{width:84px;height:84px;border-radius:24px;background:var(--accent-ink);color:var(--accent);display:grid;place-items:center;font-family:"Bricolage Grotesque",sans-serif;font-size:40px;font-weight:800}
+.p-card.id dl{margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px 20px}
+.p-card.id dt{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.09em;text-transform:uppercase;opacity:.75}
+.p-card.id dd{margin:0;font-size:15px;line-height:1.4}
+.p-card.id .strap{grid-column:1/-1;font-family:"Bricolage Grotesque",sans-serif;font-size:22px;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+.p-card.six{grid-column:span 6}
+.p-card.wide{grid-column:span 12}
+.p-card blockquote{margin:0;padding:8px 0 8px 14px;border-left:3px solid var(--lamp);font-style:italic;font-size:15px;line-height:1.45}
+.p-card blockquote .tag{font-style:normal;margin-left:6px}
+.care-map{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.care-map h4{font-size:13px;font-family:"IBM Plex Mono",monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);font-weight:500;margin-bottom:6px}
+.care-map .gap{border:1px dashed var(--lamp);background:var(--lamp-soft);border-radius:12px;padding:10px 12px}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:9px 10px;border-top:1px solid var(--line);vertical-align:top;line-height:1.4}
+th{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);font-weight:500;border-top:0}
+td.mono,th.mono{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr{transition:background .2s}
+tbody tr:hover{background:var(--surface-2)}
+.week-tbl td:first-child{font-family:"IBM Plex Mono",monospace;white-space:nowrap;color:var(--ink-2)}
+@media (max-width:900px){.p-card{grid-column:span 6}.p-card.six{grid-column:span 12}}
+@media (max-width:600px){.p-card{grid-column:span 12}.p-card.id{grid-template-columns:1fr}}
+
+/* ---------- lens tab ---------- */
+.four{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:8px}
+.pcard{border:1px solid var(--line);border-radius:18px;padding:18px;background:var(--surface);display:flex;flex-direction:column;gap:10px;font-size:14.5px;line-height:1.45;position:relative}
+.tab.enter .pcard{animation:rise .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*90ms)}
+.pcard h3{font-size:19px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pcard .def{color:var(--ink-2);font-size:13.5px}
+.pcard ul{display:flex;flex-direction:column;gap:4px}
+.pcard .opp{border-top:1px solid var(--line);padding-top:10px}
+.pcard .opp b{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);display:block;margin-bottom:4px;font-weight:500}
+.pcard.chosen{border-color:var(--p-psycho);animation:glow 3s ease-in-out infinite}
+.pcard .applied{position:absolute;top:-10px;right:14px;background:var(--p-psycho);color:var(--accent-ink);font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:999px;z-index:6}
+.why{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.why div{border-left:3px solid var(--p-psycho);padding:4px 0 4px 14px;font-size:15px;line-height:1.5}
+.why b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-size:17px;margin-bottom:4px}
+.moves th:nth-child(1),.moves td:nth-child(1){min-width:180px}
+.changes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.changes div{border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--surface)}
+.changes b{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:500;display:block;margin-bottom:8px}
+.changes .rm b{color:var(--bad)} .changes .rf b{color:var(--warn)} .changes .ad b{color:var(--ok)}
+.changes ul{font-size:14.5px;display:flex;flex-direction:column;gap:5px}
+.tasks{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.tasks div{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;font-size:14.5px;line-height:1.45}
+.tasks b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-size:16px;margin-bottom:6px}
+.tasks .w{color:var(--ink-2);font-size:13.5px;margin-top:6px}
+footer{max-width:1180px;margin:0 auto;padding:0 24px 40px;color:var(--ink-2);font-size:13px;border-top:1px solid var(--line);padding-top:20px}
+</style>
+
+<header class="top">
+  <div class="brand"><b>Offshift</b><span>DECO2850 · Care studio · Pleasure Framework pass</span></div>
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" data-tab="proto" aria-selected="true">Prototype</button>
+    <button role="tab" data-tab="exp" aria-selected="false">Experiences</button>
+    <button role="tab" data-tab="persona" aria-selected="false">Persona</button>
+    <button role="tab" data-tab="lens" aria-selected="false">Pleasure lens</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ================= PROTOTYPE ================= -->
+<section id="tab-proto" class="tab" role="tabpanel">
+  <div class="head">
+    <div class="eyebrow">Step 4 · Prototype, revisited through psycho-pleasure</div>
+    <h1 class="page">The roster is theirs. The week is yours.</h1>
+    <p class="lede">Offshift sits beside the employer's roster app. It never talks to the manager. It cares for the one moment every participant described carrying alone: a shift offer arrives, and you have to decide and reply. Start with the week below, then tap through the phone. The notes beside it explain each design move and which interview it came from. All names and figures are example data for the persona, Dinda.</p>
+  </div>
+
+  <div class="hero3d">
+    <div class="hero3d-head">
+      <div>
+        <div class="eyebrow">Dinda's week · 6 am to midnight, to scale</div>
+        <h2>Three shifts, two tutes, one ask, one Sunday.</h2>
+        <p class="quiet">Drag to look around. Hover a block for the detail. The amber one is Jess's ask for tonight: tap it to open the offer in the phone.</p>
+      </div>
+      <div class="legend3d"><span><i class="uni"></i>Uni</span><span><i class="shift"></i>Shift</span><span><i class="offer"></i>Offer</span><span><i class="rest"></i>Protected rest</span></div>
+    </div>
+    <div class="stage" id="stage">
+      <canvas id="week3d" aria-label="Three-dimensional view of Dinda's week: blocks for university, shifts, tonight's offer and Sunday's rest"></canvas>
+      <div class="labels" id="labels"></div>
+      <div class="tip" id="tip" hidden></div>
+      <div class="hint">drag · hover · tap the amber block</div>
+      <div class="fallback" id="fallback" hidden></div>
+    </div>
+  </div>
+
+  <div class="proto-grid">
+    <div class="phone-col">
+      <div class="screen-nav" aria-label="Jump to a screen">
+        <button data-screen="week" aria-current="true">Week</button><span class="flow">→</span>
+        <button data-screen="offer" aria-current="false">Shift offer</button><span class="flow">→</span>
+        <button data-screen="reply" aria-current="false">Reply</button>
+        <button data-screen="checkin" aria-current="false">Check-in</button>
+        <button data-screen="money" aria-current="false">Money &amp; rest</button>
+        <button data-screen="me" aria-current="false">Me</button>
+      </div>
+
+      <div class="phone-stage">
+      <div class="phone" id="phone" aria-label="Offshift phone prototype">
+        <div class="phone-status"><span class="mono">13:02</span><span>Thu 18 Sep</span></div>
+        <div class="screens" id="screens">
+
+          <!-- WEEK -->
+          <div class="screen" data-screen="week">
+            <div class="s-head rv">
+              <div class="eyebrow">Week of 15 Sep</div>
+              <div class="s-title">Thursday, Dinda.</div>
+              <div class="s-sub">Three shifts booked. Sunday is yours.</div>
+            </div>
+            <div class="tile-row rv">
+              <div class="tile"><div class="k">Body</div><div class="v warn">Getting tired</div><div class="d">Tuesday's close rated Tired. Two early starts ahead.</div></div>
+              <div class="tile"><div class="k">Money</div><div class="v ok">Covered</div><div class="d">Essentials covered by Saturday's shift.</div></div>
+            </div>
+            <div class="card ask rv" role="button" tabindex="0" id="ask">
+              <div class="ask-from"><span class="avatar" aria-hidden="true">J</span><div class="who"><b>Jess · Pandora</b><span class="when">Message · 12:41</span></div></div>
+              <p>“Hey Dinda, Mia's sick. Any chance you could do 4–9 tonight?”</p>
+              <span class="go">Think it through →</span>
+            </div>
+            <div class="agenda rv" aria-label="This week">
+              <div class="row"><div class="dn"><b>Mon</b><span>15</span></div><div class="items"><div class="it uni"><i></i><span class="t">10:00–12:00</span><span class="n">Tute</span></div><div class="it shift"><i></i><span class="t">14:00–19:00</span><span class="n">Pandora · 5h</span></div></div></div>
+              <div class="row"><div class="dn"><b>Tue</b><span>16</span></div><div class="items"><div class="it shift"><i></i><span class="t">16:00–21:00</span><span class="n">Pandora · close</span><span class="n warn">rated Tired</span></div></div></div>
+              <div class="row"><div class="dn"><b>Wed</b><span>17</span></div><div class="items"><div class="it uni"><i></i><span class="t">09:00–11:00</span><span class="n">Lecture</span></div><div class="it"><i style="background:var(--line)"></i><span class="n">Free evening</span></div></div></div>
+              <div class="row today"><div class="dn"><b>Thu</b><span>18</span></div><div class="items"><div class="it uni"><i></i><span class="t">13:00–15:00</span><span class="n">Tute</span></div><div class="it offer"><i></i><span class="t">16:00–21:00</span><span class="n">Offer from Jess · close</span></div></div></div>
+              <div class="row"><div class="dn"><b>Fri</b><span>19</span></div><div class="items"><div class="it shift"><i></i><span class="t">10:00–16:00</span><span class="n">Pandora · 6h</span></div></div></div>
+              <div class="row"><div class="dn"><b>Sat</b><span>20</span></div><div class="items"><div class="it shift"><i></i><span class="t">09:00–17:00</span><span class="n">Pandora · Sat rate</span></div></div></div>
+              <div class="row"><div class="dn"><b>Sun</b><span>21</span></div><div class="items"><div class="it rest"><i></i><span class="n"><b>Rest.</b> Booked like a shift.</span></div></div></div>
+            </div>
+          </div>
+
+          <!-- OFFER -->
+          <div class="screen" data-screen="offer" hidden>
+            <button class="back" onclick="showScreen('week')">← Week</button>
+            <div class="s-head rv">
+              <div class="s-title">Cover tonight, 4–9?</div>
+              <div class="s-sub">Jess asked at 12:41. No rush. She'll understand either way.</div>
+            </div>
+            <div class="check warn rv"><div class="ck">Body</div><div>Tuesday's close is still in your legs. You rated it <b>Tired</b>. Tonight would be your second close in three days, and Friday starts at 10.</div></div>
+            <div class="check warn rv"><div class="ck">Week</div><div>Your tute ends 3:00. The 412 takes about 35 minutes, so you'd arrive around 3:50 with no time to eat.</div></div>
+            <div class="check ok rv"><div class="ck">Money</div><div>This fortnight's essentials (<span class="mono">$760</span>) are covered by Saturday. Tonight adds about <span class="mono">$160</span> on top.</div></div>
+            <p class="quiet rv">Either answer is fine. Choose for the week, not just for tonight.</p>
+            <div class="btn-col rv">
+              <button class="btn" onclick="chooseReply('no')">Not tonight</button>
+              <button class="btn ghost" onclick="chooseReply('alt')">Offer another time</button>
+              <button class="btn neutral" onclick="chooseReply('yes')">Take it</button>
+            </div>
+          </div>
+
+          <!-- REPLY -->
+          <div class="screen" data-screen="reply" hidden>
+            <button class="back" onclick="showScreen('offer')">← Back to the offer</button>
+            <div class="s-head rv">
+              <div class="s-title" id="reply-title">Say it once, kindly.</div>
+              <div class="s-sub">Edit anything. It only leaves when you send it.</div>
+            </div>
+            <div class="chips rv" role="group" aria-label="Tone">
+              <button class="chip" data-tone="warm" aria-pressed="true">Warm</button>
+              <button class="chip" data-tone="plain" aria-pressed="false">Plain</button>
+            </div>
+            <div class="card msg rv"><span class="from">To Jess</span><p id="reply-text" contenteditable="true" spellcheck="false"></p></div>
+            <p class="quiet rv" id="reply-note"></p>
+            <div class="btn-row rv">
+              <button class="btn" onclick="copyReply()">Copy</button>
+              <button class="btn ghost" onclick="toast('Opens your own messaging app. Offshift never sends on your behalf.')">Open in Messages</button>
+            </div>
+            <div class="card soft rv"><div class="k">Then</div><p id="reply-after"></p></div>
+          </div>
+
+          <!-- CHECK-IN -->
+          <div class="screen" data-screen="checkin" hidden>
+            <div class="s-head rv">
+              <div class="eyebrow">Tue 16 Sep · 16:00–21:00 · close</div>
+              <div class="s-title">Clocked off. How's the body?</div>
+            </div>
+            <div class="opts rv" role="group" aria-label="How's the body">
+              <button class="opt" data-body="fine" aria-pressed="false">Fine<small>could do it again</small></button>
+              <button class="opt" data-body="tired" aria-pressed="false">Tired<small>legs and feet</small></button>
+              <button class="opt" data-body="wiped" aria-pressed="false">Wiped<small>blanked out a bit</small></button>
+            </div>
+            <div class="s-sub rv">One thing for tonight?</div>
+            <div class="chips rv" role="group" aria-label="Recovery kit">
+              <button class="chip" data-kit aria-pressed="false">Buy the favourite meal</button>
+              <button class="chip" data-kit aria-pressed="false">Early night</button>
+              <button class="chip" data-kit aria-pressed="false">Call home</button>
+              <button class="chip" data-kit aria-pressed="false">Stretch</button>
+              <button class="chip" data-kit aria-pressed="false">Nothing, I'm good</button>
+            </div>
+            <button class="btn rv" onclick="finishCheckin()">Done</button>
+            <div class="card soft" id="checkin-result" hidden><div class="k">Noted</div><p id="checkin-text"></p></div>
+            <p class="quiet rv">Three taps, then the phone goes away. Nothing here is shared with Pandora.</p>
+          </div>
+
+          <!-- MONEY & REST -->
+          <div class="screen" data-screen="money" hidden>
+            <div class="s-head rv">
+              <div class="eyebrow">Fortnight 8–21 Sep</div>
+              <div class="s-title">Covered by Saturday.</div>
+              <div class="s-sub">Anything past that is a choice, not a debt.</div>
+            </div>
+            <div class="card rv">
+              <div class="bar-k"><span>Essentials this fortnight</span><span class="mono">$760</span></div>
+              <div class="bar" role="img" aria-label="Earned $598 of $760, booked shifts cover the rest"><div class="earned" style="width:79%"></div><div class="booked" style="width:21%"></div></div>
+              <div class="legend"><span><i class="e"></i>Earned <span class="mono">$598</span></span><span><i class="b"></i>Booked <span class="mono">$412</span></span></div>
+              <p class="quiet">Rent <span class="mono">$520</span> · groceries and bus <span class="mono">$240</span>. Saturday's shift takes you about <span class="mono">$250</span> past essentials.</p>
+            </div>
+            <div class="card rv">
+              <div class="k">Quiet weeks ahead</div>
+              <p>Last January your hours dropped from 24 to 3–6 a week. Want a heads-up in early December to plan for it?</p>
+              <div class="chips"><button class="chip" data-toggle aria-pressed="true">Yes, remind me</button></div>
+            </div>
+            <div class="card rv">
+              <div class="k">Protected</div>
+              <p><b>Sunday.</b> Rest, booked like a shift, so nothing lands on it. Offshift asks before you give one away.</p>
+              <p><b>Exam block, 2–13 Nov.</b> You usually drop to two shifts a week. Availability for that fortnight closes 26 Oct.</p>
+            </div>
+          </div>
+
+          <!-- ME -->
+          <div class="screen" data-screen="me" hidden>
+            <div class="s-head rv">
+              <div class="s-title">What matters this month</div>
+              <div class="s-sub">These set the defaults. Change them any time.</div>
+            </div>
+            <div class="chips rv" role="group" aria-label="Priority this month">
+              <button class="chip" data-prio="health" aria-pressed="true">Health first</button>
+              <button class="chip" data-prio="uni" aria-pressed="false">Uni first</button>
+              <button class="chip" data-prio="money" aria-pressed="false">Money first</button>
+            </div>
+            <p class="quiet rv" id="prio-hint">Body is checked first on every offer. Closes in a row get flagged early.</p>
+            <div class="card list rv">
+              <div class="lr"><span>Protected day</span><b>Sunday</b></div>
+              <div class="lr"><span>Essentials per fortnight</span><b class="mono">$760</b></div>
+              <div class="lr"><span>Travel from uni</span><b>35 min · bus 412</b></div>
+              <div class="lr"><span>Closes in a row before a flag</span><b class="mono">2</b></div>
+            </div>
+            <div class="card rv">
+              <div class="k">Recovery kit</div>
+              <p class="quiet">Things that helped before. Offered after long shifts, never pushed.</p>
+              <div class="chips"><span class="chip static">Favourite meal, bought not cooked</span><span class="chip static">Early night</span><span class="chip static">Call home</span><button class="chip" onclick="toast('Add whatever helps. Only you see it.')">+ Add</button></div>
+            </div>
+            <div class="card privacy rv">
+              <div class="k">Who sees this</div>
+              <p><b>Only you.</b> Nothing about your body, mood or money goes to Pandora. The only things that leave Offshift are messages you copy or send yourself.</p>
+            </div>
+          </div>
+
+        </div>
+        <nav class="phone-nav" aria-label="App sections">
+          <button data-screen="week" aria-current="true"><i></i>Week</button>
+          <button data-screen="money" aria-current="false"><i></i>Money</button>
+          <button data-screen="checkin" aria-current="false"><i></i>Check-in</button>
+          <button data-screen="me" aria-current="false"><i></i>Me</button>
+        </nav>
+      </div>
+      </div>
+    </div>
+
+    <aside class="notes" aria-live="polite">
+
+      <div class="note" data-for="week">
+        <div class="eyebrow">Screen 1 · Week</div>
+        <h3>Open on how she is, not how much she'll earn.</h3>
+        <dl class="grid">
+          <dt>Design move</dt><dd>Body and Money are two tiles in plain words. The manager's ask is a card she opens when ready, not a notification that demands a reply. Sunday is written into the week as rest, so it needs no defending.</dd>
+          <dt>Pleasure</dt><dd><span class="pl psycho">psycho</span> The week reads as hers. Secondary <span class="pl physio">physio</span>: closes are named as closes, because they cost the body more than the hours suggest.</dd>
+          <dt>Evidence</dt><dd class="q">
+            <blockquote>The weekend shifts and number of hours are the two things that I always look at first.<span class="tag">P1</span></blockquote>
+            <blockquote>It is more because I am tired and I just want to, like, lie down.<span class="tag">P1</span></blockquote>
+            <blockquote>I try to avoid working on Sundays, just because I need to rest.<span class="tag">P4</span></blockquote>
+          </dd>
+          <dt>Care check</dt><dd>Who is caring for whom: Dinda for herself. The roster app shows slots and pay. This shows the person in the slots.</dd>
+        </dl>
+      </div>
+
+      <div class="note" data-for="offer" hidden>
+        <div class="eyebrow">Screen 2 · Shift offer</div>
+        <h3>Show the trade-off. Don't make the call.</h3>
+        <dl class="grid">
+          <dt>Design move</dt><dd>Three checks, Body, Week and Money, each one sentence. No score, no “we recommend”. Three honest answers with equal weight, and “take it” is a real option, not a guilt trip.</dd>
+          <dt>Pleasure</dt><dd><span class="pl psycho">psycho</span> The decision is made with the facts in view, so it feels like a choice rather than a reflex. That is the pleasure the current roster apps skip entirely.</dd>
+          <dt>Evidence</dt><dd class="q">
+            <blockquote>I was thinking, “Have I earned enough money for my rent and my living expenses?”<span class="tag">P5</span></blockquote>
+            <blockquote>The first thing that went through my mind was of course my health.<span class="tag">P1</span></blockquote>
+            <blockquote>It takes around one and a half hours to travel from my university to my workplace.<span class="tag">P3</span></blockquote>
+            <blockquote>I felt bad saying no to this manager… so I stayed. I extended my shift.<span class="tag">P2</span></blockquote>
+          </dd>
+          <dt>Care check</dt><dd>Care for herself and care for Jess are both on the screen. Neither is shamed. The app has no stake in the answer.</dd>
+        </dl>
+      </div>
+
+      <div class="note" data-for="reply" hidden>
+        <div class="eyebrow">Screen 3 · Reply</div>
+        <h3>Take the words out of the worry.</h3>
+        <dl class="grid">
+          <dt>Design move</dt><dd>The composer writes the message she was going to rehearse anyway: honest, short, kind. Warm or Plain. She edits it, copies it, and sends it from her own messaging app.</dd>
+          <dt>Pleasure</dt><dd><span class="pl psycho">psycho</span> Relief. <span class="pl ideo">ideo</span> Honesty instead of “I'm sick”. <span class="pl socio">socio</span> Offering another time keeps her a good colleague.</dd>
+          <dt>Evidence</dt><dd class="q">
+            <blockquote>I try to think about what to say to my manager before I tell them, and I try to come up with the best way to reply.<span class="tag">P4</span></blockquote>
+            <blockquote>Then I will just say I'm sick and change to another time.<span class="tag">P5</span></blockquote>
+            <blockquote>I offered to do a shift swap… I know the managers would be understanding.<span class="tag">P2</span></blockquote>
+          </dd>
+          <dt>Care check</dt><dd>Offshift never messages the manager itself. The words leave only when Dinda sends them, so she keeps her voice and her relationship.</dd>
+        </dl>
+      </div>
+
+      <div class="note" data-for="checkin" hidden>
+        <div class="eyebrow">Screen 4 · Check-in</div>
+        <h3>Ask after, not during. Three taps.</h3>
+        <dl class="grid">
+          <dt>Design move</dt><dd>Body state and one thing for tonight, then done. The recovery kit is built from her own past answers, offered and never pushed. What she records feeds the Body check next time Jess asks.</dd>
+          <dt>Pleasure</dt><dd><span class="pl physio">physio</span> The meal and the early night. Delivered through <span class="pl psycho">psycho</span>: someone noticed that five hours standing on a quiet floor is work.</dd>
+          <dt>Evidence</dt><dd class="q">
+            <blockquote>I bought my favourite meal, went home and slept early. Eating food that I like and getting enough sleep really helps me stay in a good mood.<span class="tag">P1</span></blockquote>
+            <blockquote>The store was pretty quiet, so I had to stand there for a long time.<span class="tag">P1</span></blockquote>
+            <blockquote>I ended a shift at 6 PM last night and then I'm starting 6 AM the next day.<span class="tag">P2</span></blockquote>
+          </dd>
+          <dt>Care check</dt><dd>Care, not cure. No graphs, no streaks, no “wellness score”. Tiredness is accepted as part of the job and made visible to her only.</dd>
+        </dl>
+      </div>
+
+      <div class="note" data-for="money" hidden>
+        <div class="eyebrow">Screen 5 · Money &amp; rest</div>
+        <h3>“Covered by”, not a target to chase.</h3>
+        <dl class="grid">
+          <dt>Design move</dt><dd>Income is shown against essentials for the fortnight, the unit casual pay actually arrives in. The post-Christmas dip becomes a heads-up months early. Rest days and exam blocks sit beside money because they compete for the same hours.</dd>
+          <dt>Pleasure</dt><dd><span class="pl psycho">psycho</span> Calm. Once essentials are covered, the extra shift becomes optional, and the Body check can be heard.</dd>
+          <dt>Evidence</dt><dd class="q">
+            <blockquote>After Christmas, I sometimes only received five hours, three hours or six hours in one week… I had to cancel [Pilates].<span class="tag">P1</span></blockquote>
+            <blockquote>If I'm all good and I already have plans with my friends… I will reject the shift.<span class="tag">P5</span></blockquote>
+            <blockquote>Especially if I have exams coming up. It's good to plan it out.<span class="tag">P2</span></blockquote>
+          </dd>
+          <dt>Care check</dt><dd>Shows enough to decide, never a budget lecture. What counts as essential is hers to set.</dd>
+        </dl>
+      </div>
+
+      <div class="note" data-for="me" hidden>
+        <div class="eyebrow">Screen 6 · Me</div>
+        <h3>Her values set the defaults. Not the app's.</h3>
+        <dl class="grid">
+          <dt>Design move</dt><dd>“Health first”, “Uni first” or “Money first” changes which check leads and what gets flagged. The privacy line is on the screen, not buried in a policy.</dd>
+          <dt>Pleasure</dt><dd><span class="pl ideo">ideo</span> Participants described their priorities as identity. <span class="pl psycho">psycho</span> Trust that recording a bad night has no consequence at work.</dd>
+          <dt>Evidence</dt><dd class="q">
+            <blockquote>I have to prioritise my health because working in retail can be very exhausting.<span class="tag">P1</span></blockquote>
+            <blockquote>I try to prioritize my uni. So if there are two things at the same time, I usually just prioritize uni.<span class="tag">P4</span></blockquote>
+            <blockquote>Many “caring” technologies slide easily into surveillance if they prioritise the carer's peace of mind over the autonomy of the person being cared for.<span class="tag">Brief</span></blockquote>
+          </dd>
+          <dt>Care check</dt><dd>The cared-for person has a voice and can push back: she can change the priorities, edit every message, and turn every nudge off.</dd>
+        </dl>
+      </div>
+
+    </aside>
+  </div>
+</section>
+
+<!-- ================= EXPERIENCES ================= -->
+<section id="tab-exp" class="tab" role="tabpanel" hidden>
+  <div class="head">
+    <div class="eyebrow">Step 1 · Brainstorm · what we want participants to experience</div>
+    <h1 class="page">Twenty-eight experiences, five interviews.</h1>
+    <p class="lede">Written from the worker's side of the screen. Each one carries the pleasure it mostly belongs to and the participants whose transcript it came from. The IDs are there so the team can point at one in the studio session.</p>
+    <div class="legend-pl"><span class="pl physio">physio</span> body and senses <span class="pl socio">socio</span> relationships <span class="pl psycho">psycho</span> thoughts and feelings <span class="pl ideo">ideo</span> values</div>
+  </div>
+
+  <div class="exp-groups">
+    <div class="exp-group">
+      <h2>When the roster drops</h2>
+      <ul class="exp-list">
+        <li class="exp"><span class="id">E01</span><p>See the whole fortnight as my week, not a list of pay slots.</p><span class="meta"><span class="pl psycho">psycho</span><span class="tag">P1</span><span class="tag">P5</span></span></li>
+        <li class="exp"><span class="id">E02</span><p>Check in one glance that the shifts match the availability I gave.</p><span class="meta"><span class="pl psycho">psycho</span><span class="tag">P1</span><span class="tag">P4</span></span></li>
+        <li class="exp"><span class="id">E03</span><p>Have shifts land in my calendar with travel time already around them.</p><span class="meta"><span class="pl physio">physio</span><span class="tag">P1</span><span class="tag">P3</span><span class="tag">P5</span></span></li>
+        <li class="exp"><span class="id">E04</span><p>See weekend and close shifts marked for what they cost my body, not only what they pay.</p><span class="meta"><span class="pl physio">physio</span><span class="tag">P1</span><span class="tag">P2</span></span></li>
+        <li class="exp"><span class="id">E05</span><p>Spot a clash with an assignment, quiz or group meeting before it is a problem.</p><span class="meta"><span class="pl psycho">psycho</span><span class="tag">P2</span><span class="tag">P4</span><span class="tag">P5</span></span></li>
+        <li class="exp"><span class="id">E06</span><p>Plan a month ahead only if I want to. A week at a time is a valid way to live.</p><span class="meta"><span class="pl ideo">ideo</span><span class="tag">P2</span><span class="tag">P3</span><span class="tag">P5</span></span></li>
+      </ul>
+    </div>
+
+    <div class="exp-group">
+      <h2>When a shift is offered</h2>
+      <ul class="exp-list">
+        <li class="exp"><span class="id">E07</span><p>Know, before I reply, whether it fits my body, my week and my rent.</p><span class="meta"><span class="pl psycho">psycho</span><span class="tag">P1</span><span class="tag">P5</span></span></li>
+        <li class="exp"><span class="id">E08</span><p>Say no without rehearsing it for ten minutes first.</p><span class="meta"><span class="pl psycho">psycho</span><span class="tag">P4</span></span></li>
+        <li class="exp"><span class="id">E09</span><p>Decline honestly instead of saying I'm sick.</p><span class="meta"><span class="pl ideo">ideo</span><span class="tag">P5</span></span></li>
+        <li class="exp"><span class="id">E10</span><p>Offer another time instead of a flat no, so I stay a good colleague.</p><span class="meta"><span class="pl socio">socio</span><span class="tag">P2</span><span class="tag">P3</span></span></li>
+        <li class="exp"><span class="id">E11</span><p>Help a manager I like without it turning into an eight-hour day by default.</p><span class="meta"><span class="pl socio">socio</span><span class="tag">P2</span></span></li>
+        <li class="exp"><span class="id">E12</span><p>Feel that either answer is fine, and that the choice was mine.</p><span class="meta"><span class="pl psycho">psycho</span><span class="tag">P1</span><span class="tag">P3</span><span class="tag">P4</span></span></li>
+      </ul>
+    </div>
+
+    <div class="exp-group">
+      <h2>During and after a shift</h2>
+      <ul class="exp-list">
+        <li class="exp"><span class="id">E13</span><p>Have someone notice that standing five hours on a quiet floor is work.</p><span class="meta"><span class="pl physio">physio</span><span class="tag">P1</span></span></li>
+        <li class="exp"><span class="id">E14</span><p>Get sent home early and treat it as found time, not lost pay.</p><span class="meta"><span class="pl psycho">psycho</span><span class="tag">P1</span><span class="tag">P5</span></span></li>
+        <li class="exp"><span class="id">E15</span><p>End a long shift with a small ritual that says “off”: the favourite meal, the early night.</p><span class="meta"><span class="pl physio">physio</span><span class="tag">P1</span></span></li>
+        <li class="exp"><span class="id">E16</span><p>Get home safely after a close without it being my problem alone.</p><span class="meta"><span class="pl physio">physio</span><span class="tag">P4</span></span></li>
+        <li class="exp"><span class="id">E17</span><p>Notice tiredness building before it turns into a bad week.</p><span class="meta"><span class="pl psycho">psycho</span><span class="tag">P1</span><span class="tag">P5</span></span></li>
+        <li class="exp"><span class="id">E18</span><p>Have one protected rest day that doesn't need defending.</p><span class="meta"><span class="pl psycho">psycho</span><span class="tag">P3</span><span class="tag">P4</span></span></li>
+      </ul>
+    </div>
+
+    <div class="exp-group">
+      <h2>When money shifts</h2>
+      <ul class="exp-list">
+        <li class="exp"><span class="id">E19</span><p>See early when hours are about to drop, so the gym or Pilates decision is made calmly.</p><span class="meta"><span class="pl psycho">psycho</span><span class="tag">P1</span></span></li>
+        <li class="exp"><span class="id">E20</span><p>Know when rent is covered so an extra shift becomes a choice, not a reflex.</p><span class="meta"><span class="pl psycho">psycho</span><span class="tag">P5</span></span></li>
+        <li class="exp"><span class="id">E21</span><p>See the trade-off between rest and money named honestly, with neither shamed.</p><span class="meta"><span class="pl ideo">ideo</span><span class="tag">P1</span><span class="tag">P5</span></span></li>
+        <li class="exp"><span class="id">E22</span><p>Keep the weekend shift I wanted, and know what it costs the week around it.</p><span class="meta"><span class="pl psycho">psycho</span><span class="tag">P1</span></span></li>
+      </ul>
+    </div>
+
+    <div class="exp-group">
+      <h2>With other people</h2>
+      <ul class="exp-list">
+        <li class="exp"><span class="id">E23</span><p>Tell a uni group or a visiting friend about a clash with a message that is already half-written.</p><span class="meta"><span class="pl socio">socio</span><span class="tag">P1</span><span class="tag">P2</span></span></li>
+        <li class="exp"><span class="id">E24</span><p>Hear that colleagues feel the same tiredness, without a complaint feed.</p><span class="meta"><span class="pl socio">socio</span><span class="tag">P1</span><span class="tag">P2</span><span class="tag">P3</span></span></li>
+        <li class="exp"><span class="id">E25</span><p>Feel like a person at work, not “the kitchen guy” slot.</p><span class="meta"><span class="pl socio">socio</span><span class="tag">P2</span></span></li>
+        <li class="exp"><span class="id">E26</span><p>Feel less alone at work when English isn't my first language.</p><span class="meta"><span class="pl socio">socio</span><span class="tag">P5</span></span></li>
+        <li class="exp"><span class="id">E27</span><p>Have my priorities for this month, health, uni or money, set the defaults instead of the app's.</p><span class="meta"><span class="pl ideo">ideo</span><span class="tag">P1</span><span class="tag">P4</span><span class="tag">P5</span></span></li>
+        <li class="exp"><span class="id">E28</span><p>Trust that nothing I record about my body or mood ever reaches my manager.</p><span class="meta"><span class="pl psycho">psycho</span><span class="tag">Brief</span></span></li>
+      </ul>
+    </div>
+
+    <div class="exp-group">
+      <h2>Not this</h2>
+      <p class="lede" style="margin-bottom:10px">Experiences the data warns us away from. Each one would turn care into control.</p>
+      <ul class="not-list">
+        <li><b>No verdicts</b>Being told what to answer. Participants own their reasons and resent being managed twice.</li>
+        <li><b>No manager view</b>A dashboard of my energy that my workplace can see. That is surveillance wearing a care costume.</li>
+        <li><b>No scores</b>Streaks, points or a wellness percentage. Tiredness is not a failure to be gamified.</li>
+        <li><b>No forced horizon</b>A month-long plan imposed on people who live week to week and find that exhausting.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PERSONA ================= -->
+<section id="tab-persona" class="tab" role="tabpanel" hidden>
+  <div class="head">
+    <div class="eyebrow">Step 2 · Persona · built from five field interviews</div>
+    <h1 class="page">Dinda Pratiwi</h1>
+    <p class="lede">A composite of the five student casual workers we interviewed. She is closest to P1 (jewellery retail, one year) with the money check from P5, the manager guilt from P2, the travel problem from P3 and the rehearsed refusals from P4. Every fact below traces to a transcript.</p>
+  </div>
+
+  <div class="persona-grid">
+    <div class="p-card id">
+      <div class="p-avatar" aria-hidden="true">D</div>
+      <dl>
+        <div class="strap">“I prioritise my health. But weekend shifts pay better, and I felt bad saying no.”</div>
+        <div><dt>Age · pronouns</dt><dd>21 · she/her</dd></div>
+        <div><dt>Study</dt><dd>Third-year undergraduate, international student</dd></div>
+        <div><dt>Lives</dt><dd>Share house with two roommates, 35 minutes by bus from campus</dd></div>
+        <div><dt>Work</dt><dd>Casual retail, jewellery, Queen Street. One year. Occasional café shifts.</dd></div>
+        <div><dt>Roster</dt><dd>Employer app, one to two weeks ahead. Same-day fill-ins by text from the manager.</dd></div>
+        <div><dt>Essentials</dt><dd><span class="mono">$760</span> a fortnight: rent <span class="mono">$520</span>, groceries and bus <span class="mono">$240</span></dd></div>
+      </dl>
+    </div>
+
+    <div class="p-card">
+      <h3>What she wants</h3>
+      <ul>
+        <li>Cover essentials every fortnight without thinking about it daily. <span class="tag">P5</span></li>
+        <li>Keep Saturday shifts. Weekend rates make the week worth it. <span class="tag">P1</span></li>
+        <li>Keep Sunday. Rest, not a spare day for fill-ins. <span class="tag">P4</span></li>
+        <li>Get her Pilates membership back once hours are steady. <span class="tag">P1</span></li>
+        <li>Pass her units without cramming around closes. <span class="tag">P2</span> <span class="tag">P5</span></li>
+        <li>Stay in Jess's good books without living at the store. <span class="tag">P2</span></li>
+      </ul>
+    </div>
+
+    <div class="p-card">
+      <h3>What wears her down</h3>
+      <ul>
+        <li>The dash from tutorial to shift, sometimes running for the bus. <span class="tag">P1</span> <span class="tag">P3</span></li>
+        <li>Same-day asks when she is already spent. <span class="tag">P1</span> <span class="tag">P4</span></li>
+        <li>Hours falling from 24 a week to 3 after Christmas. <span class="tag">P1</span></li>
+        <li>Rehearsing a decline message in her head before sending it. <span class="tag">P4</span></li>
+        <li>Guilt after saying no to a manager she likes, or saying yes and regretting it. <span class="tag">P2</span></li>
+        <li>Standing five hours on a quiet floor, then blanking out with customers. <span class="tag">P1</span></li>
+      </ul>
+    </div>
+
+    <div class="p-card">
+      <h3>What she already does</h3>
+      <ul>
+        <li>Blocks shifts in Google Calendar with travel time either side. <span class="tag">P1</span> <span class="tag">P5</span></li>
+        <li>Reads weekend shifts and total hours first, then everything else. <span class="tag">P1</span></li>
+        <li>Avoids being rostered straight after tutorials. <span class="tag">P1</span></li>
+        <li>Asks herself “have I earned enough for rent?” before accepting. <span class="tag">P5</span></li>
+        <li>Buys her favourite meal and sleeps early after a bad close. <span class="tag">P1</span></li>
+        <li>Talks about tiredness with colleagues her own age. <span class="tag">P1</span> <span class="tag">P2</span></li>
+      </ul>
+    </div>
+
+    <div class="p-card six">
+      <h3>In her words</h3>
+      <blockquote>I have to prioritise my health because working in retail can be very exhausting. You have to stand for a long time and meet many people.<span class="tag">P1</span></blockquote>
+      <blockquote>I was thinking, “Have I earned enough money for my rent and my living expenses?”<span class="tag">P5</span></blockquote>
+      <blockquote>I felt bad saying no to this manager. She is really nice to me. So I stayed. I extended my shift.<span class="tag">P2</span></blockquote>
+      <blockquote>I try to come up with the best way to reply before I cancel the shift.<span class="tag">P4</span></blockquote>
+      <blockquote>Usually it's on me. I never really blame the roster, because they roster me based on my own availability.<span class="tag">P4</span></blockquote>
+    </div>
+
+    <div class="p-card six">
+      <h3>Who cares for whom</h3>
+      <div class="care-map">
+        <div><h4>Dinda cares for</h4><ul><li>Jess and the team: covers, stays late, feels the gap when Mia is sick</li><li>Her uni group: moves a Saturday recording to Sunday</li><li>Her roommates: plans around them</li><li>Herself: rest, food, sleep, the gym</li></ul></div>
+        <div><h4>Who cares for Dinda</h4><ul><li>Colleagues who share the same tiredness</li><li>Friends who reschedule when work lands on a plan</li><li>Group members who “thankfully understood”</li><li>Not on the list: the roster app</li></ul></div>
+        <div class="gap"><h4>Where care goes missing</h4><p style="font-size:14.5px">The minutes between a shift offer and her reply. She weighs body, uni, rent and Jess's feelings alone, then writes the message alone. That is the moment Offshift is for.</p></div>
+      </div>
+    </div>
+
+    <div class="p-card wide">
+      <h3>A typical week, mid-semester</h3>
+      <div class="tbl-wrap">
+        <table class="week-tbl">
+          <thead><tr><th>Day</th><th>Uni</th><th>Work</th><th>What it costs</th></tr></thead>
+          <tbody>
+            <tr><td>Mon</td><td>Tute 10:00–12:00</td><td>14:00–19:00</td><td>Lunch on the bus. Arrives tight.</td></tr>
+            <tr><td>Tue</td><td>Reading</td><td>16:00–21:00 close</td><td>Standing on a quiet floor. Rated Tired.</td></tr>
+            <tr><td>Wed</td><td>Lecture 09:00–11:00</td><td>Free</td><td>The night she cooks and sees roommates.</td></tr>
+            <tr><td>Thu</td><td>Tute 13:00–15:00</td><td>Often asked to fill 16:00–21:00</td><td>The decision she carries alone.</td></tr>
+            <tr><td>Fri</td><td>Assignment work</td><td>10:00–16:00</td><td>Fine if Thursday was free.</td></tr>
+            <tr><td>Sat</td><td>None</td><td>09:00–17:00, Saturday rate</td><td>The shift that makes the fortnight work.</td></tr>
+            <tr><td>Sun</td><td>Group meeting, sometimes</td><td>Protected rest</td><td>Given away when guilt wins.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="p-card wide">
+      <h3>Evidence base</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th class="mono">ID</th><th>Workplace</th><th>Tenure</th><th>Roster lead time</th><th>Channel</th><th>What they gave the persona</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">P1</td><td>Jewellery retail, Queen St</td><td>~1 year</td><td>2 weeks, sometimes 1 or 3</td><td>Workforce (Tanda)</td><td>Health-first stance, weekend pay logic, post-Christmas dip, favourite-meal ritual, tute-to-shift dash</td></tr>
+            <tr><td class="mono">P2</td><td>Fast food, suburban</td><td>3 months</td><td>1 week, Thu or Fri</td><td>MyJob site</td><td>Manager guilt and the 8-hour extension, shift swap for an event, “spur-of-the-moment” planning</td></tr>
+            <tr><td class="mono">P3</td><td>Restaurant</td><td>2 months</td><td>1 week</td><td>Head office and manager</td><td>90-minute travel clash, declining for hobbies, wanting to balance a whole month</td></tr>
+            <tr><td class="mono">P4</td><td>Fast food, airport</td><td>1–2 months</td><td>1 week</td><td>Employer app, manager chat</td><td>Rehearsed refusals, uni first, protected Sunday, avoiding late shifts for the trip home</td></tr>
+            <tr><td class="mono">P5</td><td>Bubble tea and café, two jobs</td><td>1 year and 2 months</td><td>Sunday night after availability</td><td>Manager</td><td>The rent question, tight scheduling with travel, “I'm sick” as a swap, isolation as a foreigner, 4 weeks ahead is exhausting</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="quiet">All five are university students working casual or part-time in Brisbane. Names, the manager, the workplace details in the prototype and the dollar figures are illustrative and should be re-checked against the next round of interviews.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PLEASURE LENS ================= -->
+<section id="tab-lens" class="tab" role="tabpanel" hidden>
+  <div class="head">
+    <div class="eyebrow">Step 3 · Jordan's Four Pleasures, applied</div>
+    <h1 class="page">Where the pleasure is missing.</h1>
+    <p class="lede">Patrick Jordan's framework asks what kind of pleasure a product could give beyond being usable. We mapped all five transcripts against the four, then chose the one with the most unmet moments. It is not the obvious one for a rest-and-wellbeing project.</p>
+  </div>
+
+  <div class="four">
+    <div class="pcard">
+      <h3><span class="pl physio">physio</span> Physio-pleasure</h3>
+      <p class="def">Body and senses: touch, taste, comfort, fatigue.</p>
+      <ul>
+        <li>Standing five hours on a quiet floor <span class="tag">P1</span></li>
+        <li>Running for the bus after a tute <span class="tag">P1</span></li>
+        <li>Close at 6 pm, open at 6 am <span class="tag">P2</span></li>
+        <li>The favourite meal and the early night <span class="tag">P1</span></li>
+        <li>Late shifts and the trip home <span class="tag">P4</span></li>
+      </ul>
+      <div class="opp"><b>Opportunity</b>Travel buffers, closes flagged as closes, a recovery ritual after long shifts.</div>
+    </div>
+    <div class="pcard">
+      <h3><span class="pl socio">socio</span> Socio-pleasure</h3>
+      <p class="def">Relationships, belonging, being a good colleague.</p>
+      <ul>
+        <li>Colleagues the same age, same country <span class="tag">P1</span></li>
+        <li>A favourite manager you can't say no to <span class="tag">P2</span></li>
+        <li>Group members who understood <span class="tag">P1</span></li>
+        <li>A friend visiting from overseas <span class="tag">P2</span></li>
+        <li>Not making friends at work as a foreigner <span class="tag">P5</span></li>
+      </ul>
+      <div class="opp"><b>Opportunity</b>Offer another time instead of a flat no; half-written messages to friends and groups.</div>
+    </div>
+    <div class="pcard chosen">
+      <span class="applied">Applied</span>
+      <h3><span class="pl psycho">psycho</span> Psycho-pleasure</h3>
+      <p class="def">Thoughts and feelings: control, ease, relief, confidence.</p>
+      <ul>
+        <li>Deciding before replying: rent, health, mood <span class="tag">P1</span> <span class="tag">P5</span></li>
+        <li>Rehearsing the decline in your head <span class="tag">P4</span></li>
+        <li>Guilt after saying no, relief after saying yes <span class="tag">P2</span></li>
+        <li>Blaming yourself, never the roster <span class="tag">P3</span> <span class="tag">P4</span></li>
+        <li>Four weeks ahead is “too far, exhausting” <span class="tag">P5</span></li>
+      </ul>
+      <div class="opp"><b>Opportunity</b>Show the trade-off without making the call; write the message; make rest and money legible in words.</div>
+    </div>
+    <div class="pcard">
+      <h3><span class="pl ideo">ideo</span> Ideo-pleasure</h3>
+      <p class="def">Values and identity: what the product says about who you are.</p>
+      <ul>
+        <li>“I prioritise my health” <span class="tag">P1</span></li>
+        <li>“I prioritise my uni” <span class="tag">P4</span></li>
+        <li>“It's a job. I signed up for that.” <span class="tag">P2</span></li>
+        <li>Honesty versus “I'm sick” <span class="tag">P5</span></li>
+        <li>Care is not surveillance <span class="tag">Brief</span></li>
+      </ul>
+      <div class="opp"><b>Opportunity</b>Monthly priorities set the defaults; honest scripts; a privacy stance on the screen.</div>
+    </div>
+  </div>
+
+  <section class="block">
+    <h2>Why psycho-pleasure</h2>
+    <div class="why">
+      <div><b>It is where the hardest moment sits.</b>Every participant described the gap between an offer and a reply as the moment they carry alone. It is cognitive and emotional, not physical or social.</div>
+      <div><b>It is what the roster apps ignore.</b>Workforce, MyJob and manager texts show slots and pay. None of them show how the worker is doing, so the worker has nowhere to put that information.</div>
+      <div><b>It can be received as care without control.</b>Helping someone feel at ease with a decision needs no reporting to anyone. Physio and socio features drift toward tracking and group feeds. This one doesn't have to.</div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Seven design moves</h2>
+    <div class="tbl-wrap">
+      <table class="moves">
+        <thead><tr><th>Principle</th><th>In the prototype</th><th>Screen</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>Show the trade-off, don't make the call</td><td>Body, Week and Money as three sentences, no score and no recommendation. Three answers of equal weight.</td><td>Shift offer</td><td><span class="tag">P1</span> <span class="tag">P5</span> <span class="tag">P3</span></td></tr>
+          <tr><td>Take the words out of the worry</td><td>A reply composer that writes the honest message, Warm or Plain, editable, sent from her own app.</td><td>Reply</td><td><span class="tag">P4</span> <span class="tag">P5</span> <span class="tag">P2</span></td></tr>
+          <tr><td>Rest in words, not a score</td><td>“Tuesday's close is still in your legs”, never “Energy 62%”.</td><td>Week, Offer</td><td><span class="tag">P1</span> <span class="tag">Brief</span></td></tr>
+          <tr><td>Rest is booked, not leftover</td><td>A protected day sits in the week like a shift, and the app asks before she gives it away.</td><td>Week, Money &amp; rest</td><td><span class="tag">P4</span> <span class="tag">P3</span></td></tr>
+          <tr><td>Money as “covered by”, not a target</td><td>Essentials for the fortnight, earned and booked, plus a heads-up before the January dip.</td><td>Money &amp; rest</td><td><span class="tag">P1</span> <span class="tag">P5</span></td></tr>
+          <tr><td>Ask after, not during</td><td>Three taps after a shift. The recovery kit comes from her own answers.</td><td>Check-in</td><td><span class="tag">P1</span></td></tr>
+          <tr><td>Yours, not theirs</td><td>No manager view. The only things that leave the app are messages she sends herself.</td><td>Me, every screen</td><td><span class="tag">Brief</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>What the lens changed</h2>
+    <div class="changes">
+      <div class="rm"><b>Removed</b><ul><li>Any “you should decline” text</li><li>A numeric energy or wellness score</li><li>A manager-side or team-side dashboard</li><li>Streaks and “rest days kept” counters</li></ul></div>
+      <div class="rf"><b>Reframed</b><ul><li>A decline button became a reply composer with three honest options</li><li>A budget tracker became one line: covered by Saturday</li><li>Mood tracking became a three-tap check-in that only feeds the next offer</li></ul></div>
+      <div class="ad"><b>Added</b><ul><li>Travel time inside the Week check</li><li>A protected day the app asks before breaking</li><li>A recovery kit built from what helped before</li><li>Monthly priorities that set the defaults</li></ul></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Next: test it against the pleasure it claims</h2>
+    <div class="tasks">
+      <div><b>Task 1 · The offer</b>“Jess asks you to cover tonight. Decide and reply.”<p class="w">Watch: do they read all three checks? Do they edit the message, or send it as written? Did they want the app's opinion?</p></div>
+      <div><b>Task 2 · The check-in</b>“You've just finished a close. Do the check-in.”<p class="w">Watch: is “Wiped” comfortable to admit? Does the recovery kit feel like theirs or like advice?</p></div>
+      <div><b>Task 3 · Me</b>“Set what matters this month, then find out who can see it.”<p class="w">Watch: do they trust the privacy line? Would they turn the January heads-up off?</p></div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Criterion</th><th>Measure</th><th>Why it matters for care</th></tr></thead>
+        <tbody>
+          <tr><td>“It felt like my call.”</td><td>1–5 after Task 1</td><td>Care that decides for you is control.</td></tr>
+          <tr><td>“I'd send this message as is.”</td><td>Yes / with edits / no</td><td>The words have to be theirs, not the app's.</td></tr>
+          <tr><td>“Anything felt like being watched?”</td><td>Open answer after Task 3</td><td>The brief's line between care and surveillance.</td></tr>
+          <tr><td>Time from offer to reply</td><td>Seconds, compared with their usual</td><td>Psycho-pleasure shows up as less rehearsal.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>
+
+</main>
+
+<footer>Evidence: five semi-structured interviews with university students in casual work, iteration 1, DECO2850 Care studio. Framework: Jordan, P. W. (2000), <i>Designing Pleasurable Products</i>. Theme brief: Tronto (1998), Puig de la Bellacasa (2017). 3D rendering: three.js.</footer>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  var reduced=false,hoverable=true;
+  try{reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;hoverable=window.matchMedia('(hover: hover)').matches}catch(e){}
+
+  /* ---------- tabs ---------- */
+  var tabBtns=document.querySelectorAll('.tabs button');
+  var panels=document.querySelectorAll('.tab');
+  var currentTab='proto';
+  function showTab(name,animate){
+    currentTab=name;
+    tabBtns.forEach(function(b){b.setAttribute('aria-selected',b.dataset.tab===name?'true':'false')});
+    panels.forEach(function(p){
+      var on=(p.id==='tab-'+name);
+      p.hidden=!on;
+      p.classList.remove('enter');
+      if(on&&animate&&!reduced){void p.offsetWidth;p.classList.add('enter')}
+    });
+    try{localStorage.setItem('offshift-tab',name)}catch(e){}
+    if(animate)window.scrollTo({top:0,behavior:reduced?'auto':'smooth'});
+    if(name==='proto'&&window.__weekResume)window.__weekResume();
+  }
+  panels.forEach(function(p){p.addEventListener('animationend',function(e){if(e.target===p)p.classList.remove('enter')})});
+  tabBtns.forEach(function(b){b.addEventListener('click',function(){showTab(b.dataset.tab,true)})});
+  ['.exp','.p-card','.pcard'].forEach(function(sel){document.querySelectorAll(sel).forEach(function(el,i){el.style.setProperty('--i',Math.min(i,18))})});
+  var t='proto';try{t=localStorage.getItem('offshift-tab')||'proto'}catch(e){}
+  if(!document.getElementById('tab-'+t))t='proto';
+  showTab(t,false);
+
+  /* ---------- toast ---------- */
+  var toastEl=document.getElementById('toast'),toastT;
+  window.toast=function(msg){toastEl.hidden=true;void toastEl.offsetWidth;toastEl.textContent=msg;toastEl.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){toastEl.hidden=true},2600)};
+
+  /* ---------- phone screens with transitions ---------- */
+  var screensWrap=document.getElementById('screens');
+  var screens=document.querySelectorAll('.screen');
+  var notes=document.querySelectorAll('.note');
+  var snav=document.querySelectorAll('.screen-nav button');
+  var pnav=document.querySelectorAll('.phone-nav button');
+  var parent={offer:'week',reply:'week'};
+  var depth={week:0,offer:1,reply:2};
+  var current='week',busy=null;
+  function byName(n){return screensWrap.querySelector('.screen[data-screen="'+n+'"]')}
+  function finalize(){
+    if(!busy)return;
+    var b=busy;busy=null;
+    clearTimeout(b.timer);
+    b.from.hidden=true;
+    b.from.className='screen';
+    b.to.className='screen';
+  }
+  function stagger(el){
+    el.classList.remove('play');
+    var items=el.querySelectorAll('.rv,.check');
+    items.forEach(function(n,i){n.style.setProperty('--i',i)});
+    if(reduced)return;
+    void el.offsetWidth;
+    el.classList.add('play');
+  }
+  window.showScreen=function(name){
+    if(!byName(name))return;
+    var from=byName(current),to=byName(name);
+    finalize();
+    if(name!==current){
+      if(reduced){
+        from.hidden=true;to.hidden=false;
+      }else{
+        var kind;
+        if(name in depth&&current in depth){kind=depth[name]>depth[current]?'fwd':'back'}else{kind='deep'}
+        var inCls=kind==='fwd'?'in-right':kind==='back'?'in-left':'in-deep';
+        var outCls=kind==='fwd'?'out-left':kind==='back'?'out-right':'out-deep';
+        from.classList.add('anim-out',outCls);
+        to.hidden=false;
+        to.classList.add(inCls);
+        busy={from:from,to:to,timer:setTimeout(finalize,700)};
+        to.addEventListener('animationend',function h(e){if(e.target===to){to.removeEventListener('animationend',h);if(busy&&busy.to===to)finalize()}});
+      }
+      stagger(to);
+    }
+    current=name;
+    notes.forEach(function(n){
+      var on=(n.dataset.for===name);
+      n.classList.remove('show');
+      n.hidden=!on;
+      if(on&&!reduced){void n.offsetWidth;n.classList.add('show')}
+    });
+    snav.forEach(function(b){b.setAttribute('aria-current',b.dataset.screen===name?'true':'false')});
+    var p=parent[name]||name;
+    pnav.forEach(function(b){b.setAttribute('aria-current',b.dataset.screen===p?'true':'false')});
+    screensWrap.scrollTop=0;
+    if(name==='reply')renderReply(true);
+  };
+  snav.forEach(function(b){b.addEventListener('click',function(){showScreen(b.dataset.screen)})});
+  pnav.forEach(function(b){b.addEventListener('click',function(){showScreen(b.dataset.screen)})});
+  var ask=document.getElementById('ask');
+  ask.addEventListener('click',function(){showScreen('offer')});
+  ask.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();showScreen('offer')}});
+
+  /* ---------- reply composer with typing ---------- */
+  var R={
+    no:{title:"Not tonight.",
+        warm:"Hi Jess, thanks for thinking of me. I can't do tonight. I've had a couple of long days and I need a proper night's rest. Hope Mia feels better soon.",
+        plain:"Hi Jess, I can't do tonight, sorry. I need the rest. Hope Mia's okay.",
+        note:"Honest beats “I'm sick”. You don't owe a long explanation.",
+        after:"Tonight stays free. Your recovery kit is there if you want it: the favourite meal, an early night. Friday starts at 10."},
+    alt:{title:"Another time, then.",
+        warm:"Hi Jess, tonight isn't going to work for me, but I could come in early tomorrow from 8 if that helps cover. Hope Mia feels better soon.",
+        plain:"Hi Jess, can't do tonight. I can start at 8 tomorrow if that helps.",
+        note:"Offering a time keeps you a good colleague without spending tonight.",
+        after:"If Jess says yes to 8 am, Offshift moves your Friday alarm and adds the bus. Sunday stays protected either way."},
+    yes:{title:"Taking it. Fair enough.",
+        warm:"Hi Jess, yes, I can do tonight. My tute finishes at 3, so I'll be there about 3:50. Okay if I grab something to eat before I start?",
+        plain:"Hi Jess, yes. There by 3:50 after my tute. I'll eat on the way.",
+        note:"Saying yes is care too. The app just keeps tomorrow in view.",
+        after:"Long day noted: a tute and a close. Check-in at 9 pm, no alarm before Friday's 10 am, and Sunday stays yours."}
+  };
+  var choice='no',tone='warm',typeTimer=null;
+  var replyText=document.getElementById('reply-text');
+  function typeInto(text,animate){
+    if(typeTimer){clearInterval(typeTimer);typeTimer=null}
+    if(reduced||!animate){replyText.textContent=text;replyText.classList.remove('typing');return}
+    replyText.textContent='';replyText.classList.add('typing');
+    var i=0;
+    typeTimer=setInterval(function(){
+      i+=2;replyText.textContent=text.slice(0,i);
+      if(i>=text.length){clearInterval(typeTimer);typeTimer=null;replyText.textContent=text;replyText.classList.remove('typing')}
+    },13);
+  }
+  function renderReply(animate){
+    var r=R[choice];
+    document.getElementById('reply-title').textContent=r.title;
+    document.getElementById('reply-note').textContent=r.note;
+    document.getElementById('reply-after').textContent=r.after;
+    typeInto(r[tone],animate&&!byName('reply').hidden);
+  }
+  window.chooseReply=function(c){choice=c;showScreen('reply')};
+  document.querySelectorAll('[data-tone]').forEach(function(b){b.addEventListener('click',function(){
+    tone=b.dataset.tone;
+    document.querySelectorAll('[data-tone]').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});
+    renderReply(true);
+  })});
+  window.copyReply=function(){
+    var txt=replyText.textContent;
+    var done=function(){toast('Copied. Send it from your own messages.')};
+    var fail=function(){toast('Select the text to copy it.')};
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,fail)}else{fail()}
+  };
+  renderReply(false);
+
+  /* ---------- check-in ---------- */
+  var body=null,kit=[];
+  document.querySelectorAll('[data-body]').forEach(function(b){b.addEventListener('click',function(){
+    body=b.dataset.body;
+    document.querySelectorAll('[data-body]').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});
+  })});
+  document.querySelectorAll('[data-kit]').forEach(function(b){b.addEventListener('click',function(){
+    var on=b.getAttribute('aria-pressed')==='true';
+    b.setAttribute('aria-pressed',on?'false':'true');
+    var label=b.textContent.trim();
+    if(on){kit=kit.filter(function(k){return k!==label})}else{kit.push(label)}
+  })});
+  window.finishCheckin=function(){
+    var msg="Tomorrow's lecture is at 9 and there's no shift. You're off.";
+    if(body==='wiped')msg="That's two wiped closes this fortnight. Worth remembering when Jess next asks. "+msg;
+    if(body==='fine')msg="Good close. "+msg;
+    var chosen=kit.filter(function(k){return k!=="Nothing, I'm good"});
+    if(chosen.length)msg+=' Tonight: '+chosen.map(function(k){return k.charAt(0).toLowerCase()+k.slice(1)}).join(', ')+'.';
+    var card=document.getElementById('checkin-result');
+    document.getElementById('checkin-text').textContent=msg;
+    card.classList.remove('unfold');card.hidden=false;
+    if(!reduced){void card.offsetWidth;card.classList.add('unfold')}
+  };
+
+  /* ---------- priorities and toggles ---------- */
+  var hints={
+    health:'Body is checked first on every offer. Closes in a row get flagged early.',
+    uni:'Week is checked first. Assignments and exam blocks flag offers that land on them.',
+    money:'Money is checked first. Offers are shown against essentials, and Body still gets a say.'
+  };
+  document.querySelectorAll('[data-prio]').forEach(function(b){b.addEventListener('click',function(){
+    document.querySelectorAll('[data-prio]').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});
+    document.getElementById('prio-hint').textContent=hints[b.dataset.prio];
+  })});
+  document.querySelectorAll('[data-toggle]').forEach(function(b){b.addEventListener('click',function(){
+    var on=b.getAttribute('aria-pressed')==='true';
+    b.setAttribute('aria-pressed',on?'false':'true');
+    b.textContent=on?'Remind me':'Yes, remind me';
+  })});
+
+  /* ---------- 3D pointer tilt ---------- */
+  function tilt(el,max,lift){
+    if(reduced||!hoverable)return;
+    var rect=null;
+    el.classList.add('tiltable');
+    el.addEventListener('pointerenter',function(e){if(e.pointerType==='touch')return;rect=el.getBoundingClientRect();el.classList.add('tilting')});
+    el.addEventListener('pointermove',function(e){
+      if(e.pointerType==='touch'||!el.classList.contains('tilting'))return;
+      if(!rect)rect=el.getBoundingClientRect();
+      var px=(e.clientX-rect.left)/rect.width,py=(e.clientY-rect.top)/rect.height;
+      var ry=(px-.5)*2*max,rx=-(py-.5)*2*max;
+      el.style.transform='perspective(1200px) rotateX('+rx.toFixed(2)+'deg) rotateY('+ry.toFixed(2)+'deg)'+(lift?' translateY(-3px)':'');
+      el.style.setProperty('--gx',(px*100).toFixed(1)+'%');
+      el.style.setProperty('--gy',(py*100).toFixed(1)+'%');
+    });
+    el.addEventListener('pointerleave',function(){el.style.transform='';el.classList.remove('tilting');rect=null});
+  }
+  tilt(document.getElementById('phone'),5,false);
+  document.querySelectorAll('.pcard').forEach(function(c){tilt(c,7,true)});
+  var idCard=document.querySelector('.p-card.id');if(idCard)tilt(idCard,4,false);
+
+  /* ---------- week data (shared by 3D scene and 2D fallback) ---------- */
+  var DAYS=[
+    {d:'Mon',n:15,items:[{t:'uni',s:10,e:12,l:'Tute'},{t:'shift',s:14,e:19,l:'Pandora · 5 h'}]},
+    {d:'Tue',n:16,items:[{t:'shift',s:16,e:21,l:'Pandora · close · rated Tired'}]},
+    {d:'Wed',n:17,items:[{t:'uni',s:9,e:11,l:'Lecture · free evening'}]},
+    {d:'Thu',n:18,today:true,items:[{t:'uni',s:13,e:15,l:'Tute · ends 3:00'},{t:'offer',s:16,e:21,l:'Offer from Jess · close · tap to open'}]},
+    {d:'Fri',n:19,items:[{t:'shift',s:10,e:16,l:'Pandora · 6 h'}]},
+    {d:'Sat',n:20,items:[{t:'shift',s:9,e:17,l:'Pandora · Saturday rate'}]},
+    {d:'Sun',n:21,rest:true,items:[]}
+  ];
+  var H0=6,H1=24;
+  function fmt(h){return (h<10?'0':'')+h+':00'}
+  function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+
+  function fallback2d(){
+    var fb=document.getElementById('fallback');
+    var cv=document.getElementById('week3d');if(cv)cv.hidden=true;
+    var lb=document.getElementById('labels');if(lb)lb.hidden=true;
+    var hint=document.querySelector('.stage .hint');if(hint)hint.hidden=true;
+    document.getElementById('stage').style.cursor='default';
+    var html='';
+    [12,18,24].forEach(function(h){html+='<div class="fb-h" style="top:calc(26px + (100% - 66px) * '+((h-H0)/(H1-H0)).toFixed(4)+')">'+fmt(h)+'</div>'});
+    DAYS.forEach(function(day){
+      html+='<div class="fb-col'+(day.rest?' rest':'')+'">';
+      day.items.forEach(function(it){
+        var top=((it.s-H0)/(H1-H0)*100).toFixed(2),hgt=((it.e-it.s)/(H1-H0)*100).toFixed(2);
+        html+='<div class="fb-blk '+it.t+'" style="top:'+top+'%;height:'+hgt+'%" title="'+day.d+' '+fmt(it.s)+'–'+fmt(it.e)+' '+it.l+'"></div>';
+      });
+      html+='<div class="fb-lab">'+day.d+' '+day.n+'</div></div>';
+    });
+    fb.innerHTML=html;fb.hidden=false;
+  }
+
+  /* ---------- 3D week (three.js) ---------- */
+  function initWeek3D(){
+    if(!window.THREE)return fallback2d();
+    var stage=document.getElementById('stage'),canvas=document.getElementById('week3d'),labels=document.getElementById('labels'),tip=document.getElementById('tip');
+    var renderer;
+    try{renderer=new THREE.WebGLRenderer({canvas:canvas,alpha:true,antialias:true})}catch(e){return fallback2d()}
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    renderer.setClearColor(0x000000,0);
+    var scene=new THREE.Scene();
+    var camera=new THREE.PerspectiveCamera(18,2,0.1,120);
+    var target=new THREE.Vector3(0,1.8,0);
+    var orbit={theta:0.4,phi:1.2,r:24};
+    var baseTheta=0.4;
+    var hemi=new THREE.HemisphereLight(0xffffff,0x8a88a8,0.75);scene.add(hemi);
+    var dir=new THREE.DirectionalLight(0xffffff,0.45);dir.position.set(5,9,7);scene.add(dir);
+    var fill=new THREE.DirectionalLight(0xffffff,0.2);fill.position.set(-6,4,-4);scene.add(fill);
+
+    var UNIT=0.25,SPACING=1.36;
+    function yOf(h){return (h-H0)*UNIT}
+    var mats={};
+    function makeMats(){
+      var accent=new THREE.Color(cssVar('--accent')||'#454283');
+      var uni=new THREE.Color(cssVar('--uni3d')||'#7A78A0');
+      var lamp=new THREE.Color(cssVar('--lamp')||'#B8801A');
+      var ok=new THREE.Color(cssVar('--ok')||'#2F7A4B');
+      var line=new THREE.Color(cssVar('--line')||'#D9DBE6');
+      var soft=new THREE.Color(cssVar('--surface-2')||'#F6F7FA');
+      mats.uni=mats.uni||new THREE.MeshStandardMaterial({roughness:.8,metalness:0});mats.uni.color.copy(uni);
+      mats.shift=mats.shift||new THREE.MeshStandardMaterial({roughness:.7,metalness:0});mats.shift.color.copy(accent);
+      mats.offer=mats.offer||new THREE.MeshStandardMaterial({roughness:.5,metalness:0,transparent:true,opacity:.9});mats.offer.color.copy(lamp);mats.offer.emissive.copy(lamp);mats.offer.emissiveIntensity=.3;
+      mats.rest=mats.rest||new THREE.MeshStandardMaterial({roughness:.9,metalness:0,transparent:true,opacity:.22,depthWrite:false});mats.rest.color.copy(ok);mats.rest.emissive.copy(ok);mats.rest.emissiveIntensity=.15;
+      mats.base=mats.base||new THREE.MeshStandardMaterial({roughness:1,metalness:0});mats.base.color.copy(soft);
+      mats.baseRest=mats.baseRest||new THREE.MeshStandardMaterial({roughness:1,metalness:0});mats.baseRest.color.copy(ok).lerp(soft,.55);
+      mats.guide=mats.guide||new THREE.MeshBasicMaterial({transparent:true,opacity:.9});mats.guide.color.copy(line);
+      mats.edge=mats.edge||new THREE.LineBasicMaterial({transparent:true,opacity:.9});mats.edge.color.copy(lamp);
+      hemi.groundColor=new THREE.Color(cssVar('--ground')||'#EEF0F5');
+    }
+    makeMats();
+
+    var group=new THREE.Group();scene.add(group);
+    var blocks=[],dayLabels=[],hourLabels=[];
+    DAYS.forEach(function(day,di){
+      var x=(di-3)*SPACING;
+      var base=new THREE.Mesh(new THREE.BoxGeometry(1.12,0.07,1.12),day.rest?mats.baseRest:mats.base);
+      base.position.set(x,-0.035,0);group.add(base);
+      if(day.rest){
+        var g=new THREE.BoxGeometry(0.96,yOf(H1),0.96);g.translate(0,yOf(H1)/2,0);
+        var rest=new THREE.Mesh(g,mats.rest);rest.position.set(x,0,0);rest.userData={rest:true};group.add(rest);
+        blocks.push({mesh:rest,day:day,it:{t:'rest',s:H0,e:H1,l:'Protected rest · booked like a shift'},delay:di*0.09,rest:true});
+      }
+      day.items.forEach(function(it,ii){
+        var h=(it.e-it.s)*UNIT;
+        var geo=new THREE.BoxGeometry(0.92,h,0.92);geo.translate(0,h/2,0);
+        var m=mats[it.t].clone();
+        var mesh=new THREE.Mesh(geo,m);
+        mesh.position.set(x,yOf(it.s),0);
+        group.add(mesh);
+        var entry={mesh:mesh,day:day,it:it,delay:di*0.09+ii*0.07,baseEm:m.emissiveIntensity||0};
+        if(it.t==='offer'){
+          var edges=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.0,h+0.06,1.0)),mats.edge);
+          edges.position.set(0,h/2,0);mesh.add(edges);entry.offer=true;
+        }
+        blocks.push(entry);
+      });
+      var lab=document.createElement('div');lab.className='dlab'+(day.today?' today':'');lab.innerHTML='<b>'+day.d+'</b>'+day.n;
+      labels.appendChild(lab);dayLabels.push({el:lab,pos:new THREE.Vector3(x,-0.42,0.6)});
+    });
+    [12,18,24].forEach(function(h){
+      var guide=new THREE.Mesh(new THREE.BoxGeometry(SPACING*7+0.3,0.014,0.014),mats.guide);
+      guide.position.set(0,yOf(h),-0.64);group.add(guide);
+      var hl=document.createElement('div');hl.className='hlab';hl.textContent=fmt(h);
+      labels.appendChild(hl);hourLabels.push({el:hl,pos:new THREE.Vector3(-SPACING*3.5-0.2,yOf(h),-0.64)});
+    });
+    var hl0=document.createElement('div');hl0.className='hlab';hl0.textContent=fmt(H0);labels.appendChild(hl0);hourLabels.push({el:hl0,pos:new THREE.Vector3(-SPACING*3.5-0.2,0,-0.64)});
+
+    var w=1,h=1;
+    function resize(){
+      var r=stage.getBoundingClientRect();w=Math.max(1,r.width);h=Math.max(1,r.height);
+      renderer.setSize(w,h,false);
+      camera.aspect=w/h;camera.updateProjectionMatrix();
+      orbit.r=Math.max(24,36/camera.aspect);
+    }
+    function placeCamera(){
+      var s=Math.sin(orbit.phi);
+      camera.position.set(target.x+orbit.r*s*Math.sin(orbit.theta),target.y+orbit.r*Math.cos(orbit.phi),target.z+orbit.r*s*Math.cos(orbit.theta));
+      camera.lookAt(target);
+    }
+    var tmp=new THREE.Vector3();
+    function placeLabel(item){
+      tmp.copy(item.pos).project(camera);
+      item.el.style.left=((tmp.x+1)/2*w).toFixed(1)+'px';
+      item.el.style.top=((1-tmp.y)/2*h).toFixed(1)+'px';
+      item.el.style.opacity=tmp.z<1?'1':'0';
+    }
+
+    /* interaction */
+    var ray=new THREE.Raycaster(),ndc=new THREE.Vector2(-2,-2),pointer={x:0,y:0};
+    var hovered=null,dragging=false,moved=false,last={x:0,y:0},lastInteract=-10;
+    var clock=new THREE.Clock();
+    function setNDC(e){var r=canvas.getBoundingClientRect();pointer.x=e.clientX-r.left;pointer.y=e.clientY-r.top;ndc.x=(pointer.x/r.width)*2-1;ndc.y=-(pointer.y/r.height)*2+1}
+    canvas.addEventListener('pointermove',function(e){
+      setNDC(e);
+      if(dragging){
+        var dx=e.clientX-last.x,dy=e.clientY-last.y;last={x:e.clientX,y:e.clientY};
+        if(Math.abs(dx)+Math.abs(dy)>2)moved=true;
+        baseTheta-=dx*0.006;orbit.theta=baseTheta;
+        orbit.phi=Math.min(1.5,Math.max(0.55,orbit.phi-dy*0.004));
+        lastInteract=clock.elapsedTime;
+      }
+    });
+    canvas.addEventListener('pointerdown',function(e){dragging=true;moved=false;last={x:e.clientX,y:e.clientY};stage.classList.add('dragging','touched');setNDC(e);try{canvas.setPointerCapture(e.pointerId)}catch(err){}});
+    function endDrag(e){
+      if(!dragging)return;dragging=false;stage.classList.remove('dragging');
+      lastInteract=clock.elapsedTime;
+      if(!moved&&hovered){
+        if(hovered.offer){showScreen('offer');toast("Jess's ask, opened in the phone.");var ph=document.getElementById('phone');if(ph)ph.scrollIntoView({behavior:reduced?'auto':'smooth',block:'center'})}
+        else if(e&&e.pointerType==='touch'){showTip(hovered)}
+      }
+    }
+    canvas.addEventListener('pointerup',endDrag);
+    canvas.addEventListener('pointercancel',endDrag);
+    canvas.addEventListener('pointerleave',function(){ndc.set(-2,-2);if(!dragging){setHover(null)}});
+    function showTip(b){
+      tip.className='tip'+(b.offer?' offer':'');
+      tip.innerHTML='<b>'+b.day.d+' '+b.day.n+' · '+fmt(b.it.s)+'–'+fmt(b.it.e)+'</b>'+b.it.l;
+      tip.style.left=pointer.x+'px';tip.style.top=pointer.y+'px';tip.hidden=false;
+    }
+    function setHover(b){
+      if(hovered===b){if(b){tip.style.left=pointer.x+'px';tip.style.top=pointer.y+'px'}return}
+      hovered=b;
+      if(b){showTip(b);canvas.style.cursor=b.offer?'pointer':'grab'}else{tip.hidden=true;canvas.style.cursor=''}
+    }
+
+    /* animation loop */
+    var running=false,visible=true,raf=null,started=clock.getElapsedTime();
+    var meshes=blocks.map(function(b){return b.mesh});
+    function easeOutBack(x){var c1=1.70158,c3=c1+1;return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2)}
+    function frame(){
+      raf=null;
+      if(!running)return;
+      var t=clock.getElapsedTime();
+      /* idle sway */
+      if(!reduced&&!dragging&&t-lastInteract>3){orbit.theta=baseTheta+Math.sin(t*0.22)*0.15}
+      placeCamera();
+      /* intro grow and hover */
+      if(!dragging&&ndc.x>-2){ray.setFromCamera(ndc,camera);var hits=ray.intersectObjects(meshes,false);var hit=null;
+        if(hits.length){var m=hits[0].object;for(var i=0;i<blocks.length;i++){if(blocks[i].mesh===m){hit=blocks[i];break}}}
+        setHover(hit);
+      }
+      blocks.forEach(function(b){
+        var k=reduced?1:Math.min(1,Math.max(0,(t-started-b.delay)/0.75));
+        var grow=k>=1?1:easeOutBack(k);
+        var sx=1,sz=1;
+        if(b===hovered&&!b.rest){sx=sz=1.08}
+        if(b.offer&&!reduced){var pulse=0.5+0.5*Math.sin(t*2.6);b.mesh.material.emissiveIntensity=0.22+0.38*pulse;if(b!==hovered){sx=sz=1+0.03*pulse}}
+        if(b.rest&&!reduced){b.mesh.material.opacity=0.18+0.07*(0.5+0.5*Math.sin(t*1.1))}
+        b.mesh.scale.x+=(sx-b.mesh.scale.x)*0.18;
+        b.mesh.scale.z+=(sz-b.mesh.scale.z)*0.18;
+        b.mesh.scale.y=Math.max(0.001,grow);
+        if(!b.rest&&!b.offer&&b.mesh.material.emissive){b.mesh.material.emissiveIntensity=b===hovered?0.18:0}
+      });
+      dayLabels.forEach(placeLabel);hourLabels.forEach(placeLabel);
+      renderer.render(scene,camera);
+      var settled=reduced&&!dragging&&t-lastInteract>0.5;
+      if(!settled)raf=requestAnimationFrame(frame);else running=false;
+    }
+    function start(){if(!visible||currentTab!=='proto')return;if(!running){running=true;clock.getElapsedTime();if(!raf)raf=requestAnimationFrame(frame)}}
+    function stop(){running=false}
+    window.__weekResume=function(){resize();start()};
+    if('ResizeObserver' in window){new ResizeObserver(function(){resize();start()}).observe(stage)}else{window.addEventListener('resize',function(){resize();start()})}
+    if('IntersectionObserver' in window){new IntersectionObserver(function(en){visible=en[0].isIntersecting;if(visible)start();else stop()},{threshold:0.05}).observe(stage)}
+    document.addEventListener('visibilitychange',function(){if(document.hidden)stop();else start()});
+    if(reduced){canvas.addEventListener('pointerdown',start);canvas.addEventListener('pointermove',start)}
+    /* theme changes */
+    try{window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){makeMats();start()})}catch(e){}
+    try{new MutationObserver(function(){makeMats();start()}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']})}catch(e){}
+    resize();placeCamera();start();
+  }
+  try{initWeek3D()}catch(e){fallback2d()}
+})();
+</script>
+
+</html>
