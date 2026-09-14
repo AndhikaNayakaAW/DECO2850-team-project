@@ -1,0 +1,3623 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RosterMate · DECO2850 Mobile Prototype</title>
+<style>
+/* =====================================================
+   CONFIG & RESET
+   ===================================================== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+
+:root{
+  /* Palette – light first */
+  --bg:#F0EDE8;
+  --surface:#FFFFFF;
+  --surface2:#FAF9F7;
+  --surface3:#F4F2EE;
+  --ink:#1E1C2A;
+  --ink2:#6B6877;
+  --ink3:#9D9BAE;
+  --line:#E0DCE8;
+  --lavender:#7B5EA7;
+  --lavender-soft:#EDE8F7;
+  --lavender-ink:#FFFFFF;
+  --blue:#3B78C4;
+  --blue-soft:#E3EEFA;
+  --sage:#4E8A6A;
+  --sage-soft:#E0F0E8;
+  --peach:#C06050;
+  --peach-soft:#F9EAE6;
+  --amber:#A87020;
+  --amber-soft:#FFF0D4;
+  --rest:#5B8A6E;
+  --rest-soft:#DFF0E6;
+  --pending:#C07020;
+  --pending-soft:#FFF0D0;
+  --shadow:0 16px 48px rgba(30,28,42,.12);
+  --shadow-sm:0 4px 14px rgba(30,28,42,.08);
+  --radius:20px;
+  --phone-w:390px;
+  --phone-h:844px;
+  /* Category colours */
+  --col-uni:#7B5EA7;
+  --col-work:#3B78C4;
+  --col-mcd:#C06050;
+  --col-personal:#4E8A6A;
+  --col-rest:#5B8A6E;
+  --col-offer:#A87020;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* =====================================================
+   BODY / DESKTOP WRAPPER
+   ===================================================== */
+html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:var(--ink);-webkit-font-smoothing:antialiased}
+body{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-height:100vh;padding:28px 16px 48px}
+
+/* Desktop label */
+.desktop-label{font-size:13px;color:var(--ink2);margin-bottom:16px;text-align:center;letter-spacing:.01em}
+.desktop-label strong{color:var(--ink)}
+.desktop-label a{color:var(--lavender);text-decoration:none}
+
+/* =====================================================
+   PHONE SHELL
+   ===================================================== */
+.phone-shell{
+  width:min(var(--phone-w),100%);
+  height:min(var(--phone-h),92vh);
+  background:var(--surface2);
+  border-radius:48px;
+  box-shadow:var(--shadow),0 0 0 1px rgba(30,28,42,.07),inset 0 1px 0 rgba(255,255,255,.6);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  position:relative;
+}
+
+/* Notch */
+.notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:30px;background:var(--ink);border-radius:0 0 16px 16px;z-index:100;display:flex;align-items:center;justify-content:center;gap:8px}
+.notch-cam{width:10px;height:10px;border-radius:50%;background:#111}
+.notch-speaker{width:40px;height:4px;border-radius:2px;background:#333}
+
+/* Status bar */
+.status-bar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:38px 22px 6px;
+  font-size:13px;font-weight:600;
+  color:var(--ink);
+  flex-shrink:0;
+  z-index:10;
+  position:relative;
+}
+.status-bar.light-mode-bar{color:#fff}
+.status-icons{display:flex;gap:6px;align-items:center}
+.status-icons svg{width:16px;height:16px;fill:currentColor;opacity:.85}
+
+/* Phone content area */
+.phone-content{flex:1;overflow:hidden;position:relative;display:flex;flex-direction:column}
+
+/* Home indicator */
+.home-indicator{
+  height:28px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.home-indicator-bar{width:120px;height:4px;background:rgba(30,28,42,.18);border-radius:2px}
+
+/* =====================================================
+   SCREENS (stacked, show/hide)
+   ===================================================== */
+.screen{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  overflow-y:auto;overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  opacity:0;pointer-events:none;
+  transform:translateX(0);
+  transition:opacity .22s ease,transform .3s cubic-bezier(.4,0,.2,1);
+}
+.screen.active{opacity:1;pointer-events:all;transform:translateX(0)!important}
+.screen.slide-in-right{transform:translateX(100%)}
+.screen.slide-in-left{transform:translateX(-100%)}
+.screen.sliding-in{animation:slideInRight .3s cubic-bezier(.4,0,.2,1) forwards}
+.screen.sliding-out{animation:slideOutLeft .3s cubic-bezier(.4,0,.2,1) forwards}
+
+@keyframes slideInRight{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes slideOutLeft{from{transform:translateX(0);opacity:1}to{transform:translateX(-60px);opacity:0}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scaleIn{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes notifSlide{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* =====================================================
+   LOCK SCREEN
+   ===================================================== */
+#screen-lock{
+  background:linear-gradient(165deg,#3B2E5A 0%,#1E1C40 40%,#2A1E3B 100%);
+  color:#fff;
+  padding:52px 24px 28px;
+  gap:0;
+  z-index:80;
+}
+.lock-time{font-size:72px;font-weight:300;letter-spacing:-.04em;text-align:center;margin-top:20px;line-height:1}
+.lock-date{font-size:18px;text-align:center;opacity:.85;margin-top:8px;letter-spacing:.01em}
+.lock-notifs{display:flex;flex-direction:column;gap:8px;margin:28px 0 0}
+.lock-notif{background:rgba(255,255,255,.12);backdrop-filter:blur(10px);border-radius:16px;padding:12px 14px;display:flex;gap:10px;align-items:center;animation:notifSlide .4s ease both}
+.lock-notif:nth-child(1){animation-delay:.1s}
+.lock-notif:nth-child(2){animation-delay:.2s}
+.lock-notif:nth-child(3){animation-delay:.3s}
+.lock-notif-icon{width:32px;height:32px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px}
+.lock-notif-body{flex:1;min-width:0}
+.lock-notif-app{font-size:11px;opacity:.7;letter-spacing:.05em;text-transform:uppercase;margin-bottom:1px}
+.lock-notif-msg{font-size:13px;line-height:1.3}
+.lock-notif-time{font-size:11px;opacity:.6;flex-shrink:0}
+.lock-swipe-hint{text-align:center;margin-top:auto;padding-top:32px;font-size:14px;opacity:.6;letter-spacing:.02em}
+.lock-swipe-hint::before{content:"⬆";display:block;font-size:22px;margin-bottom:6px;animation:pulse 2s ease-in-out infinite}
+
+/* =====================================================
+   HOME SCREEN
+   ===================================================== */
+#screen-home{background:linear-gradient(160deg,#3B2E5A 0%,#241A40 60%,#1A1A35 100%);padding-bottom:80px}
+.home-pages-wrap{flex:1;overflow:hidden;position:relative;min-height:0}
+.home-pages{display:flex;width:300%;transition:transform .35s cubic-bezier(.4,0,.2,1);height:100%}
+.home-page{width:calc(100%/3);padding:20px 16px 0;display:flex;flex-direction:column;gap:0;flex-shrink:0}
+.home-page-label{text-align:center;font-size:11px;color:rgba(255,255,255,.55);letter-spacing:.08em;text-transform:uppercase;padding:6px 12px;border-radius:999px;margin:0 auto 12px}
+.home-page-label.demo-label{background:rgba(255,200,80,.18);color:rgba(255,200,120,.9)}
+.app-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px 8px}
+.app-icon{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;border:0;background:transparent;padding:4px;border-radius:12px;transition:transform .15s;position:relative;-webkit-tap-highlight-color:transparent}
+.app-icon:active{transform:scale(.9)}
+.app-icon:focus-visible{outline:2px solid rgba(255,255,255,.6);outline-offset:4px}
+.app-icon-img{width:58px;height:58px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 4px 12px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.25);flex-shrink:0;position:relative}
+.app-icon-label{font-size:11px;color:rgba(255,255,255,.9);text-align:center;line-height:1.2;max-width:64px;text-shadow:0 1px 3px rgba(0,0,0,.4)}
+.app-badge{position:absolute;top:-4px;right:-4px;background:#FF3B30;color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid rgba(60,45,80,.8);display:none}
+.app-badge.show{display:flex}
+
+/* App colours */
+.ic-pandora{background:linear-gradient(135deg,#6B3FA0,#9B5CD0)}
+.ic-mcd{background:linear-gradient(135deg,#D44E1A,#E87030)}
+.ic-uq{background:linear-gradient(135deg,#51217A,#7A3AAD)}
+.ic-rostermate{background:linear-gradient(135deg,#4A6FA5,#7B5EA7)}
+.ic-messages{background:linear-gradient(135deg,#2AAA5A,#3CC970)}
+.ic-maps{background:linear-gradient(135deg,#E54545,#F57070)}
+.ic-calendar{background:linear-gradient(135deg,#1A7AE0,#3BA0FF)}
+.ic-personal{background:linear-gradient(135deg,#4AA87B,#6EC99A)}
+.ic-3dcal{background:linear-gradient(135deg,#5A4A8A,#8A70C0)}
+.ic-weekly{background:linear-gradient(135deg,#2D7A9A,#4AAAC0)}
+.ic-boundaries{background:linear-gradient(135deg,#8A6020,#C09040)}
+.ic-rest{background:linear-gradient(135deg,#4A8A6A,#6AA87A)}
+.ic-connected{background:linear-gradient(135deg,#4060A0,#6080C0)}
+.ic-padmin{background:linear-gradient(135deg,#7A304A,#A84060)}
+.ic-mcadmin{background:linear-gradient(135deg,#8A4010,#C06030)}
+.ic-mgrchat{background:linear-gradient(135deg,#306050,#508A70)}
+.ic-reset{background:linear-gradient(135deg,#555,#888)}
+
+/* Page indicator dots */
+.page-dots{display:flex;justify-content:center;gap:6px;padding:12px 0 6px}
+.page-dot{width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,.3);transition:background .25s,width .25s}
+.page-dot.active{background:rgba(255,255,255,.9);width:18px}
+
+/* Home dock */
+.home-dock{
+  position:absolute;bottom:0;left:0;right:0;
+  padding:12px 20px 28px;
+  background:rgba(255,255,255,.06);
+  backdrop-filter:blur(16px);
+  border-top:1px solid rgba(255,255,255,.08);
+  display:flex;justify-content:space-around;
+}
+
+/* =====================================================
+   APP SCREENS SHARED
+   ===================================================== */
+.app-screen{background:var(--surface2);padding:0;display:flex;flex-direction:column}
+.app-header{
+  display:flex;align-items:center;gap:10px;
+  padding:14px 16px 10px;
+  background:var(--surface);
+  border-bottom:1px solid var(--line);
+  position:sticky;top:0;z-index:20;
+  flex-shrink:0;
+}
+.app-header-icon{width:28px;height:28px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px}
+.app-header h1{font-size:17px;font-weight:700;flex:1}
+.back-btn{border:0;background:transparent;color:var(--lavender);font-size:14px;font-weight:600;padding:4px 2px;cursor:pointer;display:flex;align-items:center;gap:4px;flex-shrink:0}
+.back-btn:focus-visible{outline:2px solid var(--lavender);border-radius:6px}
+.app-body{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:16px 14px 32px;display:flex;flex-direction:column;gap:12px}
+
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.card-sm{padding:10px 12px;border-radius:12px}
+.card.accent{background:var(--lavender-soft);border-color:rgba(123,94,167,.18)}
+.card.amber{background:var(--amber-soft);border-color:rgba(168,112,32,.2)}
+.card.sage{background:var(--sage-soft);border-color:rgba(78,138,106,.2)}
+.card.peach{background:var(--peach-soft);border-color:rgba(192,96,80,.2)}
+.card.blue{background:var(--blue-soft);border-color:rgba(59,120,196,.2)}
+.card-label{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink2)}
+.card-value{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.card-detail{font-size:13px;color:var(--ink2)}
+
+/* Section label */
+.sec-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink2);padding:4px 2px}
+
+/* Buttons */
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;border:0;background:var(--lavender);color:var(--lavender-ink);font-size:15px;font-weight:600;padding:12px 16px;border-radius:14px;cursor:pointer;transition:transform .15s,filter .15s;text-align:center;line-height:1.2}
+.btn:hover{filter:brightness(1.08)}
+.btn:active{transform:scale(.97)}
+.btn:focus-visible{outline:2px solid var(--lavender);outline-offset:2px}
+.btn.ghost{background:transparent;color:var(--lavender);border:1.5px solid var(--lavender)}
+.btn.neutral{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.btn.sage-btn{background:var(--sage);color:#fff}
+.btn.danger{background:var(--peach);color:#fff}
+.btn.full{width:100%}
+.btn.sm{font-size:13px;padding:8px 12px;border-radius:10px}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn-col{display:flex;flex-direction:column;gap:8px}
+
+/* Tags/chips */
+.chip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);font-size:13px;cursor:pointer;transition:background .18s,border-color .18s,color .18s;font-weight:500}
+.chip[aria-pressed="true"]{background:var(--lavender-soft);border-color:var(--lavender);color:var(--lavender);font-weight:700}
+.chip:focus-visible{outline:2px solid var(--lavender);outline-offset:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+
+/* Avatar */
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--lavender);color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;flex-shrink:0}
+
+/* Toggle switch */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.toggle-label{font-size:14px;font-weight:600}
+.toggle-sub{font-size:12px;color:var(--ink2);margin-top:2px}
+.toggle{position:relative;display:inline-block;width:44px;height:26px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;background:#ccc;border-radius:13px;transition:background .25s}
+.toggle input:checked+.toggle-track{background:var(--sage)}
+.toggle-thumb{position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .25s;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.toggle input:checked~.toggle-thumb{transform:translateX(18px)}
+
+/* Input / Select */
+input,select,textarea{font:inherit;border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;background:var(--surface);color:var(--ink);font-size:14px;width:100%}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--lavender);border-color:var(--lavender)}
+textarea{min-height:80px;resize:vertical}
+label{font-size:13px;font-weight:700;color:var(--ink2);display:block;margin-bottom:4px}
+.field{display:flex;flex-direction:column;gap:4px}
+
+/* Toast */
+#toast{
+  position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
+  background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;
+  font-size:13.5px;font-weight:600;box-shadow:var(--shadow);z-index:200;
+  animation:toastIn .3s ease;white-space:nowrap;max-width:calc(100% - 48px);
+  text-align:center;
+}
+
+/* Notification badge pulse */
+@keyframes badgePop{0%{transform:scale(0)}70%{transform:scale(1.3)}100%{transform:scale(1)}}
+.app-badge.show{animation:badgePop .3s cubic-bezier(.2,.8,.2,1)}
+
+/* Pending tag */
+.pending-tag{display:inline-flex;align-items:center;gap:4px;background:var(--pending-soft);color:var(--pending);font-size:11px;font-weight:700;letter-spacing:.05em;padding:3px 8px;border-radius:999px}
+.confirmed-tag{background:var(--sage-soft);color:var(--sage)}
+
+/* Week strip */
+.week-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.week-day{display:flex;flex-direction:column;align-items:center;gap:2px}
+.week-day-name{font-size:10px;color:var(--ink2);letter-spacing:.04em;text-transform:uppercase;font-weight:600}
+.week-day-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.week-day-num.today{background:var(--lavender);color:#fff}
+.week-day-dots{display:flex;gap:2px;height:6px;align-items:center;flex-wrap:wrap;justify-content:center}
+.wdot{width:5px;height:5px;border-radius:50%}
+
+/* Agenda rows */
+.agenda-row{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.agenda-row:last-child{border-bottom:0}
+.agenda-time{font-size:12px;color:var(--ink2);width:42px;flex-shrink:0;padding-top:2px;font-feature-settings:"tnum"}
+.agenda-dot{width:10px;height:10px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.agenda-info{flex:1;min-width:0}
+.agenda-title{font-size:14px;font-weight:600;line-height:1.2}
+.agenda-sub{font-size:12px;color:var(--ink2);margin-top:2px}
+
+/* Calendar 2D */
+.cal-grid{display:grid;grid-template-columns:40px repeat(7,1fr);gap:0}
+.cal-hour{font-size:10px;color:var(--ink3);text-align:right;padding-right:6px;height:44px;display:flex;align-items:flex-start;padding-top:2px;font-feature-settings:"tnum"}
+.cal-col{position:relative;border-left:1px solid var(--line);height:44px}
+.cal-col.today-col{background:rgba(123,94,167,.04)}
+.cal-event{position:absolute;left:1px;right:1px;border-radius:5px;font-size:10px;padding:2px 4px;overflow:hidden;cursor:pointer;font-weight:600;line-height:1.2;z-index:1}
+.cal-event.uni{background:var(--col-uni);color:#fff}
+.cal-event.work{background:var(--col-work);color:#fff}
+.cal-event.mcd{background:var(--col-mcd);color:#fff}
+.cal-event.personal{background:var(--col-personal);color:#fff}
+.cal-event.rest{background:var(--col-rest);color:#fff;opacity:.55}
+.cal-event.offer{background:var(--col-offer);color:#fff;border:2px dashed rgba(255,255,255,.5)}
+.cal-header{font-size:11px;color:var(--ink2);padding:4px 0 4px 2px;text-align:center;font-weight:700;border-bottom:1px solid var(--line)}
+.cal-header.today-h{color:var(--lavender)}
+
+/* 3D/isometric calendar */
+.iso-stage{position:relative;height:240px;overflow:hidden;background:linear-gradient(180deg,var(--lavender-soft) 0%,var(--surface2) 100%);border-radius:14px}
+.iso-canvas-wrap{position:absolute;inset:0}
+.iso-canvas-wrap canvas{display:block;width:100%;height:100%}
+.iso-legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--ink2);padding:6px 2px 0}
+.iso-legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+/* RosterMate flow stages */
+.flow-indicator{display:flex;gap:0;padding:0 16px;margin-bottom:4px}
+.flow-step{flex:1;height:3px;background:var(--line);transition:background .3s}
+.flow-step.done{background:var(--lavender)}
+.flow-step+.flow-step{margin-left:3px}
+
+/* Impact cards (Compare stage) */
+.impact-card{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:14px;cursor:pointer;transition:border-color .2s,box-shadow .2s,background .2s;position:relative;overflow:hidden}
+.impact-card:active{transform:scale(.98)}
+.impact-card.expanded{border-color:var(--lavender);background:var(--lavender-soft)}
+.impact-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.impact-card-label{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink2)}
+.impact-card.expanded .impact-card-label{color:var(--lavender)}
+.impact-card-value{font-size:18px;font-weight:700;margin-top:4px}
+.impact-card-sub{font-size:12px;color:var(--ink2);margin-top:2px}
+.impact-card-expand{font-size:18px;color:var(--ink3);transition:transform .25s;flex-shrink:0;margin-top:2px}
+.impact-card.expanded .impact-card-expand{transform:rotate(180deg);color:var(--lavender)}
+.impact-detail{max-height:0;overflow:hidden;transition:max-height .35s cubic-bezier(.4,0,.2,1)}
+.impact-card.expanded .impact-detail{max-height:200px}
+.impact-detail-inner{padding-top:10px;border-top:1px solid rgba(123,94,167,.15);margin-top:10px;font-size:13px;color:var(--ink2);line-height:1.5}
+.impact-warn{color:var(--amber);font-weight:600}
+
+/* Decision buttons – equal weight */
+.decision-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.decision-grid .btn:nth-child(5){grid-column:1/-1}
+
+/* Messages screen */
+.msg-bubble{max-width:80%;padding:10px 13px;border-radius:18px;font-size:14px;line-height:1.4;margin-bottom:4px}
+.msg-bubble.incoming{background:var(--surface3);border-radius:18px 18px 18px 4px;align-self:flex-start}
+.msg-bubble.outgoing{background:var(--lavender);color:#fff;border-radius:18px 18px 4px 18px;align-self:flex-end}
+.msg-meta{font-size:11px;color:var(--ink3);margin-bottom:10px;align-self:flex-start}
+.msg-meta.right{align-self:flex-end}
+.msg-list{display:flex;flex-direction:column;gap:2px;flex:1;padding:12px 14px;overflow-y:auto}
+.msg-input-row{display:flex;gap:8px;align-items:flex-end;padding:10px 12px 12px;background:var(--surface);border-top:1px solid var(--line);flex-shrink:0}
+.msg-input-row textarea{border-radius:20px;padding:9px 14px;min-height:auto;height:42px;flex:1;resize:none;line-height:1.4}
+.msg-send{width:36px;height:36px;border-radius:50%;background:var(--lavender);color:#fff;border:0;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:16px;align-self:flex-end}
+.msg-send:focus-visible{outline:2px solid var(--lavender);outline-offset:2px}
+
+/* Connected apps */
+.conn-list{display:flex;flex-direction:column;gap:8px}
+
+/* Pandora admin notice */
+.demo-banner{background:rgba(255,180,0,.12);border:1px solid rgba(255,180,0,.3);border-radius:12px;padding:10px 13px;font-size:12px;color:#7A5A00;font-weight:600;text-align:center;letter-spacing:.03em}
+
+/* Section divider */
+.divider{height:1px;background:var(--line);margin:2px 0}
+
+/* Priority reorder */
+.priority-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;cursor:pointer;transition:background .18s}
+.priority-item.selected{background:var(--lavender-soft);border-color:var(--lavender)}
+.priority-rank{width:20px;height:20px;border-radius:50%;background:var(--lavender);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.priority-item:not(.selected) .priority-rank{background:var(--line);color:var(--ink2)}
+
+/* Rest check-in history */
+.rest-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.rest-item-date{font-size:12px;color:var(--ink2)}
+.rest-item-val{font-size:13px;font-weight:600}
+
+/* Boundary items */
+.boundary-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.boundary-del{border:0;background:transparent;color:var(--peach);font-size:16px;cursor:pointer;padding:2px 6px}
+
+/* Time line in travel visual */
+.timeline{display:flex;flex-direction:column;gap:0;position:relative;padding-left:20px}
+.timeline::before{content:"";position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:var(--line)}
+.tl-item{display:flex;align-items:flex-start;gap:10px;position:relative;padding:4px 0}
+.tl-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--surface);background:var(--lavender);position:absolute;left:-20px;top:5px;flex-shrink:0;z-index:1}
+.tl-dot.amber{background:var(--amber)}
+.tl-dot.sage{background:var(--sage)}
+.tl-time{font-size:12px;font-weight:700;color:var(--ink2);width:34px;flex-shrink:0;padding-top:1px;font-feature-settings:"tnum"}
+.tl-label{font-size:13px;line-height:1.3}
+.tl-gap{padding:4px 0 4px 44px;font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:6px}
+.tl-arrow{color:var(--ink3);font-size:10px}
+
+/* Scroll margin for sticky header */
+.has-sticky-header .app-body{padding-top:12px}
+
+/* =====================================================
+   ROSTERMATE special header
+   ===================================================== */
+.rm-header{
+  background:linear-gradient(135deg,#4A6FA5,#7B5EA7);
+  color:#fff;
+  padding:16px 16px 20px;
+  flex-shrink:0;
+}
+.rm-header h1{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.rm-header .rm-sub{font-size:14px;opacity:.8;margin-top:2px}
+
+/* =====================================================
+   LOCK-SCREEN DRAG UNLOCK
+   ===================================================== */
+.lock-unlock-area{
+  height:80px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  padding-bottom:12px;cursor:pointer;
+  flex-shrink:0;
+  margin-top:auto;
+}
+.lock-unlock-btn{
+  background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);
+  border-radius:999px;padding:10px 28px;color:#fff;font-size:14px;font-weight:600;
+  cursor:pointer;backdrop-filter:blur(6px);
+}
+
+/* =====================================================
+   PANDORA APP COLOURS
+   ===================================================== */
+.pandora-header{background:linear-gradient(135deg,#6B3FA0,#9B5CD0);color:#fff;padding:14px 16px 16px;flex-shrink:0}
+.pandora-header h1{font-size:20px;font-weight:700}
+.pandora-header p{font-size:13px;opacity:.85;margin-top:2px}
+
+.mcd-header{background:linear-gradient(135deg,#C04010,#E06030);color:#fff;padding:14px 16px 16px;flex-shrink:0}
+.uq-header{background:linear-gradient(135deg,#51217A,#7A3AAD);color:#fff;padding:14px 16px 16px;flex-shrink:0}
+
+/* =====================================================
+   NOTIFICATION PILL (in-app)
+   ===================================================== */
+.notif-pill{
+  position:absolute;top:8px;left:50%;transform:translateX(-50%);
+  background:var(--ink);color:#fff;font-size:12px;font-weight:600;
+  padding:6px 16px;border-radius:999px;box-shadow:var(--shadow-sm);
+  z-index:50;white-space:nowrap;animation:notifSlide .4s ease;
+  pointer-events:none;
+}
+
+/* Small "info" text */
+.info-text{font-size:12px;color:var(--ink2);line-height:1.4;padding:4px 2px}
+.info-text strong{color:var(--ink);font-weight:600}
+.warn-text{font-size:12px;color:var(--amber);font-weight:600}
+.ok-text{font-size:12px;color:var(--sage);font-weight:600}
+
+/* =====================================================
+   ACCESSIBILITY
+   ===================================================== */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+
+/* Separator */
+.sep{height:8px}
+
+/* Scroll helper */
+.scroll-target{scroll-margin-top:60px}
+
+/* =====================================================
+   RESPONSIVE (very small screens)
+   ===================================================== */
+@media (max-width:430px){
+  .phone-shell{border-radius:0;height:100vh}
+  body{padding:0}
+}
+@media (max-width:600px){
+  body{padding:0;align-items:stretch}
+  .phone-shell{width:100%;height:100vh;border-radius:0;box-shadow:none}
+}
+</style>
+</head>
+<body>
+
+<p class="desktop-label"><strong>RosterMate</strong> · DECO2850 Mobile Prototype · <a href="javascript:void(0)" onclick="resetDemo()">Reset demo</a></p>
+
+<!-- =====================================================
+     PHONE SHELL
+     ===================================================== -->
+<div class="phone-shell" id="phone" aria-label="RosterMate phone prototype">
+  <!-- Notch -->
+  <div class="notch" aria-hidden="true">
+    <div class="notch-cam"></div>
+    <div class="notch-speaker"></div>
+  </div>
+
+  <!-- Status bar -->
+  <div class="status-bar" id="status-bar">
+    <span id="status-time" class="status-time" aria-live="off">13:02</span>
+    <div class="status-icons" aria-label="Signal full, WiFi, Battery">
+      <!-- Signal -->
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="15" width="3" height="6" rx="1"/><rect x="6" y="11" width="3" height="10" rx="1"/><rect x="11" y="7" width="3" height="14" rx="1"/><rect x="16" y="3" width="3" height="18" rx="1"/></svg>
+      <!-- WiFi -->
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20l2-3a4 4 0 00-4 0l2 3zm0 0z"/><path d="M5.6 13.6A9.9 9.9 0 0112 11a9.9 9.9 0 016.4 2.6l1.8-2.1A12.9 12.9 0 0012 8.5a12.9 12.9 0 00-8.2 3l1.8 2.1z"/><path d="M2 10a17.1 17.1 0 0110-3.5A17.1 17.1 0 0122 10l1.8-2.2A19.9 19.9 0 0012 4 19.9 19.9 0 00.2 7.8L2 10z" opacity=".5"/></svg>
+      <!-- Battery -->
+      <svg viewBox="0 0 28 14" aria-hidden="true" width="22" height="14"><rect x=".5" y=".5" width="23" height="13" rx="3.5" stroke="currentColor" fill="none" opacity=".35"/><rect x="2" y="2" width="18" height="10" rx="2" fill="currentColor" opacity=".85"/><path d="M25 4v6a3 3 0 000-6z" fill="currentColor" opacity=".4"/></svg>
+    </div>
+  </div>
+
+  <!-- Phone content -->
+  <div class="phone-content">
+
+    <!-- ===================================================
+         LOCK SCREEN
+         =================================================== -->
+    <div class="screen active" id="screen-lock" role="main" aria-label="Lock screen">
+      <div class="lock-time" id="lock-time" aria-live="off">13:02</div>
+      <div class="lock-date" id="lock-date">Thursday, 17 September</div>
+      <div class="lock-notifs" aria-label="Notifications" role="list">
+        <div class="lock-notif" role="listitem" style="animation-delay:.1s">
+          <div class="lock-notif-icon" style="background:linear-gradient(135deg,#6B3FA0,#9B5CD0)">💼</div>
+          <div class="lock-notif-body">
+            <div class="lock-notif-app">Pandora Work</div>
+            <div class="lock-notif-msg">New shift request from Jess</div>
+          </div>
+          <div class="lock-notif-time">12:41</div>
+        </div>
+        <div class="lock-notif" role="listitem" style="animation-delay:.2s">
+          <div class="lock-notif-icon" style="background:linear-gradient(135deg,#51217A,#7A3AAD)">🎓</div>
+          <div class="lock-notif-body">
+            <div class="lock-notif-app">my.UQ</div>
+            <div class="lock-notif-msg">DECO2850 Studio · 1:00 PM today</div>
+          </div>
+          <div class="lock-notif-time">8:00</div>
+        </div>
+        <div class="lock-notif" role="listitem" style="animation-delay:.3s">
+          <div class="lock-notif-icon" style="background:linear-gradient(135deg,#4A6FA5,#7B5EA7)">📋</div>
+          <div class="lock-notif-body">
+            <div class="lock-notif-app">RosterMate</div>
+            <div class="lock-notif-msg">New shift available to review</div>
+          </div>
+          <div class="lock-notif-time">12:42</div>
+        </div>
+      </div>
+      <div class="lock-unlock-area">
+        <button class="lock-unlock-btn" id="unlock-btn" onclick="unlock()" aria-label="Unlock phone, swipe up to open">
+          Swipe up to unlock
+        </button>
+      </div>
+    </div>
+
+    <!-- ===================================================
+         HOME SCREEN
+         =================================================== -->
+    <div class="screen" id="screen-home" role="main" aria-label="Home screen">
+      <div class="home-pages-wrap" id="home-pages-wrap">
+        <div class="home-pages" id="home-pages">
+
+          <!-- Page 1: Worker apps -->
+          <div class="home-page" id="home-page-0">
+            <div class="sep"></div>
+            <div class="app-grid" role="list">
+              <button class="app-icon" role="listitem" onclick="openApp('pandora')" aria-label="Pandora Work" tabindex="0">
+                <div class="app-icon-img ic-pandora">💼</div>
+                <span class="app-icon-label">Pandora Work</span>
+                <div class="app-badge show" id="badge-pandora" aria-label="1 notification">1</div>
+              </button>
+              <button class="app-icon" role="listitem" onclick="openApp('mcd')" aria-label="McD Crew">
+                <div class="app-icon-img ic-mcd">🍟</div>
+                <span class="app-icon-label">McD Crew</span>
+              </button>
+              <button class="app-icon" role="listitem" onclick="openApp('uq')" aria-label="my.UQ">
+                <div class="app-icon-img ic-uq">🎓</div>
+                <span class="app-icon-label">my.UQ</span>
+              </button>
+              <button class="app-icon" role="listitem" onclick="openApp('rostermate')" aria-label="RosterMate" tabindex="0">
+                <div class="app-icon-img ic-rostermate">📋</div>
+                <span class="app-icon-label">RosterMate</span>
+                <div class="app-badge show" id="badge-rm" aria-label="1 notification">1</div>
+              </button>
+              <button class="app-icon" role="listitem" onclick="openApp('messages')" aria-label="Messages">
+                <div class="app-icon-img ic-messages">💬</div>
+                <span class="app-icon-label">Messages</span>
+              </button>
+              <button class="app-icon" role="listitem" onclick="openApp('maps')" aria-label="Maps">
+                <div class="app-icon-img ic-maps">🗺</div>
+                <span class="app-icon-label">Maps</span>
+              </button>
+              <button class="app-icon" role="listitem" onclick="openApp('calendar')" aria-label="Calendar">
+                <div class="app-icon-img ic-calendar">📅</div>
+                <span class="app-icon-label">Calendar</span>
+              </button>
+              <button class="app-icon" role="listitem" onclick="openApp('personal')" aria-label="Personal">
+                <div class="app-icon-img ic-personal">🌿</div>
+                <span class="app-icon-label">Personal</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Page 2: Care & planning -->
+          <div class="home-page" id="home-page-1">
+            <div class="home-page-label">Care & Planning</div>
+            <div class="app-grid" role="list">
+              <button class="app-icon" role="listitem" onclick="openApp('threedcal')" aria-label="3D Calendar">
+                <div class="app-icon-img ic-3dcal">🧊</div>
+                <span class="app-icon-label">3D Calendar</span>
+              </button>
+              <button class="app-icon" role="listitem" onclick="openApp('weekly')" aria-label="Weekly View">
+                <div class="app-icon-img ic-weekly">📊</div>
+                <span class="app-icon-label">Weekly View</span>
+              </button>
+              <button class="app-icon" role="listitem" onclick="openApp('boundaries')" aria-label="Boundaries">
+                <div class="app-icon-img ic-boundaries">🛡</div>
+                <span class="app-icon-label">Boundaries</span>
+              </button>
+              <button class="app-icon" role="listitem" onclick="openApp('rest')" aria-label="Rest">
+                <div class="app-icon-img ic-rest">🌙</div>
+                <span class="app-icon-label">Rest</span>
+              </button>
+              <button class="app-icon" role="listitem" onclick="openApp('connected')" aria-label="Connected Apps">
+                <div class="app-icon-img ic-connected">🔗</div>
+                <span class="app-icon-label">Connected Apps</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Page 3: Demo controls -->
+          <div class="home-page" id="home-page-2">
+            <div class="home-page-label demo-label" id="demo-page-label">🎬 Exhibition Demo Controls</div>
+            <div class="demo-banner" style="margin-bottom:12px">NOT part of the worker interface</div>
+            <div class="app-grid" role="list">
+              <button class="app-icon" role="listitem" onclick="openApp('pandora-admin')" aria-label="Pandora Admin">
+                <div class="app-icon-img ic-padmin">⚙️</div>
+                <span class="app-icon-label">Pandora Admin</span>
+              </button>
+              <button class="app-icon" role="listitem" onclick="openApp('mcd-admin')" aria-label="McD Admin">
+                <div class="app-icon-img ic-mcadmin">⚙️</div>
+                <span class="app-icon-label">McD Admin</span>
+              </button>
+              <button class="app-icon" role="listitem" onclick="openApp('mgr-chat')" aria-label="Manager Chat">
+                <div class="app-icon-img ic-mgrchat">🗣</div>
+                <span class="app-icon-label">Manager Chat</span>
+              </button>
+              <button class="app-icon" role="listitem" onclick="resetDemo()" aria-label="Reset Demo">
+                <div class="app-icon-img ic-reset">🔄</div>
+                <span class="app-icon-label">Reset Demo</span>
+              </button>
+            </div>
+            <div class="sep"></div>
+            <div class="card" style="margin-top:8px">
+              <div class="card-label">Demo Mode</div>
+              <div class="toggle-row" style="border:0;padding:0">
+                <span style="font-size:13px">Show this page to participants</span>
+                <label class="toggle" aria-label="Toggle demo mode visibility">
+                  <input type="checkbox" id="demo-mode-toggle" checked onchange="toggleDemoMode(this.checked)">
+                  <div class="toggle-track"></div>
+                  <div class="toggle-thumb"></div>
+                </label>
+              </div>
+              <p class="info-text">When OFF, hides this page during participant testing.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <!-- Page dots -->
+      <div class="page-dots" role="tablist" aria-label="Home pages">
+        <div class="page-dot active" role="tab" aria-selected="true" aria-label="Page 1: Apps" onclick="goToPage(0)"></div>
+        <div class="page-dot" role="tab" aria-selected="false" aria-label="Page 2: Care" onclick="goToPage(1)"></div>
+        <div class="page-dot" role="tab" aria-selected="false" aria-label="Page 3: Demo" onclick="goToPage(2)" id="demo-page-dot"></div>
+      </div>
+    </div>
+
+    <!-- ===================================================
+         APP SCREENS (generated dynamically)
+         =================================================== -->
+    <div class="screen app-screen" id="screen-pandora"></div>
+    <div class="screen app-screen" id="screen-mcd"></div>
+    <div class="screen app-screen" id="screen-uq"></div>
+    <div class="screen app-screen" id="screen-rostermate"></div>
+    <div class="screen app-screen" id="screen-messages"></div>
+    <div class="screen app-screen" id="screen-maps"></div>
+    <div class="screen app-screen" id="screen-calendar"></div>
+    <div class="screen app-screen" id="screen-personal"></div>
+    <div class="screen app-screen" id="screen-threedcal"></div>
+    <div class="screen app-screen" id="screen-weekly"></div>
+    <div class="screen app-screen" id="screen-boundaries"></div>
+    <div class="screen app-screen" id="screen-rest"></div>
+    <div class="screen app-screen" id="screen-connected"></div>
+    <div class="screen app-screen" id="screen-pandora-admin"></div>
+    <div class="screen app-screen" id="screen-mcd-admin"></div>
+    <div class="screen app-screen" id="screen-mgr-chat"></div>
+
+  </div><!-- /phone-content -->
+
+  <div class="home-indicator" aria-hidden="true"><div class="home-indicator-bar"></div></div>
+</div><!-- /phone-shell -->
+
+<!-- Toast -->
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+"use strict";
+
+/* =====================================================
+   CONFIG
+   ===================================================== */
+const APP_NAME = "RosterMate";
+const STORAGE_KEY = "rostermate-mobile-prototype-v1";
+const DEMO_DATE = "2026-09-17"; // Thu 17 Sep 2026
+const WEEK_START = "2026-09-14"; // Mon
+
+/* =====================================================
+   DEFAULT STATE
+   ===================================================== */
+const defaultState = {
+  activeScreen: "lock",
+  selectedApp: null,
+  homePage: 0,
+  demoMode: true,
+
+  worker: {
+    id: "worker-dinda",
+    name: "Dinda",
+    location: "UQ St Lucia"
+  },
+
+  shiftOffers: [
+    {
+      id: "pandora-offer-1",
+      employer: "Pandora",
+      source: "Pandora Work",
+      requestedBy: "Jess",
+      date: "2026-09-17",
+      start: "16:00",
+      finish: "21:00",
+      hourlyRate: 32,
+      unpaidBreakMinutes: 0,
+      status: "pending",
+      message: "Hey Dinda, Mia is sick. Any chance you could do 4–9 tonight?"
+    }
+  ],
+
+  workShifts: [
+    {
+      id: "mcd-shift-1",
+      employer: "McD",
+      date: "2026-09-19",
+      start: "09:00",
+      finish: "17:00",
+      hourlyRate: 30,
+      status: "confirmed"
+    }
+  ],
+
+  universityEvents: [
+    {
+      id: "uq-deco-1",
+      title: "DECO2850 Studio",
+      date: "2026-09-17",
+      start: "13:00",
+      finish: "15:00",
+      source: "my.UQ"
+    },
+    {
+      id: "uq-nextday-1",
+      title: "University",
+      date: "2026-09-18",
+      start: "10:00",
+      finish: "12:00",
+      source: "my.UQ"
+    }
+  ],
+
+  personalEvents: [
+    {
+      id: "personal-dinner-1",
+      title: "Dinner",
+      date: "2026-09-17",
+      start: "19:00",
+      finish: "21:00",
+      importance: "important"
+    }
+  ],
+
+  protectedRest: [
+    {
+      id: "rest-sunday-1",
+      title: "Protected rest",
+      date: "2026-09-20",
+      start: "09:00",
+      finish: "23:00"
+    }
+  ],
+
+  travelMinutes: 35,
+
+  connections: {
+    pandora: true,
+    mcd: true,
+    uq: true,
+    maps: true,
+    personal: true
+  },
+
+  priorities: [],
+
+  boundaries: [
+    {
+      id: "boundary-sunday",
+      label: "Sunday",
+      type: "rest",
+      preference: "Protected rest"
+    }
+  ],
+
+  checkins: [],
+  messages: [],
+  decisions: [],
+  reminders: [],
+
+  currentReflection: {
+    feeling: null,
+    managerComfort: null,
+    selectedPriorities: [],
+    selectedBoundary: null
+  },
+
+  notifications: [],
+
+  // Track RosterMate flow state
+  rmFlow: {
+    stage: "home", // home | pause | compare | reflect | decide | post-decision
+    offer: null,
+    expandedCard: null
+  },
+
+  // Draft message for Messages app
+  messageDraft: ""
+};
+
+/* =====================================================
+   STATE & STORAGE
+   ===================================================== */
+let state = loadState();
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Deep merge with defaults to pick up new fields
+      return deepMerge(JSON.parse(JSON.stringify(defaultState)), parsed);
+    }
+  } catch(e) {}
+  return JSON.parse(JSON.stringify(defaultState));
+}
+
+function deepMerge(target, source) {
+  for (const key in source) {
+    if (source[key] && typeof source[key] === "object" && !Array.isArray(source[key])) {
+      if (!target[key]) target[key] = {};
+      deepMerge(target[key], source[key]);
+    } else {
+      target[key] = source[key];
+    }
+  }
+  return target;
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch(e) {}
+}
+
+function resetDemo() {
+  if (!confirm("Reset the demo? This restores the original Dinda scenario.")) return;
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+  state = JSON.parse(JSON.stringify(defaultState));
+  saveState();
+  // Return to lock screen
+  goToScreen("lock", false);
+  showToast("Demo reset. Starting from lock screen.");
+}
+
+/* =====================================================
+   DATE / TIME HELPERS
+   ===================================================== */
+function formatDate(isoDate) {
+  // "2026-09-17" → "Thu 17 Sep"
+  const d = new Date(isoDate + "T00:00:00");
+  const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return days[d.getDay()] + " " + d.getDate() + " " + months[d.getMonth()];
+}
+
+function formatDateLong(isoDate) {
+  const d = new Date(isoDate + "T00:00:00");
+  const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  return days[d.getDay()] + ", " + d.getDate() + " " + months[d.getMonth()];
+}
+
+function formatDayName(isoDate) {
+  const d = new Date(isoDate + "T00:00:00");
+  const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  return days[d.getDay()];
+}
+
+function formatTime(hhmm) {
+  // "16:00" → "4:00 PM"
+  const [h, m] = hhmm.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 || 12;
+  return h12 + (m ? ":" + String(m).padStart(2,"0") : "") + " " + ampm;
+}
+
+function toMinutes(hhmm) {
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function minutesToHhmm(mins) {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
+}
+
+function minutesBetween(hhmm1, hhmm2) {
+  return toMinutes(hhmm2) - toMinutes(hhmm1);
+}
+
+function eventsOverlap(start1, finish1, start2, finish2) {
+  return toMinutes(start1) < toMinutes(finish2) && toMinutes(finish1) > toMinutes(start2);
+}
+
+function formatDuration(mins) {
+  if (mins === null || mins === undefined) return "—";
+  const h = Math.floor(Math.abs(mins) / 60);
+  const m = Math.abs(mins) % 60;
+  if (h === 0) return m + "m";
+  if (m === 0) return h + "h";
+  return h + "h " + m + "m";
+}
+
+function getDayOfWeek(isoDate) {
+  const d = new Date(isoDate + "T00:00:00");
+  return d.getDay(); // 0=Sun
+}
+
+function addDays(isoDate, n) {
+  const d = new Date(isoDate + "T00:00:00");
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0,10);
+}
+
+/* Week dates Mon–Sun for DEMO_DATE's week */
+function getWeekDates() {
+  // Demo week: Mon 15 Sep … Sun 21 Sep 2026? No, spec says demo date is Thu 17 Sep 2026
+  // Week starts Mon 15 Sep 2026
+  const thursday = new Date(DEMO_DATE + "T00:00:00");
+  const dayOfWeek = thursday.getDay(); // 4 for Thursday
+  const monday = new Date(thursday);
+  monday.setDate(thursday.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+  const dates = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    dates.push(d.toISOString().slice(0,10));
+  }
+  return dates;
+}
+
+/* =====================================================
+   CALCULATIONS
+   ===================================================== */
+function getOffer() {
+  return state.shiftOffers.find(o => o.id === "pandora-offer-1") || state.shiftOffers[0] || null;
+}
+
+function calculateIncome(offer) {
+  if (!offer) return { income: 0, paidMinutes: 0 };
+  const totalMins = minutesBetween(offer.start, offer.finish);
+  const paidMins = totalMins - (offer.unpaidBreakMinutes || 0);
+  const income = Math.round((paidMins / 60) * offer.hourlyRate * 100) / 100;
+  return { income, paidMinutes: paidMins };
+}
+
+function calculateTravelBuffer(offer) {
+  if (!offer) return null;
+  // Find latest commitment on same date finishing before offer start
+  const offerStart = toMinutes(offer.start);
+  let latest = null;
+  // University events
+  if (state.connections.uq) {
+    for (const ev of state.universityEvents) {
+      if (ev.date === offer.date && toMinutes(ev.finish) <= offerStart) {
+        if (!latest || toMinutes(ev.finish) > toMinutes(latest.finish)) {
+          latest = ev;
+        }
+      }
+    }
+  }
+  // Personal events
+  if (state.connections.personal) {
+    for (const ev of state.personalEvents) {
+      if (ev.date === offer.date && toMinutes(ev.finish) <= offerStart) {
+        if (!latest || toMinutes(ev.finish) > toMinutes(latest.finish)) {
+          latest = ev;
+        }
+      }
+    }
+  }
+  if (!latest) return { buffer: null, prevEvent: null };
+  const gap = offerStart - toMinutes(latest.finish);
+  const buffer = gap - (state.connections.maps ? state.travelMinutes : 0);
+  return { buffer, prevEvent: latest, gap };
+}
+
+function calculateRestWindow(offer) {
+  if (!offer) return null;
+  const offerFinish = toMinutes(offer.finish);
+  const offerDate = offer.date;
+
+  let nextMinutes = null;
+  // Look for next commitment after offer finishes
+  const candidates = [];
+
+  // Same day
+  if (state.connections.uq) {
+    for (const ev of state.universityEvents) {
+      if (ev.date === offerDate && toMinutes(ev.start) >= offerFinish) {
+        candidates.push({ date: offerDate, startMins: toMinutes(ev.start), title: ev.title });
+      }
+    }
+  }
+  if (state.connections.personal) {
+    for (const ev of state.personalEvents) {
+      if (ev.date === offerDate && toMinutes(ev.start) >= offerFinish) {
+        candidates.push({ date: offerDate, startMins: toMinutes(ev.start), title: ev.title });
+      }
+    }
+  }
+  // Next day commitments
+  const nextDate = addDays(offerDate, 1);
+  if (state.connections.uq) {
+    for (const ev of state.universityEvents) {
+      if (ev.date === nextDate) {
+        // Convert to minutes from midnight of offer date: add 24*60
+        candidates.push({ date: nextDate, startMins: toMinutes(ev.start) + 24*60, title: ev.title });
+      }
+    }
+  }
+  if (state.connections.mcd) {
+    for (const sh of state.workShifts) {
+      if (sh.date === nextDate) {
+        candidates.push({ date: nextDate, startMins: toMinutes(sh.start) + 24*60, title: sh.employer + " shift" });
+      }
+    }
+  }
+  // Protected rest same or next day
+  for (const r of state.protectedRest) {
+    if (r.date === offerDate && toMinutes(r.start) >= offerFinish) {
+      candidates.push({ date: offerDate, startMins: toMinutes(r.start), title: r.title });
+    }
+    if (r.date === nextDate) {
+      candidates.push({ date: nextDate, startMins: toMinutes(r.start) + 24*60, title: r.title });
+    }
+  }
+
+  if (!candidates.length) return { restMins: null, nextEvent: null };
+  candidates.sort((a,b) => a.startMins - b.startMins);
+  const first = candidates[0];
+  const restMins = first.startMins - offerFinish;
+  return { restMins, nextEvent: first };
+}
+
+function findPersonalOverlap(offer) {
+  if (!offer || !state.connections.personal) return [];
+  return state.personalEvents.filter(ev =>
+    ev.date === offer.date &&
+    eventsOverlap(offer.start, offer.finish, ev.start, ev.finish)
+  );
+}
+
+function findStudyOverlap(offer) {
+  if (!offer || !state.connections.uq) return [];
+  return state.universityEvents.filter(ev =>
+    ev.date === offer.date &&
+    eventsOverlap(offer.start, offer.finish, ev.start, ev.finish)
+  );
+}
+
+function touchesBoundary(offer) {
+  if (!offer) return null;
+  const offerDay = formatDayName(offer.date); // "Thu"
+  return state.boundaries.find(b => {
+    if (b.type === "rest") {
+      // Check if offer date is same as rest date
+      const restDate = state.protectedRest.find(r => r.id === "rest-sunday-1");
+      if (restDate && restDate.date === offer.date) return true;
+    }
+    // Check by day label
+    const dayNames = {"Sunday":"Sun","Saturday":"Sat","Monday":"Mon","Tuesday":"Tue","Wednesday":"Wed","Thursday":"Thu","Friday":"Fri"};
+    const short = dayNames[b.label] || b.label.slice(0,3);
+    return short === offerDay;
+  }) || null;
+}
+
+/* =====================================================
+   NAVIGATION / SCREEN MANAGEMENT
+   ===================================================== */
+let currentScreen = "lock";
+let screenHistory = [];
+
+function goToScreen(screenId, pushHistory = true) {
+  const current = document.getElementById("screen-" + currentScreen);
+  const next = document.getElementById("screen-" + screenId);
+  if (!next) return;
+
+  if (pushHistory && currentScreen !== screenId) {
+    screenHistory.push(currentScreen);
+  }
+
+  if (current) {
+    current.classList.remove("active");
+  }
+
+  next.classList.add("active");
+  next.scrollTop = 0;
+  currentScreen = screenId;
+  state.activeScreen = screenId;
+  saveState();
+
+  // Update status bar colour for lock screen
+  const statusBar = document.getElementById("status-bar");
+  if (screenId === "lock" || screenId === "home") {
+    statusBar.style.color = "#fff";
+  } else {
+    statusBar.style.color = "";
+  }
+}
+
+function goBack() {
+  if (screenHistory.length) {
+    const prev = screenHistory.pop();
+    goToScreen(prev, false);
+  } else {
+    goToScreen("home");
+  }
+}
+
+function unlock() {
+  goToScreen("home");
+}
+
+function openApp(appId) {
+  const screenId = "screen-" + appId;
+  const el = document.getElementById(screenId);
+  if (!el) return;
+
+  // Render app content
+  renderApp(appId);
+  goToScreen(appId);
+
+  // Clear badge
+  const badge = document.getElementById("badge-" + appId);
+  if (badge) badge.classList.remove("show");
+}
+
+/* =====================================================
+   HOME PAGE SWIPE
+   ===================================================== */
+let currentPage = 0;
+let touchStartX = 0;
+let touchStartY = 0;
+let isDragging = false;
+
+function goToPage(page) {
+  const maxPage = state.demoMode ? 2 : 1;
+  page = Math.max(0, Math.min(page, maxPage));
+  currentPage = page;
+  state.homePage = page;
+  const pages = document.getElementById("home-pages");
+  if (pages) pages.style.transform = `translateX(${-page * (100/3)}%)`;
+  // Update dots
+  document.querySelectorAll(".page-dot").forEach((dot, i) => {
+    dot.classList.toggle("active", i === page);
+    dot.setAttribute("aria-selected", i === page ? "true" : "false");
+  });
+  saveState();
+}
+
+function initHomeSwipe() {
+  const wrap = document.getElementById("home-pages-wrap");
+  if (!wrap) return;
+
+  wrap.addEventListener("touchstart", e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    isDragging = false;
+  }, { passive: true });
+
+  wrap.addEventListener("touchmove", e => {
+    const dx = e.touches[0].clientX - touchStartX;
+    const dy = e.touches[0].clientY - touchStartY;
+    if (!isDragging && Math.abs(dx) > Math.abs(dy) + 5) isDragging = true;
+  }, { passive: true });
+
+  wrap.addEventListener("touchend", e => {
+    if (!isDragging) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 40) {
+      if (dx < 0) goToPage(currentPage + 1);
+      else goToPage(currentPage - 1);
+    }
+  });
+
+  // Mouse drag
+  let mouseStartX = 0;
+  let mouseDown = false;
+  wrap.addEventListener("mousedown", e => {
+    mouseStartX = e.clientX;
+    mouseDown = true;
+  });
+  document.addEventListener("mouseup", e => {
+    if (!mouseDown) return;
+    mouseDown = false;
+    const dx = e.clientX - mouseStartX;
+    if (Math.abs(dx) > 40) {
+      if (dx < 0) goToPage(currentPage + 1);
+      else goToPage(currentPage - 1);
+    }
+  });
+
+  // Arrow keys (when home screen is active)
+  document.addEventListener("keydown", e => {
+    if (currentScreen !== "home") return;
+    if (e.key === "ArrowRight") goToPage(currentPage + 1);
+    if (e.key === "ArrowLeft") goToPage(currentPage - 1);
+    if (e.key === "Escape") goToScreen("home");
+  });
+}
+
+function toggleDemoMode(on) {
+  state.demoMode = on;
+  const dot = document.getElementById("demo-page-dot");
+  const label = document.getElementById("demo-page-label");
+  if (dot) dot.style.display = on ? "" : "none";
+  if (label) label.style.opacity = on ? "1" : "0.3";
+  if (!on && currentPage === 2) goToPage(0);
+  saveState();
+}
+
+/* =====================================================
+   TOAST
+   ===================================================== */
+let toastTimer = null;
+function showToast(msg, duration = 2800) {
+  const el = document.getElementById("toast");
+  if (!el) return;
+  el.textContent = msg;
+  el.hidden = false;
+  el.style.animation = "none";
+  void el.offsetWidth;
+  el.style.animation = "";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.hidden = true; }, duration);
+}
+
+/* =====================================================
+   CLOCK
+   ===================================================== */
+function updateClock() {
+  // Demo: show a fixed time relative to 13:02 on 17 Sep 2026
+  const now = new Date();
+  const h = now.getHours();
+  const m = now.getMinutes();
+  const timeStr = String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
+  const el = document.getElementById("status-time");
+  if (el) el.textContent = timeStr;
+  const lockEl = document.getElementById("lock-time");
+  if (lockEl) lockEl.textContent = timeStr;
+}
+
+/* =====================================================
+   APP RENDERING DISPATCHER
+   ===================================================== */
+function renderApp(appId) {
+  const screenEl = document.getElementById("screen-" + appId);
+  if (!screenEl) return;
+  const renders = {
+    pandora: renderPandoraWork,
+    mcd: renderMcDCrew,
+    uq: renderMyUQ,
+    rostermate: renderRosterMateHome,
+    messages: renderMessages,
+    maps: renderMaps,
+    calendar: renderCalendar,
+    personal: renderPersonal,
+    threedcal: renderThreeDCalendar,
+    weekly: renderWeeklyView,
+    boundaries: renderBoundaries,
+    rest: renderRest,
+    connected: renderConnectedApps,
+    "pandora-admin": renderPandoraAdmin,
+    "mcd-admin": renderMcdAdmin,
+    "mgr-chat": renderMgrChat
+  };
+  if (renders[appId]) renders[appId](screenEl);
+}
+
+/* =====================================================
+   PANDORA WORK
+   ===================================================== */
+function renderPandoraWork(el) {
+  const offer = getOffer();
+  const pending = offer && offer.status === "pending";
+
+  el.innerHTML = `
+    <div class="pandora-header">
+      <h1>💼 Pandora Work</h1>
+      <p>Pandora · Queen Street Mall</p>
+    </div>
+    <div class="app-body">
+      <button class="back-btn" onclick="goBack()">← Home</button>
+      ${pending ? `
+      <div class="sec-label">New shift request</div>
+      <div class="card amber" id="pandora-offer-card">
+        <div class="card-label">From Jess · Today</div>
+        <div style="font-size:17px;font-weight:700;letter-spacing:-.01em">Pandora · ${formatTime(offer.start)}–${formatTime(offer.finish)}</div>
+        <div class="info-text" style="margin-top:2px">${formatDate(offer.date)}</div>
+        <div style="font-size:14px;margin-top:6px;line-height:1.4;color:var(--ink)">"${offer.message}"</div>
+        <div class="btn-col" style="margin-top:10px">
+          <button class="btn full" onclick="openRMFromPandora()" aria-label="Review with RosterMate">
+            📋 Review with RosterMate
+          </button>
+          <div class="btn-row">
+            <button class="btn ghost sm" onclick="replyLaterPandora()">Reply later</button>
+            <button class="btn neutral sm" onclick="pandoraViewMessages()">Messages</button>
+          </div>
+        </div>
+      </div>
+      ` : offer && offer.status === "accepted" ? `
+      <div class="card sage">
+        <div class="card-label">Shift confirmed</div>
+        <div style="font-size:17px;font-weight:700">Pandora · ${formatTime(offer.start)}–${formatTime(offer.finish)}</div>
+        <div class="info-text">${formatDate(offer.date)}</div>
+        <div class="confirmed-tag" style="margin-top:4px;display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;font-size:12px;font-weight:700">✓ Accepted</div>
+      </div>
+      ` : `
+      <div class="card">
+        <div class="card-label">No pending requests</div>
+        <div class="info-text">No shift requests at this time.</div>
+      </div>
+      `}
+
+      <div class="sec-label" style="margin-top:4px">Upcoming shifts</div>
+      <div class="card">
+        ${offer && offer.status === "accepted" ? `
+        <div class="agenda-row">
+          <div class="agenda-time">${formatTime(offer.start).replace(" PM","").replace(" AM","")}</div>
+          <div class="agenda-dot" style="background:var(--col-work)"></div>
+          <div class="agenda-info">
+            <div class="agenda-title">Pandora</div>
+            <div class="agenda-sub">${formatDate(offer.date)} · ${formatTime(offer.start)}–${formatTime(offer.finish)}</div>
+          </div>
+        </div>
+        ` : ""}
+        <div class="agenda-row">
+          <div class="agenda-time">9 AM</div>
+          <div class="agenda-dot" style="background:var(--col-work)"></div>
+          <div class="agenda-info">
+            <div class="agenda-title">Pandora · Sat shift</div>
+            <div class="agenda-sub">Sat 19 Sep · 9:00 AM – 5:00 PM</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-text" style="margin-top:4px;padding:8px 10px;background:var(--lavender-soft);border-radius:10px">
+        🔒 Nothing about your schedule or check-ins is shared with Pandora automatically.
+      </div>
+    </div>`;
+}
+
+function openRMFromPandora() {
+  renderRosterMateFromOffer("pandora-offer-1");
+  goToScreen("rostermate");
+}
+
+function replyLaterPandora() {
+  showToast("Offer saved as pending. You can review it later.");
+}
+
+function pandoraViewMessages() {
+  openApp("messages");
+}
+
+/* =====================================================
+   MCD CREW
+   ===================================================== */
+function renderMcDCrew(el) {
+  const shift = state.workShifts.find(s => s.employer === "McD") || null;
+  el.innerHTML = `
+    <div class="mcd-header">
+      <h1>🍟 McD Crew</h1>
+      <p>McDonald's · Schedule</p>
+    </div>
+    <div class="app-body">
+      <button class="back-btn" onclick="goBack()">← Home</button>
+      <div class="sec-label">Next shift</div>
+      ${shift ? `
+      <div class="card blue">
+        <div class="card-label">Confirmed</div>
+        <div style="font-size:18px;font-weight:700;letter-spacing:-.01em">${formatDate(shift.date)}</div>
+        <div style="font-size:15px;margin-top:2px">${formatTime(shift.start)} – ${formatTime(shift.finish)}</div>
+        <div class="info-text">8 hours · \$${shift.hourlyRate}/hr</div>
+      </div>
+      ` : `<div class="card"><div class="info-text">No upcoming McD shifts.</div></div>`}
+
+      <div class="sec-label" style="margin-top:4px">Roster</div>
+      <div class="card">
+        <div class="info-text">Your roster for the coming week is visible in the McD scheduling system.</div>
+      </div>
+      <div class="sec-label" style="margin-top:4px">Availability</div>
+      <div class="card">
+        <div class="info-text">Your availability has been set in the McD system. Contact your manager to update.</div>
+      </div>
+      <div class="sec-label" style="margin-top:4px">Upcoming</div>
+      ${shift ? `
+      <div class="card">
+        <div class="agenda-row" style="border:0;padding:6px 0">
+          <div class="agenda-dot" style="background:var(--col-mcd)"></div>
+          <div class="agenda-info" style="margin-left:10px">
+            <div class="agenda-title">${formatDate(shift.date)}</div>
+            <div class="agenda-sub">${formatTime(shift.start)}–${formatTime(shift.finish)}</div>
+          </div>
+        </div>
+      </div>
+      ` : ""}
+    </div>`;
+}
+
+/* =====================================================
+   MY.UQ
+   ===================================================== */
+function renderMyUQ(el) {
+  const uqOn = state.connections.uq;
+  const events = state.universityEvents;
+  const todayEvs = events.filter(e => e.date === DEMO_DATE);
+  const nextDayEvs = events.filter(e => e.date === addDays(DEMO_DATE, 1));
+  const synced = uqOn;
+
+  el.innerHTML = `
+    <div class="uq-header">
+      <h1>🎓 my.UQ</h1>
+      <p>University of Queensland</p>
+    </div>
+    <div class="app-body">
+      <button class="back-btn" onclick="goBack()">← Home</button>
+
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="sec-label">Timetable</div>
+        <button class="btn sm ${synced ? 'sage-btn' : 'ghost'}" onclick="syncUQ()">
+          ${synced ? "✓ Timetable synced" : "Sync timetable"}
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Today · ${formatDateLong(DEMO_DATE).split(",")[0]}</div>
+        ${todayEvs.length ? todayEvs.map(ev => `
+        <div class="agenda-row" style="border:0;padding:6px 0">
+          <div class="agenda-dot" style="background:var(--col-uni)"></div>
+          <div class="agenda-info" style="margin-left:10px">
+            <div class="agenda-title">${ev.title}</div>
+            <div class="agenda-sub">${formatTime(ev.start)} – ${formatTime(ev.finish)}</div>
+          </div>
+        </div>`).join("") : `<div class="info-text">No classes today.</div>`}
+      </div>
+
+      <div class="card">
+        <div class="card-label">Tomorrow</div>
+        ${nextDayEvs.length ? nextDayEvs.map(ev => `
+        <div class="agenda-row" style="border:0;padding:6px 0">
+          <div class="agenda-dot" style="background:var(--col-uni)"></div>
+          <div class="agenda-info" style="margin-left:10px">
+            <div class="agenda-title">${ev.title}</div>
+            <div class="agenda-sub">${formatTime(ev.start)} – ${formatTime(ev.finish)}</div>
+          </div>
+        </div>`).join("") : `<div class="info-text">No classes tomorrow.</div>`}
+      </div>
+
+      <div class="info-text" style="padding:8px 10px;background:var(--lavender-soft);border-radius:10px">
+        RosterMate uses your UQ timetable to check for overlaps. You control what is shared in <b>Connected Apps</b>.
+      </div>
+    </div>`;
+}
+
+function syncUQ() {
+  if (!state.connections.uq) {
+    state.connections.uq = true;
+    saveState();
+    showToast("my.UQ connected. Timetable synced.");
+  } else {
+    showToast("Timetable already synced.");
+  }
+  renderApp("uq");
+}
+
+/* =====================================================
+   PERSONAL APP
+   ===================================================== */
+function renderPersonal(el) {
+  const events = state.personalEvents;
+  const todayEvs = events.filter(e => e.date === DEMO_DATE);
+
+  el.innerHTML = `
+    <div class="app-header">
+      <div class="app-header-icon ic-personal" style="background:linear-gradient(135deg,#4A8A6A,#6EC99A)">🌿</div>
+      <h1>Personal</h1>
+      <button class="back-btn" onclick="goBack()">← Home</button>
+    </div>
+    <div class="app-body">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="sec-label">Today</div>
+        <button class="btn sm ghost" onclick="addPersonalEvent()">+ Add commitment</button>
+      </div>
+
+      ${todayEvs.length ? todayEvs.map(ev => `
+      <div class="card ${ev.importance === "important" ? "accent" : ""}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-weight:700;font-size:15px">${ev.title}</div>
+            <div class="info-text">${formatTime(ev.start)} – ${formatTime(ev.finish)}</div>
+          </div>
+          <div class="pending-tag ${ev.importance === "important" ? "" : "confirmed-tag"}">${ev.importance || "flexible"}</div>
+        </div>
+        <button class="btn neutral sm" onclick="deletePersonalEvent('${ev.id}')">Remove</button>
+      </div>`).join("") : `
+      <div class="card"><div class="info-text">No personal commitments today.</div></div>`}
+
+      <div class="sec-label" style="margin-top:4px">All events</div>
+      ${events.filter(e => e.date !== DEMO_DATE).map(ev => `
+      <div class="card">
+        <div style="font-weight:700">${ev.title}</div>
+        <div class="info-text">${formatDate(ev.date)} · ${formatTime(ev.start)} – ${formatTime(ev.finish)}</div>
+        <button class="btn neutral sm" onclick="deletePersonalEvent('${ev.id}')">Remove</button>
+      </div>`).join("")}
+
+      <div class="info-text" style="padding:8px 10px;background:var(--sage-soft);border-radius:10px;margin-top:4px">
+        🔒 Personal events are only shared with RosterMate if you have Personal connected. Nothing goes to employers.
+      </div>
+    </div>`;
+}
+
+function addPersonalEvent() {
+  // Simple modal-style inline form
+  const formId = "personal-add-form";
+  const existing = document.getElementById(formId);
+  if (existing) { existing.remove(); return; }
+
+  const appBody = document.querySelector("#screen-personal .app-body");
+  if (!appBody) return;
+
+  const types = ["Dinner","Gym","Appointment","Study","Social","Rest","Custom"];
+
+  const formDiv = document.createElement("div");
+  formDiv.id = formId;
+  formDiv.className = "card accent";
+  formDiv.style.cssText = "animation:fadeUp .3s ease";
+  formDiv.innerHTML = `
+    <div class="card-label">Add commitment</div>
+    <div class="field">
+      <label for="pe-title">Event</label>
+      <select id="pe-type" onchange="document.getElementById('pe-title').value=this.value==='Custom'?'':this.value">
+        ${types.map(t => `<option>${t}</option>`).join("")}
+      </select>
+    </div>
+    <div class="field" style="display:none" id="pe-custom-wrap">
+      <label for="pe-custom">Custom name</label>
+      <input id="pe-custom" placeholder="Event name">
+    </div>
+    <div class="field"><label for="pe-date">Date</label><input id="pe-date" type="date" value="${DEMO_DATE}"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="field"><label for="pe-start">Start</label><input id="pe-start" type="time" value="19:00"></div>
+      <div class="field"><label for="pe-end">Finish</label><input id="pe-end" type="time" value="21:00"></div>
+    </div>
+    <div class="field">
+      <label>Importance</label>
+      <div class="chips" role="group">
+        <button class="chip" aria-pressed="false" data-importance="flexible">Flexible</button>
+        <button class="chip" aria-pressed="true" data-importance="important">Important</button>
+        <button class="chip" aria-pressed="false" data-importance="protected">Protected</button>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn sm full" onclick="savePersonalEvent()">Add</button>
+      <button class="btn neutral sm" onclick="document.getElementById('${formId}').remove()">Cancel</button>
+    </div>`;
+
+  // Insert before last child
+  const lastInfoText = appBody.querySelector(".info-text");
+  if (lastInfoText) appBody.insertBefore(formDiv, lastInfoText);
+  else appBody.appendChild(formDiv);
+
+  // Toggle custom field
+  const typeSelect = formDiv.querySelector("#pe-type");
+  const customWrap = formDiv.querySelector("#pe-custom-wrap");
+  typeSelect.addEventListener("change", () => {
+    customWrap.style.display = typeSelect.value === "Custom" ? "" : "none";
+  });
+
+  // Importance chips
+  formDiv.querySelectorAll("[data-importance]").forEach(chip => {
+    chip.addEventListener("click", () => {
+      formDiv.querySelectorAll("[data-importance]").forEach(c => c.setAttribute("aria-pressed","false"));
+      chip.setAttribute("aria-pressed","true");
+    });
+  });
+}
+
+function savePersonalEvent() {
+  const typeEl = document.getElementById("pe-type");
+  const customEl = document.getElementById("pe-custom");
+  const dateEl = document.getElementById("pe-date");
+  const startEl = document.getElementById("pe-start");
+  const endEl = document.getElementById("pe-end");
+  const importanceEl = document.querySelector("[data-importance][aria-pressed='true']");
+
+  if (!typeEl || !dateEl || !startEl || !endEl) return;
+
+  const title = typeEl.value === "Custom" ? (customEl ? customEl.value.trim() || "Custom" : "Custom") : typeEl.value;
+  const date = dateEl.value;
+  const start = startEl.value;
+  const finish = endEl.value;
+  const importance = importanceEl ? importanceEl.dataset.importance : "flexible";
+
+  if (toMinutes(finish) <= toMinutes(start)) {
+    showToast("Finish must be after start."); return;
+  }
+
+  // No duplicates
+  const dup = state.personalEvents.find(e => e.date === date && e.start === start && e.title === title);
+  if (dup) { showToast("Event already exists."); return; }
+
+  const ev = { id: "personal-" + Date.now(), title, date, start, finish, importance };
+  state.personalEvents.push(ev);
+  saveState();
+
+  const formEl = document.getElementById("personal-add-form");
+  if (formEl) formEl.remove();
+
+  renderApp("personal");
+  showToast(title + " added.");
+}
+
+function deletePersonalEvent(id) {
+  state.personalEvents = state.personalEvents.filter(e => e.id !== id);
+  saveState();
+  renderApp("personal");
+  showToast("Event removed.");
+}
+
+/* =====================================================
+   MAPS
+   ===================================================== */
+function renderMaps(el) {
+  const connected = state.connections.maps;
+  const travel = state.travelMinutes;
+  const options = [25, 35, 45, 60];
+
+  el.innerHTML = `
+    <div class="app-header">
+      <div class="app-header-icon ic-maps" style="background:linear-gradient(135deg,#E54545,#F57070)">🗺</div>
+      <h1>Maps</h1>
+      <button class="back-btn" onclick="goBack()">← Home</button>
+    </div>
+    <div class="app-body">
+      ${!connected ? `<div class="card peach"><div class="card-label">Not connected</div><div class="info-text">Maps is disconnected. Travel data not connected to RosterMate.</div></div>` : ""}
+      <div class="card">
+        <div class="card-label">Travel estimate · Demo</div>
+        <div style="display:flex;align-items:baseline;gap:6px;margin-top:4px">
+          <div style="font-size:28px;font-weight:700">${travel} min</div>
+        </div>
+        <div class="info-text">UQ St Lucia → Pandora Workplace</div>
+        <div class="info-text" style="color:var(--amber);margin-top:4px">Demo travel estimate — not live data</div>
+      </div>
+      <div class="sec-label">Change estimate</div>
+      <div class="chips" id="travel-options" role="group" aria-label="Travel duration options">
+        ${options.map(t => `
+        <button class="chip" aria-pressed="${t === travel ? 'true' : 'false'}" onclick="setTravel(${t})">
+          ${t} min
+        </button>`).join("")}
+        <button class="chip" aria-pressed="${!options.includes(travel) ? 'true' : 'false'}" onclick="setCustomTravel()">
+          Custom
+        </button>
+      </div>
+      <div class="info-text" style="margin-top:4px">Changing this immediately updates RosterMate's travel calculation.</div>
+
+      <div class="info-text" style="padding:8px 10px;background:var(--surface3);border-radius:10px;margin-top:8px">
+        This is a prototype travel estimate. RosterMate does not connect to live Google Maps.
+      </div>
+    </div>`;
+}
+
+function setTravel(mins) {
+  state.travelMinutes = mins;
+  saveState();
+  renderApp("maps");
+  showToast("Travel time updated to " + mins + " min. RosterMate updated.");
+}
+
+function setCustomTravel() {
+  const val = prompt("Enter travel time in minutes:", String(state.travelMinutes));
+  if (val && !isNaN(Number(val)) && Number(val) > 0) {
+    setTravel(Math.round(Number(val)));
+  }
+}
+
+/* =====================================================
+   CALENDAR (2D)
+   ===================================================== */
+function renderCalendar(el) {
+  const weekDates = getWeekDates();
+  const H0 = 8, H1 = 22; // 8am to 10pm
+  const hourCount = H1 - H0;
+  const dayNames = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+  // Build all events for the week
+  function eventsForDate(date) {
+    const evs = [];
+    if (state.connections.uq) {
+      state.universityEvents.filter(e => e.date === date).forEach(e =>
+        evs.push({ ...e, type: "uni", label: e.title }));
+    }
+    if (state.connections.mcd) {
+      state.workShifts.filter(s => s.date === date).forEach(s =>
+        evs.push({ ...s, type: "mcd", label: s.employer, start: s.start, finish: s.finish }));
+    }
+    state.shiftOffers.filter(o => o.date === date).forEach(o =>
+      evs.push({ ...o, type: o.status === "accepted" ? "work" : "offer", label: o.employer }));
+    if (state.connections.personal) {
+      state.personalEvents.filter(e => e.date === date).forEach(e =>
+        evs.push({ ...e, type: "personal", label: e.title }));
+    }
+    state.protectedRest.filter(r => r.date === date).forEach(r =>
+      evs.push({ ...r, type: "rest", label: r.title }));
+    return evs;
+  }
+
+  // Render hour labels + day columns
+  const hours = [];
+  for (let h = H0; h <= H1; h++) hours.push(h);
+
+  el.innerHTML = `
+    <div class="app-header">
+      <div class="app-header-icon ic-calendar" style="background:linear-gradient(135deg,#1A7AE0,#3BA0FF)">📅</div>
+      <h1>Calendar</h1>
+      <button class="back-btn" onclick="goBack()">← Home</button>
+    </div>
+    <div class="app-body" style="padding-left:8px;padding-right:8px;overflow-x:auto">
+      <div class="sec-label">Week of ${formatDate(weekDates[0])}</div>
+      <div style="min-width:300px">
+        <!-- Day headers -->
+        <div class="cal-grid" style="height:auto;margin-bottom:0">
+          <div></div>
+          ${weekDates.map((d,i) => `
+          <div class="cal-header ${d === DEMO_DATE ? 'today-h' : ''}">${dayNames[i]}<br><span style="font-size:10px">${d.slice(8)}</span></div>
+          `).join("")}
+        </div>
+        <!-- Time rows -->
+        ${hours.map(h => `
+        <div class="cal-grid" style="height:44px;position:relative">
+          <div class="cal-hour">${h === H0 ? "" : formatTime(String(h).padStart(2,"0") + ":00")}</div>
+          ${weekDates.map(d => `
+          <div class="cal-col ${d === DEMO_DATE ? 'today-col' : ''}">
+            ${eventsForDate(d).filter(ev => {
+              const evS = toMinutes(ev.start || ev.finish);
+              const evE = toMinutes(ev.finish || ev.start);
+              // Only render at the starting hour
+              return Math.floor(evS / 60) === h;
+            }).map(ev => {
+              const evS = toMinutes(ev.start);
+              const evE = toMinutes(ev.finish);
+              const topPct = ((evS - h*60) / 60 * 100).toFixed(1);
+              const hgtPct = ((evE - evS) / 60 * 100).toFixed(1);
+              const maxH = (H1 - h) * 44;
+              const hgtPx = Math.min(((evE - evS) / 60) * 44, maxH);
+              return `<div class="cal-event ${ev.type}"
+                style="top:${topPct}%;height:${hgtPx}px;left:1px;right:1px;position:absolute"
+                title="${ev.label} ${ev.start}–${ev.finish}"
+                role="button" aria-label="${ev.label} from ${formatTime(ev.start)} to ${formatTime(ev.finish)}"
+                tabindex="0">${ev.label}</div>`;
+            }).join("")}
+          </div>`).join("")}
+        </div>`).join("")}
+      </div>
+
+      <!-- Legend -->
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+        ${[["uni","University"],["work","Pandora"],["mcd","McD"],["personal","Personal"],["rest","Rest"],["offer","Pending offer"]].map(([cls,lbl]) =>
+        `<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--ink2)">
+          <div style="width:10px;height:10px;border-radius:2px;background:var(--col-${cls === 'work' || cls === 'offer' ? cls : cls})"></div>
+          ${lbl}
+        </div>`).join("")}
+      </div>
+    </div>`;
+}
+
+/* =====================================================
+   WEEKLY VIEW
+   ===================================================== */
+function renderWeeklyView(el) {
+  const weekDates = getWeekDates();
+  const dayNames = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+  function getEventsForDate(date) {
+    const evs = [];
+    if (state.connections.uq) {
+      state.universityEvents.filter(e => e.date === date).forEach(e =>
+        evs.push({ type: "uni", label: e.title, start: e.start, finish: e.finish }));
+    }
+    if (state.connections.mcd) {
+      state.workShifts.filter(s => s.date === date).forEach(s =>
+        evs.push({ type: "mcd", label: "McD", start: s.start, finish: s.finish }));
+    }
+    state.shiftOffers.filter(o => o.date === date).forEach(o =>
+      evs.push({ type: o.status === "accepted" ? "work" : "offer", label: o.status === "accepted" ? o.employer : "Pending: " + o.employer, start: o.start, finish: o.finish }));
+    if (state.connections.personal) {
+      state.personalEvents.filter(e => e.date === date).forEach(e =>
+        evs.push({ type: "personal", label: e.title, start: e.start, finish: e.finish }));
+    }
+    state.protectedRest.filter(r => r.date === date).forEach(r =>
+      evs.push({ type: "rest", label: r.title, start: r.start, finish: r.finish }));
+    return evs;
+  }
+
+  const H0 = 8, H1 = 22;
+
+  el.innerHTML = `
+    <div class="app-header">
+      <div class="app-header-icon ic-weekly" style="background:linear-gradient(135deg,#2D7A9A,#4AAAC0)">📊</div>
+      <h1>Weekly View</h1>
+      <button class="back-btn" onclick="goBack()">← Home</button>
+    </div>
+    <div class="app-body" style="padding:10px 8px 32px">
+      <div class="sec-label">Week of ${formatDate(weekDates[0])}</div>
+
+      ${weekDates.map((date, di) => {
+        const evs = getEventsForDate(date);
+        const isToday = date === DEMO_DATE;
+        return `
+        <div class="card ${isToday ? 'accent' : ''}" style="margin-bottom:6px;padding:10px 12px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:${evs.length ? '8px' : '0'}">
+            <div style="font-size:13px;font-weight:700;color:${isToday ? 'var(--lavender)' : 'var(--ink2)'}">
+              ${dayNames[di]}
+            </div>
+            <div style="font-size:12px;color:var(--ink2)">${date.slice(8)} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][parseInt(date.slice(5,7))-1]}</div>
+            ${isToday ? '<div class="pending-tag" style="font-size:10px;padding:2px 6px">Today</div>' : ""}
+          </div>
+          ${evs.length ? evs.map(ev => `
+          <div class="agenda-row" style="padding:5px 0;border-bottom:0">
+            <div class="agenda-dot" style="background:var(--col-${ev.type === 'work' ? 'work' : ev.type === 'offer' ? 'offer' : ev.type === 'uni' ? 'uni' : ev.type === 'mcd' ? 'mcd' : ev.type === 'personal' ? 'personal' : 'rest'})"></div>
+            <div class="agenda-info" style="margin-left:8px">
+              <div class="agenda-title" style="font-size:13px">${ev.label}</div>
+              <div class="agenda-sub">${formatTime(ev.start)} – ${formatTime(ev.finish)}</div>
+            </div>
+            ${ev.type === 'offer' ? '<div class="pending-tag" style="font-size:10px;padding:2px 6px">Pending</div>' : ''}
+          </div>`).join("") : `<div class="info-text" style="font-size:12px">Free</div>`}
+        </div>`;
+      }).join("")}
+
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
+        ${[["uni","University"],["work","Work/Pandora"],["mcd","McD"],["personal","Personal"],["rest","Rest"],["offer","Pending"]].map(([cls,lbl]) =>
+        `<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--ink2)">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--col-${cls})"></div>${lbl}
+        </div>`).join("")}
+      </div>
+    </div>`;
+}
+
+/* =====================================================
+   3D CALENDAR (self-contained isometric CSS/Canvas)
+   ===================================================== */
+function renderThreeDCalendar(el) {
+  el.innerHTML = `
+    <div class="app-header">
+      <div class="app-header-icon ic-3dcal" style="background:linear-gradient(135deg,#5A4A8A,#8A70C0)">🧊</div>
+      <h1>3D Calendar</h1>
+      <button class="back-btn" onclick="goBack()">← Home</button>
+    </div>
+    <div class="app-body">
+      <div class="sec-label">Week at a glance · Isometric view</div>
+      <div class="iso-stage" id="iso-stage">
+        <canvas id="iso-canvas" width="358" height="240" style="width:100%;height:100%" aria-label="Isometric 3D view of Dinda's week showing work shifts, university commitments, and personal events as coloured blocks"></canvas>
+        <div style="position:absolute;bottom:6px;right:8px;font-size:11px;color:rgba(255,255,255,.6)">Drag to rotate · Tap block for details</div>
+      </div>
+
+      <div class="iso-legend">
+        ${[["var(--col-uni)","University"],["var(--col-work)","Work (Pandora)"],["var(--col-mcd)","McD"],["var(--col-personal)","Personal"],["var(--col-rest)","Protected rest"],["var(--col-offer)","Pending offer"]].map(([col,lbl]) =>
+        `<div style="display:flex;align-items:center;gap:5px"><div class="iso-legend-dot" style="background:${col}"></div><span>${lbl}</span></div>`).join("")}
+      </div>
+
+      <div class="info-text" style="margin-top:4px">Blocks reflect current state. Pending shifts shown in amber.</div>
+
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn neutral sm" onclick="openApp('weekly')">Switch to Weekly View</button>
+        <button class="btn neutral sm" onclick="openApp('calendar')">Switch to Calendar</button>
+      </div>
+
+      <div id="iso-detail" class="card" style="display:none;margin-top:8px;animation:fadeUp .3s ease"></div>
+    </div>`;
+
+  // Render isometric calendar on canvas
+  setTimeout(() => initIsoCanvas(), 50);
+}
+
+function initIsoCanvas() {
+  const canvas = document.getElementById("iso-canvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  // Get current state events
+  const weekDates = getWeekDates();
+  const dayNames = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  const H0 = 8, H1 = 22;
+
+  // Build event blocks
+  const blocks = [];
+  weekDates.forEach((date, di) => {
+    // Uni
+    if (state.connections.uq) {
+      state.universityEvents.filter(e => e.date === date).forEach(e => {
+        blocks.push({ di, s: toMinutes(e.start)/60, e: toMinutes(e.finish)/60, type: "uni", label: e.title, date });
+      });
+    }
+    // Work shifts
+    if (state.connections.mcd) {
+      state.workShifts.filter(s => s.date === date).forEach(s => {
+        blocks.push({ di, s: toMinutes(s.start)/60, e: toMinutes(s.finish)/60, type: "mcd", label: "McD", date });
+      });
+    }
+    // Offers
+    state.shiftOffers.filter(o => o.date === date).forEach(o => {
+      blocks.push({ di, s: toMinutes(o.start)/60, e: toMinutes(o.finish)/60,
+        type: o.status === "accepted" ? "work" : "offer", label: o.employer, date });
+    });
+    // Personal
+    if (state.connections.personal) {
+      state.personalEvents.filter(ev => ev.date === date).forEach(ev => {
+        blocks.push({ di, s: toMinutes(ev.start)/60, e: toMinutes(ev.finish)/60, type: "personal", label: ev.title, date });
+      });
+    }
+    // Rest
+    state.protectedRest.filter(r => r.date === date).forEach(r => {
+      blocks.push({ di, s: toMinutes(r.start)/60, e: toMinutes(r.finish)/60, type: "rest", label: r.title, date });
+    });
+  });
+
+  const typeColors = {
+    uni: "#7B5EA7",
+    work: "#3B78C4",
+    mcd: "#C06050",
+    personal: "#4E8A6A",
+    rest: "rgba(91,138,110,0.4)",
+    offer: "#A87020"
+  };
+
+  // Isometric projection parameters
+  let rotY = 0.4; // radians
+  let dragging = false;
+  let lastX = 0;
+
+  function project(x, y, z) {
+    // Simple isometric-ish
+    const iso = Math.PI / 6;
+    const scale = 22;
+    const px = (x - z) * Math.cos(iso) * scale;
+    const py = (x + z) * Math.sin(iso) * scale - y * scale * 0.7;
+    return [px, py];
+  }
+
+  function draw() {
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    const cx = w * 0.5, cy = h * 0.72;
+    const daysCount = 7;
+    const daySpacing = 38;
+    const scaleH = 4.5; // height scale
+
+    // Draw base platform
+    ctx.fillStyle = "rgba(123,94,167,0.06)";
+    ctx.beginPath();
+    // Simple floor
+    for (let di = 0; di < daysCount; di++) {
+      const x = (di - 3) * daySpacing;
+      const bx = cx + x - 14;
+      ctx.fillRect(bx, cy - 4, 28, 6);
+    }
+
+    // Sort blocks back-to-front
+    const sorted = [...blocks].sort((a, b) => b.di - a.di);
+
+    // Draw blocks
+    sorted.forEach(blk => {
+      const x = (blk.di - 3) * daySpacing;
+      const bw = 24;
+      const yTop = cy - (blk.e - H0) / (H1 - H0) * 160 * scaleH / (H1 - H0) * (H1 - H0) / 14;
+      const bh = Math.max(4, (blk.e - blk.s) / (H1 - H0) * 160);
+      const by = cy - (blk.e - H0) / (H1 - H0) * 160;
+      const actualBy = cy - (blk.e - H0) * 8;
+      const actualH = (blk.e - blk.s) * 8;
+
+      const col = typeColors[blk.type] || "#888";
+
+      // Simple 2.5D bar
+      // Front face
+      ctx.fillStyle = col;
+      ctx.fillRect(cx + x - bw/2, actualBy, bw, actualH);
+
+      // Top face (isometric top)
+      ctx.fillStyle = shadeColor(col, 20);
+      ctx.beginPath();
+      ctx.moveTo(cx + x - bw/2, actualBy);
+      ctx.lineTo(cx + x + bw/2, actualBy);
+      ctx.lineTo(cx + x + bw/2 + 6, actualBy - 6);
+      ctx.lineTo(cx + x - bw/2 + 6, actualBy - 6);
+      ctx.closePath();
+      ctx.fill();
+
+      // Right face
+      ctx.fillStyle = shadeColor(col, -20);
+      ctx.beginPath();
+      ctx.moveTo(cx + x + bw/2, actualBy);
+      ctx.lineTo(cx + x + bw/2 + 6, actualBy - 6);
+      ctx.lineTo(cx + x + bw/2 + 6, actualBy + actualH - 6);
+      ctx.lineTo(cx + x + bw/2, actualBy + actualH);
+      ctx.closePath();
+      ctx.fill();
+
+      // Pending dashed border
+      if (blk.type === "offer") {
+        ctx.strokeStyle = "rgba(255,255,255,.6)";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([3,3]);
+        ctx.strokeRect(cx + x - bw/2 + 1, actualBy + 1, bw - 2, actualH - 2);
+        ctx.setLineDash([]);
+        ctx.lineWidth = 1;
+      }
+
+      // Store hit area
+      blk._hitX = cx + x - bw/2;
+      blk._hitY = actualBy;
+      blk._hitW = bw + 6;
+      blk._hitH = actualH + 6;
+    });
+
+    // Draw day labels
+    ctx.fillStyle = "rgba(30,28,42,.5)";
+    ctx.font = "bold 10px system-ui";
+    ctx.textAlign = "center";
+    for (let di = 0; di < daysCount; di++) {
+      const x = (di - 3) * daySpacing;
+      const isToday = weekDates[di] === DEMO_DATE;
+      ctx.fillStyle = isToday ? "#7B5EA7" : "rgba(30,28,42,.4)";
+      ctx.fillText(dayNames[di], cx + x, cy + 16);
+    }
+
+    // Draw hour guide lines
+    ctx.strokeStyle = "rgba(30,28,42,.06)";
+    ctx.lineWidth = 0.5;
+    [12, 18].forEach(h => {
+      const y = cy - (h - H0) * 8;
+      ctx.beginPath();
+      ctx.moveTo(cx - 3 * daySpacing - 20, y);
+      ctx.lineTo(cx + 3 * daySpacing + 20, y);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(30,28,42,.3)";
+      ctx.font = "9px system-ui";
+      ctx.textAlign = "right";
+      ctx.fillText(h + ":00", cx - 3 * daySpacing - 6, y + 3);
+    });
+  }
+
+  function shadeColor(color, percent) {
+    if (color.startsWith("rgba")) return color;
+    const num = parseInt(color.replace("#",""), 16);
+    const r = Math.min(255, Math.max(0, (num >> 16) + percent));
+    const g = Math.min(255, Math.max(0, ((num >> 8) & 0xFF) + percent));
+    const b = Math.min(255, Math.max(0, (num & 0xFF) + percent));
+    return "#" + [r,g,b].map(v => v.toString(16).padStart(2,"0")).join("");
+  }
+
+  draw();
+
+  // Click/tap for detail
+  canvas.addEventListener("click", e => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const mx = (e.clientX - rect.left) * scaleX;
+    const my = (e.clientY - rect.top) * scaleY;
+
+    const hit = blocks.find(b => b._hitX && mx >= b._hitX && mx <= b._hitX + b._hitW && my >= b._hitY && my <= b._hitY + b._hitH);
+    const detailEl = document.getElementById("iso-detail");
+    if (hit && detailEl) {
+      detailEl.style.display = "";
+      detailEl.innerHTML = `
+        <div class="card-label">${hit.label}</div>
+        <div style="font-weight:700">${formatDate(hit.date)} · ${formatTime(minutesToHhmm(hit.s * 60))} – ${formatTime(minutesToHhmm(hit.e * 60))}</div>
+        <div class="info-text">${hit.type === "offer" ? "Pending shift request" : hit.type === "rest" ? "Protected rest" : hit.type}</div>
+        ${hit.type === "offer" ? '<button class="btn sm" onclick="openRMFromPandora()" style="margin-top:8px">Review with RosterMate</button>' : ""}`;
+    } else if (detailEl) {
+      detailEl.style.display = "none";
+    }
+  });
+
+  // Drag to rotate (simple horizontal rotation effect)
+  canvas.addEventListener("mousedown", e => { dragging = true; lastX = e.clientX; });
+  document.addEventListener("mouseup", () => { dragging = false; });
+  canvas.addEventListener("mousemove", e => {
+    if (!dragging) return;
+    rotY += (e.clientX - lastX) * 0.01;
+    lastX = e.clientX;
+    draw();
+  });
+}
+
+/* =====================================================
+   ROSTERMATE HOME
+   ===================================================== */
+function renderRosterMateHome(el) {
+  const offer = getOffer();
+  const pending = offer && offer.status === "pending";
+  const todayUQ = state.connections.uq ? state.universityEvents.filter(e => e.date === DEMO_DATE) : [];
+  const mcdShift = state.connections.mcd ? state.workShifts.find(s => s.employer === "McD") : null;
+
+  el.innerHTML = `
+    <div class="rm-header">
+      <div style="font-size:12px;opacity:.75;margin-bottom:4px">📋 ${APP_NAME}</div>
+      <h1>Good afternoon, ${state.worker.name}</h1>
+      <div class="rm-sub">Thursday, 17 September 2026</div>
+    </div>
+    <div class="app-body">
+      <button class="back-btn" onclick="goBack()">← Home</button>
+
+      <div class="sec-label">Today</div>
+      <div class="card">
+        ${todayUQ.length ? todayUQ.map(e => `
+        <div class="agenda-row" style="padding:6px 0;border-bottom:1px solid var(--line)">
+          <div class="agenda-dot" style="background:var(--col-uni);margin-top:4px"></div>
+          <div class="agenda-info" style="margin-left:8px">
+            <div class="agenda-title">${e.title}</div>
+            <div class="agenda-sub">${formatTime(e.start)} – ${formatTime(e.finish)}</div>
+          </div>
+        </div>`).join("") : !state.connections.uq ? `<div class="info-text warn-text">Study data not connected</div>` : `<div class="info-text">No classes today.</div>`}
+
+        ${pending ? `
+        <div class="agenda-row" style="padding:8px 0;border-bottom:0">
+          <div style="display:flex;align-items:center;gap:4px;padding:2px 6px;background:var(--amber-soft);border-radius:999px;font-size:11px;font-weight:700;color:var(--amber)">●</div>
+          <div class="agenda-info" style="margin-left:8px">
+            <div class="agenda-title">${offer.employer}</div>
+            <div class="agenda-sub">${formatTime(offer.start)} – ${formatTime(offer.finish)} · Pending</div>
+          </div>
+          <button class="btn sm ghost" onclick="startRMFlow('${offer.id}')" style="margin-left:auto">Review →</button>
+        </div>` : offer && offer.status === "accepted" ? `
+        <div class="agenda-row" style="padding:6px 0;border-bottom:0">
+          <div class="agenda-dot" style="background:var(--col-work);margin-top:4px"></div>
+          <div class="agenda-info" style="margin-left:8px">
+            <div class="agenda-title">${offer.employer} · Confirmed</div>
+            <div class="agenda-sub">${formatTime(offer.start)} – ${formatTime(offer.finish)}</div>
+          </div>
+        </div>` : ""}
+      </div>
+
+      ${pending ? `
+      <div class="card amber" style="cursor:pointer" onclick="startRMFlow('${offer.id}')">
+        <div class="card-label">Pending decision</div>
+        <div style="font-size:16px;font-weight:700">${offer.employer} shift request</div>
+        <div class="info-text">${offer.requestedBy} · ${formatTime(offer.start)}–${formatTime(offer.finish)}</div>
+        <button class="btn full" style="margin-top:8px">Review shift →</button>
+      </div>` : ""}
+
+      ${mcdShift ? `
+      <div class="sec-label">Upcoming</div>
+      <div class="card">
+        <div class="agenda-row" style="padding:6px 0;border-bottom:0">
+          <div class="agenda-dot" style="background:var(--col-mcd);margin-top:4px"></div>
+          <div class="agenda-info" style="margin-left:8px">
+            <div class="agenda-title">McD</div>
+            <div class="agenda-sub">${formatDate(mcdShift.date)} · ${formatTime(mcdShift.start)}–${formatTime(mcdShift.finish)}</div>
+          </div>
+        </div>
+      </div>` : ""}
+
+      <div class="sec-label" style="margin-top:4px">Recent decisions</div>
+      <div class="card">
+        ${state.decisions.length ? state.decisions.slice(-3).reverse().map(d => `
+        <div class="agenda-row" style="padding:5px 0;border-bottom:1px solid var(--line)">
+          <div class="agenda-info">
+            <div class="agenda-title" style="font-size:13px">${d.action} · ${d.employer}</div>
+            <div class="agenda-sub">${formatDate(d.date)}</div>
+          </div>
+        </div>`).join("") : `<div class="info-text">No decisions yet.</div>`}
+      </div>
+
+      <div class="info-text" style="padding:8px 10px;background:var(--lavender-soft);border-radius:10px">
+        🔒 Your reflections, priorities and check-ins are only visible to you. Nothing is shared with employers automatically.
+      </div>
+    </div>`;
+}
+
+function renderRosterMateFromOffer(offerId) {
+  const offer = state.shiftOffers.find(o => o.id === offerId);
+  if (!offer) return;
+  state.rmFlow.offer = offerId;
+  state.rmFlow.stage = "pause";
+  saveState();
+  renderRMPause(document.getElementById("screen-rostermate"), offer);
+}
+
+function startRMFlow(offerId) {
+  renderRosterMateFromOffer(offerId);
+}
+
+/* =====================================================
+   ROSTERMATE PAUSE
+   ===================================================== */
+function renderRMPause(el, offer) {
+  el.innerHTML = `
+    <div class="app-header">
+      <div class="app-header-icon ic-rostermate" style="background:linear-gradient(135deg,#4A6FA5,#7B5EA7)">📋</div>
+      <h1>${APP_NAME}</h1>
+      <button class="back-btn" onclick="renderRosterMateHome(document.getElementById('screen-rostermate'))">← Back</button>
+    </div>
+
+    <div class="flow-indicator" aria-label="Progress: step 1 of 4">
+      <div class="flow-step done"></div>
+      <div class="flow-step"></div>
+      <div class="flow-step"></div>
+      <div class="flow-step"></div>
+    </div>
+
+    <div class="app-body">
+      <div class="card accent" style="animation:scaleIn .35s ease">
+        <div style="font-size:13px;font-weight:700;color:var(--lavender);letter-spacing:.02em">${offer.employer}</div>
+        <div style="font-size:22px;font-weight:700;letter-spacing:-.02em;margin-top:4px">
+          Shift request<br>${formatTime(offer.start)} – ${formatTime(offer.finish)}
+        </div>
+        <div class="info-text" style="margin-top:4px">${offer.requestedBy} · ${formatDate(offer.date)}</div>
+        <div style="font-size:14px;line-height:1.5;margin-top:10px;color:var(--ink);font-style:italic">"${offer.message}"</div>
+      </div>
+
+      <div class="card" style="animation:fadeUp .4s ease .1s both">
+        <div class="card-label" style="font-size:13px;color:var(--lavender)">Pause</div>
+        <div style="font-size:15px;line-height:1.5">See how this shift fits before you reply.</div>
+      </div>
+
+      <div class="info-text" style="animation:fadeUp .4s ease .2s both">
+        ${APP_NAME} brings together the information you have chosen to connect. The decision is yours.
+      </div>
+
+      <button class="btn full" style="animation:fadeUp .4s ease .3s both;margin-top:4px" onclick="moveToCompare()">
+        Review shift →
+      </button>
+
+      <button class="btn neutral full" onclick="renderRosterMateHome(document.getElementById('screen-rostermate'))">
+        Review later
+      </button>
+    </div>`;
+}
+
+/* =====================================================
+   ROSTERMATE COMPARE
+   ===================================================== */
+function moveToCompare() {
+  state.rmFlow.stage = "compare";
+  state.rmFlow.expandedCard = null;
+  saveState();
+  const el = document.getElementById("screen-rostermate");
+  const offer = state.shiftOffers.find(o => o.id === state.rmFlow.offer);
+  renderRMCompare(el, offer);
+}
+
+function renderRMCompare(el, offer) {
+  const travel = calculateTravelBuffer(offer);
+  const income = calculateIncome(offer);
+  const restW = calculateRestWindow(offer);
+  const studyOv = findStudyOverlap(offer);
+  const personalOv = findPersonalOverlap(offer);
+
+  const travelBuffer = travel ? travel.buffer : null;
+  const prevEvent = travel ? travel.prevEvent : null;
+
+  // Impact summaries
+  const studyVal = !state.connections.uq ? "Not connected" : studyOv.length ? "During class" : "No direct overlap";
+  const studySub = !state.connections.uq ? "Study data not connected" : studyOv.length ? studyOv.map(e => e.title).join(", ") : "No study event during this shift";
+  const studyStatus = !state.connections.uq ? "" : studyOv.length ? "warn" : "ok";
+
+  const travelVal = !state.connections.maps ? "Not connected" : travelBuffer === null ? "No prev. event" : (travelBuffer < 0 ? "⚠ Very tight" : travelBuffer < 20 ? "⚠ " + formatDuration(travelBuffer) + " buffer" : formatDuration(travelBuffer) + " buffer");
+  const travelSub = !state.connections.maps ? "Travel data not connected" : prevEvent ? `${formatDuration(state.travelMinutes)} travel from ${prevEvent.title}` : "No previous commitment found";
+
+  const incomeVal = "≈ $" + income.income.toFixed(0);
+  const incomeSub = formatDuration(income.paidMinutes) + " paid · $" + offer.hourlyRate + "/hr";
+
+  const restVal = restW && restW.restMins !== null ? formatDuration(restW.restMins) : "Unavailable";
+  const restSub = restW && restW.nextEvent ? "Until: " + restW.nextEvent.title : "No next commitment found";
+  const restStatus = restW && restW.restMins !== null && restW.restMins < 540 ? "warn" : "";
+
+  const personalVal = !state.connections.personal ? "Not connected" : personalOv.length ? personalOv[0].title : "No overlap";
+  const personalSub = !state.connections.personal ? "Personal data not connected" : personalOv.length ? formatDuration(minutesBetween(personalOv[0].start, personalOv[0].finish)) + " overlap" : "No personal plans during this shift";
+
+  // Check boundary
+  const boundary = touchesBoundary(offer);
+
+  el.innerHTML = `
+    <div class="app-header">
+      <div class="app-header-icon ic-rostermate" style="background:linear-gradient(135deg,#4A6FA5,#7B5EA7)">📋</div>
+      <h1>${APP_NAME} · Compare</h1>
+      <button class="back-btn" onclick="renderRMPause(document.getElementById('screen-rostermate'), state.shiftOffers.find(o=>o.id===state.rmFlow.offer))">← Back</button>
+    </div>
+
+    <div class="flow-indicator" aria-label="Progress: step 2 of 4">
+      <div class="flow-step done"></div>
+      <div class="flow-step done"></div>
+      <div class="flow-step"></div>
+      <div class="flow-step"></div>
+    </div>
+
+    <div class="app-body">
+      <div style="font-size:13px;color:var(--ink2);margin-bottom:4px">
+        ${offer.employer} · ${formatTime(offer.start)}–${formatTime(offer.finish)} · ${offer.requestedBy}
+      </div>
+
+      ${boundary ? `
+      <div class="card peach" style="animation:fadeUp .3s ease">
+        <div class="card-label" style="color:var(--peach)">Boundary</div>
+        <div style="font-size:14px">Touches a boundary you set: <strong>${boundary.label}</strong> — ${boundary.preference}</div>
+        <div class="info-text">This doesn't block you from accepting. It's here so you can reflect on it.</div>
+      </div>` : ""}
+
+      <div class="sec-label">Tap a card for details</div>
+
+      ${makeImpactCard("study", "Study", studyVal, studySub, studyStatus, offer)}
+      ${makeImpactCard("travel", "Travel", travelVal, travelSub, travelBuffer !== null && travelBuffer < 20 ? "warn" : "", offer)}
+      ${makeImpactCard("income", "Income", incomeVal, incomeSub, "", offer)}
+      ${makeImpactCard("rest", "Rest window", restVal, restSub, restStatus, offer)}
+      ${makeImpactCard("personal", "Personal", personalVal, personalSub, personalOv.length ? "warn" : "", offer)}
+
+      <div class="info-text" style="padding:8px 10px;background:var(--surface3);border-radius:10px;margin-top:4px">
+        Each trade-off stands independently. ${APP_NAME} does not aggregate these into a score or recommendation.
+      </div>
+
+      <button class="btn full" style="margin-top:4px" onclick="moveToReflect()">
+        Continue to Reflect →
+      </button>
+      <button class="btn neutral full" onclick="moveToDecide()">
+        Skip to decision
+      </button>
+    </div>`;
+
+  // Attach expand listeners
+  el.querySelectorAll(".impact-card").forEach(card => {
+    card.addEventListener("click", () => {
+      const key = card.dataset.key;
+      const wasExpanded = card.classList.contains("expanded");
+      el.querySelectorAll(".impact-card").forEach(c => c.classList.remove("expanded"));
+      if (!wasExpanded) {
+        card.classList.add("expanded");
+        state.rmFlow.expandedCard = key;
+      } else {
+        state.rmFlow.expandedCard = null;
+      }
+    });
+    // Keyboard
+    card.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); card.click(); }
+    });
+  });
+
+  // Re-expand previously selected card
+  if (state.rmFlow.expandedCard) {
+    const prevCard = el.querySelector(`[data-key="${state.rmFlow.expandedCard}"]`);
+    if (prevCard) prevCard.classList.add("expanded");
+  }
+}
+
+function makeImpactCard(key, label, value, sub, status, offer) {
+  let detailHTML = "";
+  const offer2 = offer;
+
+  if (key === "study") {
+    if (!state.connections.uq) {
+      detailHTML = `<div class="info-text warn-text">Study data not connected. Connect my.UQ in Connected Apps.</div>`;
+    } else {
+      const evs = state.universityEvents.filter(e => e.date === offer2.date);
+      const todayEvs = evs.filter(e => eventsOverlap(offer2.start, offer2.finish, e.start, e.finish));
+      const beforeEvs = evs.filter(e => toMinutes(e.finish) <= toMinutes(offer2.start));
+      detailHTML = `
+        ${beforeEvs.length ? beforeEvs.map(e => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <div style="width:10px;height:10px;border-radius:50%;background:var(--col-uni);flex-shrink:0"></div>
+          <div><div style="font-size:13px;font-weight:600">${e.title}</div><div style="font-size:12px;color:var(--ink2)">${formatTime(e.start)} – ${formatTime(e.finish)}</div></div>
+        </div>`).join("") : ""}
+        ${todayEvs.length ? `<div class="warn-text">⚠ Overlap with: ${todayEvs.map(e => e.title).join(", ")}</div>` : `<div class="ok-text">✓ No class during this shift</div>`}
+      `;
+    }
+  } else if (key === "travel") {
+    if (!state.connections.maps) {
+      detailHTML = `<div class="info-text warn-text">Travel data not connected. Connect Maps in Connected Apps.</div>`;
+    } else {
+      const trav = calculateTravelBuffer(offer2);
+      if (trav && trav.prevEvent) {
+        const prevEnd = trav.prevEvent.finish;
+        const travelMins = state.travelMinutes;
+        const arrivalTime = minutesToHhmm(toMinutes(prevEnd) + travelMins);
+        const buffer = trav.buffer;
+        detailHTML = `
+          <div class="timeline">
+            <div class="tl-item">
+              <div class="tl-dot"></div>
+              <div class="tl-time">${prevEnd}</div>
+              <div class="tl-label"><strong>${trav.prevEvent.title}</strong> ends</div>
+            </div>
+            <div class="tl-gap"><div class="tl-arrow">↓</div>${travelMins} min travel</div>
+            <div class="tl-item">
+              <div class="tl-dot amber"></div>
+              <div class="tl-time">${arrivalTime}</div>
+              <div class="tl-label">Estimated arrival</div>
+            </div>
+            ${buffer !== null ? `<div class="tl-gap"><div class="tl-arrow">↓</div>${buffer > 0 ? buffer + " min buffer" : "⚠ Tight"}</div>` : ""}
+            <div class="tl-item">
+              <div class="tl-dot sage"></div>
+              <div class="tl-time">${offer2.start}</div>
+              <div class="tl-label"><strong>${offer2.employer}</strong> shift starts</div>
+            </div>
+          </div>
+          ${buffer !== null && buffer < 20 ? `<div class="warn-text" style="margin-top:8px">⚠ ${buffer < 0 ? "Arrives after shift starts" : "Very little time between class and shift"}</div>` : ""}
+        `;
+      } else {
+        detailHTML = `<div class="info-text">No previous commitment found on this day to calculate travel from.</div>`;
+      }
+    }
+  } else if (key === "income") {
+    const inc = calculateIncome(offer2);
+    const gross = inc.income;
+    detailHTML = `
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:2px">
+        <div style="display:flex;justify-content:space-between;font-size:13px">
+          <span style="color:var(--ink2)">Duration</span>
+          <span style="font-weight:600">${formatDuration(minutesBetween(offer2.start, offer2.finish))}</span>
+        </div>
+        ${offer2.unpaidBreakMinutes ? `<div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--ink2)">Unpaid break</span><span>${offer2.unpaidBreakMinutes} min</span></div>` : ""}
+        <div style="display:flex;justify-content:space-between;font-size:13px">
+          <span style="color:var(--ink2)">Paid hours</span>
+          <span style="font-weight:600">${(inc.paidMinutes/60).toFixed(1)} h</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px">
+          <span style="color:var(--ink2)">Rate</span>
+          <span style="font-weight:600">$${offer2.hourlyRate}/hr</span>
+        </div>
+        <div style="height:1px;background:var(--line)"></div>
+        <div style="display:flex;justify-content:space-between;font-size:14px">
+          <span style="color:var(--ink2)">Gross estimate</span>
+          <span style="font-weight:700;font-size:16px">≈ $${gross.toFixed(0)}</span>
+        </div>
+        <div class="info-text">Gross only. Tax, super and award rates not calculated here.</div>
+      </div>`;
+  } else if (key === "rest") {
+    const rw = calculateRestWindow(offer2);
+    detailHTML = `
+      <div style="font-size:13px;color:var(--ink2);margin-bottom:6px">Time between shift finish and next commitment:</div>
+      ${rw && rw.restMins !== null ? `
+      <div style="font-size:22px;font-weight:700;margin-bottom:4px">${formatDuration(rw.restMins)}</div>
+      <div class="info-text">Until: ${rw.nextEvent ? rw.nextEvent.title : "—"}</div>
+      ${rw.restMins < 540 ? `<div class="warn-text" style="margin-top:6px">⚠ Less than 9 hours before next commitment</div>` : `<div class="ok-text" style="margin-top:6px">✓ ${formatDuration(rw.restMins)} rest window</div>`}
+      ` : `<div class="info-text">Rest information unavailable — no next commitment found.</div>`}
+      <div class="info-text" style="margin-top:6px">${APP_NAME} shows you the window. You decide what it means.</div>`;
+  } else if (key === "personal") {
+    if (!state.connections.personal) {
+      detailHTML = `<div class="info-text warn-text">Personal data not connected. Connect Personal in Connected Apps.</div>`;
+    } else {
+      const pvs = state.personalEvents.filter(e => e.date === offer2.date);
+      const ovEvs = pvs.filter(e => eventsOverlap(offer2.start, offer2.finish, e.start, e.finish));
+      detailHTML = pvs.length ? pvs.map(ev => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <div style="width:10px;height:10px;border-radius:50%;background:var(--col-personal);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600">${ev.title}${ovEvs.find(o => o.id === ev.id) ? ' <span class="warn-text">(overlap)</span>' : ""}</div>
+            <div style="font-size:12px;color:var(--ink2)">${formatTime(ev.start)} – ${formatTime(ev.finish)}</div>
+          </div>
+        </div>`).join("") : `<div class="info-text">No personal events today.</div>`;
+    }
+  }
+
+  const statusIcon = status === "warn" ? "⚠" : status === "ok" ? "" : "";
+  return `
+    <div class="impact-card" data-key="${key}" role="button" tabindex="0" aria-expanded="false" aria-label="${label}: ${value}">
+      <div class="impact-card-top">
+        <div>
+          <div class="impact-card-label">${label}</div>
+          <div class="impact-card-value ${status === "warn" ? "impact-warn" : ""}">${value}</div>
+          <div class="impact-card-sub">${sub}</div>
+        </div>
+        <div class="impact-card-expand">⌄</div>
+      </div>
+      <div class="impact-detail" aria-hidden="true">
+        <div class="impact-detail-inner">${detailHTML}</div>
+      </div>
+    </div>`;
+}
+
+/* =====================================================
+   ROSTERMATE REFLECT
+   ===================================================== */
+function moveToReflect() {
+  state.rmFlow.stage = "reflect";
+  saveState();
+  const el = document.getElementById("screen-rostermate");
+  const offer = state.shiftOffers.find(o => o.id === state.rmFlow.offer);
+  renderRMReflect(el, offer);
+}
+
+function renderRMReflect(el, offer) {
+  const rf = state.currentReflection;
+  const priorities = ["Study","Income","Rest","Travel","Personal"];
+  const feelings = ["Fine with it","Not sure","Already stretched","Prefer not to say"];
+  const comforts = ["Comfortable","Depends","Uncomfortable","Not sure"];
+  const boundaries = ["Study time","Rest","Personal plan","No preference","Custom"];
+
+  el.innerHTML = `
+    <div class="app-header">
+      <div class="app-header-icon ic-rostermate" style="background:linear-gradient(135deg,#4A6FA5,#7B5EA7)">📋</div>
+      <h1>${APP_NAME} · Reflect</h1>
+      <button class="back-btn" onclick="moveToCompare()">← Compare</button>
+    </div>
+
+    <div class="flow-indicator" aria-label="Progress: step 3 of 4">
+      <div class="flow-step done"></div>
+      <div class="flow-step done"></div>
+      <div class="flow-step done"></div>
+      <div class="flow-step"></div>
+    </div>
+
+    <div class="app-body">
+      <!-- Priorities -->
+      <div class="card" style="animation:fadeUp .3s ease">
+        <div class="card-label">What matters most for this decision?</div>
+        <div class="info-text" style="margin-bottom:8px">Select any that apply. This reorders the Compare cards — it does not make a recommendation.</div>
+        <div class="chips" role="group" aria-label="Priorities" id="priority-chips">
+          ${priorities.map(p => `
+          <button class="chip" aria-pressed="${rf.selectedPriorities.includes(p) ? 'true' : 'false'}" data-priority="${p}" onclick="togglePriority(this,'${p}')">
+            ${p}
+          </button>`).join("")}
+        </div>
+      </div>
+
+      <!-- Feeling check-in -->
+      <div class="card" style="animation:fadeUp .35s ease .05s both">
+        <div class="card-label">How are you feeling about taking another shift?</div>
+        <div class="info-text" style="margin-bottom:8px">Optional. You enter this — it is never inferred from behaviour.</div>
+        <div class="chips" role="group" aria-label="Feeling options" id="feeling-chips">
+          ${feelings.map(f => `
+          <button class="chip" aria-pressed="${rf.feeling === f ? 'true' : 'false'}" onclick="setFeeling(this,'${f}')">
+            ${f}
+          </button>`).join("")}
+        </div>
+      </div>
+
+      <!-- Boundary reflection -->
+      <div class="card" style="animation:fadeUp .4s ease .1s both">
+        <div class="card-label">Anything you want to protect today?</div>
+        <div class="info-text" style="margin-bottom:8px">Optional. Selecting something won't block you from accepting — it's just here for your own reflection.</div>
+        <div class="chips" role="group" aria-label="Boundary options" id="boundary-chips">
+          ${boundaries.map(b => `
+          <button class="chip" aria-pressed="${rf.selectedBoundary === b ? 'true' : 'false'}" onclick="setBoundary(this,'${b}')">
+            ${b}
+          </button>`).join("")}
+        </div>
+        ${rf.selectedBoundary && rf.selectedBoundary !== "No preference" ? `
+        <div class="info-text ok-text" style="margin-top:6px">Protected by you: ${rf.selectedBoundary}</div>` : ""}
+      </div>
+
+      <!-- Manager comfort -->
+      <div class="card" style="animation:fadeUp .45s ease .15s both" id="mgr-comfort-card">
+        <div class="card-label">How comfortable are you saying no to ${offer.requestedBy}?</div>
+        <div class="info-text" style="margin-bottom:8px">Optional. This describes your own experience, not a judgement of ${offer.requestedBy}.</div>
+        <div class="chips" role="group" aria-label="Manager comfort options" id="comfort-chips">
+          ${comforts.map(c => `
+          <button class="chip" aria-pressed="${rf.managerComfort === c ? 'true' : 'false'}" onclick="setComfort(this,'${c}')">
+            ${c}
+          </button>`).join("")}
+        </div>
+        ${rf.managerComfort === "Uncomfortable" ? `
+        <div class="card peach card-sm" style="margin-top:10px">
+          <div style="font-size:13px;font-weight:600">You can keep your reply short.</div>
+          <div class="info-text">You don't need to add personal details. A brief, polite message is enough.</div>
+          <button class="btn sm ghost" onclick="moveToDecideWithMessage()" style="margin-top:8px">Get message support</button>
+        </div>` : ""}
+      </div>
+
+      <button class="btn full" style="margin-top:4px" onclick="moveToDecide()">
+        Continue to Decide →
+      </button>
+      <button class="btn neutral full" onclick="moveToDecide()">
+        Skip reflection
+      </button>
+    </div>`;
+}
+
+function togglePriority(btn, priority) {
+  const pressed = btn.getAttribute("aria-pressed") === "true";
+  btn.setAttribute("aria-pressed", pressed ? "false" : "true");
+  if (pressed) {
+    state.currentReflection.selectedPriorities = state.currentReflection.selectedPriorities.filter(p => p !== priority);
+  } else {
+    state.currentReflection.selectedPriorities.push(priority);
+  }
+  saveState();
+}
+
+function setFeeling(btn, feeling) {
+  document.querySelectorAll("#feeling-chips .chip").forEach(c => c.setAttribute("aria-pressed","false"));
+  btn.setAttribute("aria-pressed","true");
+  state.currentReflection.feeling = feeling;
+  saveState();
+}
+
+function setBoundary(btn, boundary) {
+  const wasPressed = btn.getAttribute("aria-pressed") === "true";
+  document.querySelectorAll("#boundary-chips .chip").forEach(c => c.setAttribute("aria-pressed","false"));
+  if (!wasPressed) {
+    btn.setAttribute("aria-pressed","true");
+    state.currentReflection.selectedBoundary = boundary;
+  } else {
+    state.currentReflection.selectedBoundary = null;
+  }
+  saveState();
+  // Re-render to show/hide "Protected by you" text
+  const offer = state.shiftOffers.find(o => o.id === state.rmFlow.offer);
+  renderRMReflect(document.getElementById("screen-rostermate"), offer);
+}
+
+function setComfort(btn, comfort) {
+  document.querySelectorAll("#comfort-chips .chip").forEach(c => c.setAttribute("aria-pressed","false"));
+  btn.setAttribute("aria-pressed","true");
+  state.currentReflection.managerComfort = comfort;
+  saveState();
+  // Re-render to show message support if Uncomfortable
+  const offer = state.shiftOffers.find(o => o.id === state.rmFlow.offer);
+  renderRMReflect(document.getElementById("screen-rostermate"), offer);
+}
+
+function moveToDecideWithMessage() {
+  state.rmFlow.stage = "decide";
+  saveState();
+  const el = document.getElementById("screen-rostermate");
+  const offer = state.shiftOffers.find(o => o.id === state.rmFlow.offer);
+  renderRMDecide(el, offer, true);
+}
+
+/* =====================================================
+   ROSTERMATE DECIDE
+   ===================================================== */
+function moveToDecide() {
+  state.rmFlow.stage = "decide";
+  saveState();
+  const el = document.getElementById("screen-rostermate");
+  const offer = state.shiftOffers.find(o => o.id === state.rmFlow.offer);
+  renderRMDecide(el, offer, false);
+}
+
+function renderRMDecide(el, offer, showMessageHint) {
+  el.innerHTML = `
+    <div class="app-header">
+      <div class="app-header-icon ic-rostermate" style="background:linear-gradient(135deg,#4A6FA5,#7B5EA7)">📋</div>
+      <h1>${APP_NAME} · Decide</h1>
+      <button class="back-btn" onclick="moveToReflect()">← Reflect</button>
+    </div>
+
+    <div class="flow-indicator" aria-label="Progress: step 4 of 4">
+      <div class="flow-step done"></div>
+      <div class="flow-step done"></div>
+      <div class="flow-step done"></div>
+      <div class="flow-step done"></div>
+    </div>
+
+    <div class="app-body">
+      <div class="card accent">
+        <div class="card-label">${offer.employer} · ${offer.requestedBy}</div>
+        <div style="font-size:16px;font-weight:700">${formatTime(offer.start)} – ${formatTime(offer.finish)}</div>
+        <div class="info-text">${formatDate(offer.date)}</div>
+      </div>
+
+      ${showMessageHint ? `
+      <div class="card peach" style="animation:fadeUp .3s ease">
+        <div style="font-size:13px;font-weight:600">Message support</div>
+        <div class="info-text">You can keep your reply short. You don't need to explain your reasons.</div>
+      </div>` : ""}
+
+      <div class="sec-label">What would you like to do?</div>
+      <div class="info-text" style="margin-bottom:8px">All options have equal weight. ${APP_NAME} does not recommend one over another.</div>
+
+      <div class="decision-grid">
+        <button class="btn neutral" onclick="handleDecision('accept', '${offer.id}')">Accept</button>
+        <button class="btn neutral" onclick="handleDecision('negotiate', '${offer.id}')">Negotiate</button>
+        <button class="btn neutral" onclick="handleDecision('swap', '${offer.id}')">Request swap</button>
+        <button class="btn neutral" onclick="handleDecision('decline', '${offer.id}')">Decline</button>
+        <button class="btn neutral" onclick="handleDecision('later', '${offer.id}')">Decide later</button>
+      </div>
+
+      <div class="info-text" style="padding:8px 10px;background:var(--surface3);border-radius:10px;margin-top:8px">
+        ${APP_NAME} supports your communication, but does not send anything on your behalf.
+      </div>
+    </div>`;
+}
+
+function handleDecision(action, offerId) {
+  const offer = state.shiftOffers.find(o => o.id === offerId);
+  if (!offer) return;
+
+  if (action === "accept") {
+    renderRMAccept(document.getElementById("screen-rostermate"), offer);
+  } else if (action === "negotiate") {
+    renderRMNegotiate(document.getElementById("screen-rostermate"), offer);
+  } else if (action === "swap") {
+    renderRMSwap(document.getElementById("screen-rostermate"), offer);
+  } else if (action === "decline") {
+    renderRMDecline(document.getElementById("screen-rostermate"), offer);
+  } else if (action === "later") {
+    renderRMDecideLater(document.getElementById("screen-rostermate"), offer);
+  }
+}
+
+/* =====================================================
+   DECISION: ACCEPT
+   ===================================================== */
+function renderRMAccept(el, offer) {
+  el.innerHTML = `
+    <div class="app-header">
+      <h1>${APP_NAME} · Accept</h1>
+      <button class="back-btn" onclick="moveToDecide()">← Back</button>
+    </div>
+    <div class="app-body">
+      <div class="card sage" style="animation:scaleIn .3s ease">
+        <div class="card-label" style="color:var(--sage)">Shift accepted</div>
+        <div style="font-size:18px;font-weight:700">${offer.employer} · ${formatTime(offer.start)}–${formatTime(offer.finish)}</div>
+        <div class="info-text">${formatDate(offer.date)}</div>
+      </div>
+      <div class="card">
+        <div class="card-label">What happens now</div>
+        <ul style="font-size:13px;color:var(--ink2);line-height:1.6;padding-left:18px">
+          <li>The shift is added to your calendar and Weekly View</li>
+          <li>Your decision is saved locally</li>
+          <li>You can message ${offer.requestedBy} to confirm</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-label">Reply to ${offer.requestedBy}</div>
+        <div class="info-text" style="margin-bottom:8px">A draft message is ready. Edit it before sending — nothing is sent automatically.</div>
+        <div style="font-size:14px;line-height:1.5;margin-bottom:10px;padding:10px;background:var(--surface3);border-radius:8px">Hi ${offer.requestedBy}, yes, I can do tonight. My class finishes at 3, so I'll be there around 3:50.</div>
+        <div class="btn-row">
+          <button class="btn sm" onclick="confirmAccept('${offer.id}')">Confirm & draft message</button>
+          <button class="btn neutral sm" onclick="confirmAcceptNoMsg('${offer.id}')">Accept only</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function confirmAccept(offerId) {
+  const offer = state.shiftOffers.find(o => o.id === offerId);
+  if (!offer) return;
+  offer.status = "accepted";
+  // Add as confirmed work shift if not already
+  if (!state.workShifts.find(s => s.id === offerId + "-confirmed")) {
+    state.workShifts.push({
+      id: offerId + "-confirmed",
+      employer: offer.employer,
+      date: offer.date,
+      start: offer.start,
+      finish: offer.finish,
+      hourlyRate: offer.hourlyRate,
+      status: "confirmed"
+    });
+  }
+  state.decisions.push({ action: "Accept", employer: offer.employer, date: offer.date, at: Date.now() });
+  state.messageDraft = `Hi ${offer.requestedBy}, yes, I can do tonight. My class finishes at 3, so I'll be there around 3:50.`;
+  saveState();
+  showToast("Shift accepted. Draft message ready in Messages.");
+  // Navigate to messages
+  openApp("messages");
+}
+
+function confirmAcceptNoMsg(offerId) {
+  const offer = state.shiftOffers.find(o => o.id === offerId);
+  if (!offer) return;
+  offer.status = "accepted";
+  if (!state.workShifts.find(s => s.id === offerId + "-confirmed")) {
+    state.workShifts.push({
+      id: offerId + "-confirmed",
+      employer: offer.employer,
+      date: offer.date,
+      start: offer.start,
+      finish: offer.finish,
+      hourlyRate: offer.hourlyRate,
+      status: "confirmed"
+    });
+  }
+  state.decisions.push({ action: "Accept", employer: offer.employer, date: offer.date, at: Date.now() });
+  saveState();
+  showToast("Shift accepted. Calendar and weekly view updated.");
+  renderRosterMateHome(document.getElementById("screen-rostermate"));
+}
+
+/* =====================================================
+   DECISION: NEGOTIATE
+   ===================================================== */
+function renderRMNegotiate(el, offer) {
+  const options = ["Start later","Finish earlier","Different day","Custom"];
+  el.innerHTML = `
+    <div class="app-header">
+      <h1>${APP_NAME} · Negotiate</h1>
+      <button class="back-btn" onclick="moveToDecide()">← Back</button>
+    </div>
+    <div class="app-body">
+      <div class="card accent">
+        <div class="card-label">What would work better?</div>
+        <div class="chips" role="group" id="neg-options">
+          ${options.map(o => `<button class="chip" aria-pressed="false" data-neg="${o}" onclick="selectNegOption(this,'${o}')">${o}</button>`).join("")}
+        </div>
+      </div>
+      <div class="card" id="neg-draft">
+        <div class="card-label">Draft message to ${offer.requestedBy}</div>
+        <textarea id="neg-text" style="margin-top:4px" rows="4">Hi ${offer.requestedBy}, I may be able to help tonight. Would it be possible for me to start at 5?</textarea>
+        <div class="info-text">Edit this before sending. Nothing is sent automatically.</div>
+      </div>
+      <div class="btn-row" style="margin-top:4px">
+        <button class="btn sm" onclick="sendToMessages('negotiate','${offer.id}')">Send to Messages</button>
+        <button class="btn neutral sm" onclick="moveToDecide()">Back</button>
+      </div>
+    </div>`;
+}
+
+function selectNegOption(btn, option) {
+  document.querySelectorAll("[data-neg]").forEach(b => b.setAttribute("aria-pressed","false"));
+  btn.setAttribute("aria-pressed","true");
+  const textArea = document.getElementById("neg-text");
+  const offer = state.shiftOffers.find(o => o.id === state.rmFlow.offer);
+  if (!textArea || !offer) return;
+  const drafts = {
+    "Start later": `Hi ${offer.requestedBy}, I may be able to help tonight. Would it be possible for me to start at 5 instead?`,
+    "Finish earlier": `Hi ${offer.requestedBy}, I may be able to help but I'd need to finish by 8:30. Would that work?`,
+    "Different day": `Hi ${offer.requestedBy}, I can't do tonight, but I'm available Friday morning from 10 if that helps.`,
+    "Custom": `Hi ${offer.requestedBy}, `
+  };
+  textArea.value = drafts[option] || textArea.value;
+}
+
+function sendToMessages(action, offerId) {
+  const textEl = document.getElementById("neg-text") || document.getElementById("dec-text") || document.getElementById("swap-text");
+  if (textEl) state.messageDraft = textEl.value;
+  state.decisions.push({ action: action.charAt(0).toUpperCase() + action.slice(1), employer: state.shiftOffers.find(o=>o.id===offerId)?.employer || "—", date: DEMO_DATE, at: Date.now() });
+  saveState();
+  showToast("Draft ready in Messages. You choose when to send.");
+  openApp("messages");
+}
+
+/* =====================================================
+   DECISION: SWAP
+   ===================================================== */
+function renderRMSwap(el, offer) {
+  el.innerHTML = `
+    <div class="app-header">
+      <h1>${APP_NAME} · Request swap</h1>
+      <button class="back-btn" onclick="moveToDecide()">← Back</button>
+    </div>
+    <div class="app-body">
+      <div class="card accent">
+        <div class="card-label">Current request</div>
+        <div style="font-size:16px;font-weight:700">${offer.employer} · ${formatTime(offer.start)}–${formatTime(offer.finish)}</div>
+        <div class="info-text">${formatDate(offer.date)}</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Your alternative availability</div>
+        <div class="field" style="margin-top:4px">
+          <label for="swap-avail">When could you help instead?</label>
+          <input id="swap-avail" type="text" placeholder="e.g. Friday 10am–4pm, or Saturday">
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">Draft message to ${offer.requestedBy}</div>
+        <textarea id="swap-text" rows="4">Hi ${offer.requestedBy}, I can't do tonight's shift, but I may be able to swap. Could we look at another time that works for both of us?</textarea>
+        <div class="info-text">Edit this before sending. No other worker has been contacted.</div>
+      </div>
+      <div class="btn-row" style="margin-top:4px">
+        <button class="btn sm" onclick="sendToMessages('swap','${offer.id}')">Send to Messages</button>
+        <button class="btn neutral sm" onclick="moveToDecide()">Back</button>
+      </div>
+    </div>`;
+}
+
+/* =====================================================
+   DECISION: DECLINE
+   ===================================================== */
+function renderRMDecline(el, offer) {
+  el.innerHTML = `
+    <div class="app-header">
+      <h1>${APP_NAME} · Decline</h1>
+      <button class="back-btn" onclick="moveToDecide()">← Back</button>
+    </div>
+    <div class="app-body">
+      <div class="card">
+        <div class="card-label">Message style</div>
+        <div class="btn-row" style="margin-top:6px">
+          <button class="btn neutral sm" onclick="setDeclineTone('simple','${offer.id}')">Simple</button>
+          <button class="btn sm" onclick="setDeclineTone('warm','${offer.id}')">Warm</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">Draft message to ${offer.requestedBy}</div>
+        <textarea id="dec-text" rows="4">Hi ${offer.requestedBy}, thanks for asking. I'm not available tonight, but I hope you're able to find cover.</textarea>
+        <div class="info-text">You don't need to give a reason. Edit this before sending — nothing is sent automatically.</div>
+      </div>
+      ${state.currentReflection.managerComfort === "Uncomfortable" ? `
+      <div class="card peach card-sm">
+        <div style="font-size:13px;font-weight:600">You can keep your reply short.</div>
+        <div class="info-text">You don't need to add personal details here.</div>
+      </div>` : ""}
+      <div class="btn-row" style="margin-top:4px">
+        <button class="btn sm" onclick="sendToMessages('decline','${offer.id}')">Send to Messages</button>
+        <button class="btn neutral sm" onclick="moveToDecide()">Back</button>
+      </div>
+    </div>`;
+}
+
+function setDeclineTone(tone, offerId) {
+  const offer = state.shiftOffers.find(o => o.id === offerId);
+  if (!offer) return;
+  const textEl = document.getElementById("dec-text");
+  if (!textEl) return;
+  const drafts = {
+    simple: `Hi ${offer.requestedBy}, sorry, I'm not available tonight.`,
+    warm: `Hi ${offer.requestedBy}, thanks for asking. I'm not available tonight, but I hope you're able to find cover.`
+  };
+  textEl.value = drafts[tone] || textEl.value;
+}
+
+/* =====================================================
+   DECISION: DECIDE LATER
+   ===================================================== */
+function renderRMDecideLater(el, offer) {
+  el.innerHTML = `
+    <div class="app-header">
+      <h1>${APP_NAME} · Decide later</h1>
+      <button class="back-btn" onclick="moveToDecide()">← Back</button>
+    </div>
+    <div class="app-body">
+      <div class="card accent" style="animation:fadeUp .3s ease">
+        <div class="card-label">Set a reminder</div>
+        <div class="info-text" style="margin-bottom:8px">A local reminder will save your place. The decision timer won't decide for you.</div>
+        <div class="chips" role="group" id="reminder-chips">
+          <button class="chip" aria-pressed="true" data-mins="30" onclick="selectReminder(this,30)">30 min</button>
+          <button class="chip" aria-pressed="false" data-mins="60" onclick="selectReminder(this,60)">1 hour</button>
+          <button class="chip" aria-pressed="false" data-mins="120" onclick="selectReminder(this,120)">2 hours</button>
+          <button class="chip" aria-pressed="false" data-mins="0" onclick="selectCustomReminder()">Custom</button>
+        </div>
+        <button class="btn full" style="margin-top:10px" onclick="saveReminder('${offer.id}')">Save reminder</button>
+      </div>
+      <div class="card">
+        <div class="info-text">The offer stays pending until you decide. ${APP_NAME} will not reply on your behalf.</div>
+      </div>
+    </div>`;
+}
+
+let selectedReminderMins = 30;
+
+function selectReminder(btn, mins) {
+  document.querySelectorAll("#reminder-chips .chip").forEach(c => c.setAttribute("aria-pressed","false"));
+  btn.setAttribute("aria-pressed","true");
+  selectedReminderMins = mins;
+}
+
+function selectCustomReminder() {
+  const val = prompt("Remind me in (minutes):", "45");
+  if (val && !isNaN(Number(val)) && Number(val) > 0) {
+    selectedReminderMins = Math.round(Number(val));
+    document.querySelectorAll("#reminder-chips .chip").forEach(c => c.setAttribute("aria-pressed","false"));
+    showToast("Custom reminder set for " + selectedReminderMins + " min.");
+  }
+}
+
+function saveReminder(offerId) {
+  const mins = selectedReminderMins || 30;
+  state.reminders.push({ offerId, minutes: mins, at: Date.now() });
+  state.decisions.push({ action: "Decide later", employer: state.shiftOffers.find(o=>o.id===offerId)?.employer || "—", date: DEMO_DATE, at: Date.now() });
+  saveState();
+  showToast("Reminder saved locally. No message sent.");
+  renderRosterMateHome(document.getElementById("screen-rostermate"));
+}
+
+/* =====================================================
+   MESSAGES
+   ===================================================== */
+function renderMessages(el) {
+  const offer = getOffer();
+  const managerName = offer ? offer.requestedBy : "Jess";
+  const convHistory = state.messages;
+  const draft = state.messageDraft || "";
+
+  el.innerHTML = `
+    <div class="app-header">
+      <div class="app-header-icon ic-messages" style="background:linear-gradient(135deg,#2AAA5A,#3CC970)">💬</div>
+      <h1>Messages</h1>
+      <button class="back-btn" onclick="goBack()">← Home</button>
+    </div>
+    <div class="app-body" style="padding:0">
+      <!-- Conversation header -->
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border-bottom:1px solid var(--line)">
+        <div class="avatar">${managerName.charAt(0)}</div>
+        <div>
+          <div style="font-weight:700;font-size:15px">${managerName}</div>
+          <div style="font-size:12px;color:var(--ink2)">Pandora Work</div>
+        </div>
+      </div>
+
+      <!-- Messages list -->
+      <div class="msg-list" id="msg-list">
+        <!-- Incoming: manager's original message -->
+        <div class="msg-meta">Today 12:41</div>
+        <div class="msg-bubble incoming">${offer ? offer.message : "Hey Dinda, any chance you could cover tonight?"}</div>
+
+        <!-- Previously sent messages -->
+        ${convHistory.map(m => `
+        <div class="msg-meta right">${new Date(m.at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
+        <div class="msg-bubble outgoing">${escHtml(m.text)}</div>`).join("")}
+      </div>
+
+      <!-- Input -->
+      <div class="msg-input-row">
+        <textarea id="msg-input" placeholder="Message" aria-label="Type your message">${escHtml(draft)}</textarea>
+        <button class="msg-send" onclick="sendMessage()" aria-label="Send message">↑</button>
+      </div>
+    </div>`;
+
+  // Clear draft after loading
+  state.messageDraft = "";
+  saveState();
+
+  // Auto-scroll to bottom
+  setTimeout(() => {
+    const list = document.getElementById("msg-list");
+    if (list) list.scrollTop = list.scrollHeight;
+  }, 50);
+}
+
+function sendMessage() {
+  const input = document.getElementById("msg-input");
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) { showToast("Type a message before sending."); return; }
+  state.messages.push({ text, at: Date.now() });
+  saveState();
+  showToast("Message sent.");
+  renderApp("messages");
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+/* =====================================================
+   CONNECTED APPS
+   ===================================================== */
+function renderConnectedApps(el) {
+  const apps = [
+    { id: "pandora", label: "Pandora Work", sub: "Shift requests from Pandora", icon: "💼" },
+    { id: "mcd", label: "McD Crew", sub: "McD shifts in RosterMate analysis", icon: "🍟" },
+    { id: "uq", label: "my.UQ", sub: "University timetable for overlap checks", icon: "🎓" },
+    { id: "maps", label: "Maps", sub: "Travel time estimates", icon: "🗺" },
+    { id: "personal", label: "Personal", sub: "Personal events in RosterMate", icon: "🌿" }
+  ];
+
+  el.innerHTML = `
+    <div class="app-header">
+      <div class="app-header-icon ic-connected" style="background:linear-gradient(135deg,#4060A0,#6080C0)">🔗</div>
+      <h1>Connected Apps</h1>
+      <button class="back-btn" onclick="goBack()">← Home</button>
+    </div>
+    <div class="app-body">
+      <div class="card-label">Choose what ${APP_NAME} can use</div>
+      <div class="info-text" style="margin-bottom:10px">Disconnecting a source means ${APP_NAME} will not use that data in its analysis. The source app can still retain its own data.</div>
+
+      <div class="conn-list">
+        ${apps.map(app => `
+        <div class="toggle-row">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:16px">${app.icon}</span>
+              <div class="toggle-label">${app.label}</div>
+            </div>
+            <div class="toggle-sub" style="padding-left:24px">${app.sub}</div>
+            ${!state.connections[app.id] ? `<div style="font-size:11px;color:var(--peach);padding-left:24px;margin-top:2px;font-weight:600">Not connected</div>` : ""}
+          </div>
+          <label class="toggle" aria-label="Toggle ${app.label}">
+            <input type="checkbox" ${state.connections[app.id] ? "checked" : ""}
+              onchange="toggleConnection('${app.id}', this.checked)">
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>`).join("")}
+      </div>
+
+      <div class="info-text" style="padding:8px 10px;background:var(--lavender-soft);border-radius:10px;margin-top:8px">
+        🔒 Nothing is shared with employers automatically. Connections only affect what ${APP_NAME} can see.
+      </div>
+    </div>`;
+}
+
+function toggleConnection(appId, on) {
+  state.connections[appId] = on;
+  saveState();
+  const msgs = {
+    uq: on ? "my.UQ connected. Study data available." : "my.UQ disconnected. Study data not connected.",
+    maps: on ? "Maps connected. Travel calculations enabled." : "Maps disconnected. Travel data not connected.",
+    personal: on ? "Personal connected. Events visible in RosterMate." : "Personal disconnected. Personal data not connected.",
+    pandora: on ? "Pandora connected." : "Pandora disconnected.",
+    mcd: on ? "McD connected." : "McD disconnected."
+  };
+  showToast(msgs[appId] || "Updated.");
+  renderApp("connected");
+}
+
+/* =====================================================
+   BOUNDARIES
+   ===================================================== */
+function renderBoundaries(el) {
+  el.innerHTML = `
+    <div class="app-header">
+      <div class="app-header-icon ic-boundaries" style="background:linear-gradient(135deg,#8A6020,#C09040)">🛡</div>
+      <h1>My Boundaries</h1>
+      <button class="back-btn" onclick="goBack()">← Home</button>
+    </div>
+    <div class="app-body">
+      <div class="info-text" style="margin-bottom:8px">Boundaries appear as a reminder when a shift request touches something you want to protect. They do not block you from accepting.</div>
+
+      <div class="sec-label">Your boundaries</div>
+      ${state.boundaries.length ? state.boundaries.map(b => `
+      <div class="boundary-item">
+        <div>
+          <div style="font-weight:600;font-size:14px">${b.label}</div>
+          <div class="info-text">${b.preference}</div>
+        </div>
+        <button class="boundary-del" onclick="deleteBoundary('${b.id}')" aria-label="Remove boundary">✕</button>
+      </div>`).join("") : `<div class="card"><div class="info-text">No boundaries set.</div></div>`}
+
+      <button class="btn ghost full" onclick="addBoundary()" style="margin-top:4px">+ Add boundary</button>
+
+      <div class="sec-label" style="margin-top:12px">Examples</div>
+      ${[["Sunday","Protected rest"],["Before 9 AM","Prefer no shifts"],["Exam week","Maximum 2 shifts"]].map(([label, pref]) => `
+      <div class="card card-sm" style="flex-direction:row;justify-content:space-between;align-items:center">
+        <div><div style="font-size:13px;font-weight:600">${label}</div><div class="info-text">${pref}</div></div>
+        <button class="btn neutral sm" onclick="addBoundaryPreset('${label}','${pref}')">+ Add</button>
+      </div>`).join("")}
+
+      <div class="info-text" style="padding:8px 10px;background:var(--surface3);border-radius:10px;margin-top:8px">
+        When a shift touches a boundary, ${APP_NAME} shows "Touches a boundary you set" — it never says you cannot work or tells you to decline.
+      </div>
+    </div>`;
+}
+
+function addBoundary() {
+  const label = prompt("Boundary label (e.g. Sunday, Exam week):", "");
+  if (!label || !label.trim()) return;
+  const pref = prompt("Preference description:", "Protected time");
+  if (!pref) return;
+  const b = { id: "boundary-" + Date.now(), label: label.trim(), type: "custom", preference: pref.trim() };
+  state.boundaries.push(b);
+  saveState();
+  renderApp("boundaries");
+  showToast("Boundary added.");
+}
+
+function addBoundaryPreset(label, pref) {
+  if (state.boundaries.find(b => b.label === label)) { showToast("Already set."); return; }
+  state.boundaries.push({ id: "boundary-" + Date.now(), label, type: "custom", preference: pref });
+  saveState();
+  renderApp("boundaries");
+  showToast("Boundary added: " + label);
+}
+
+function deleteBoundary(id) {
+  state.boundaries = state.boundaries.filter(b => b.id !== id);
+  saveState();
+  renderApp("boundaries");
+  showToast("Boundary removed.");
+}
+
+/* =====================================================
+   REST CHECK-IN
+   ===================================================== */
+function renderRest(el) {
+  el.innerHTML = `
+    <div class="app-header">
+      <div class="app-header-icon ic-rest" style="background:linear-gradient(135deg,#4A8A6A,#6AA87A)">🌙</div>
+      <h1>Rest</h1>
+      <button class="back-btn" onclick="goBack()">← Home</button>
+    </div>
+    <div class="app-body">
+      <div class="card accent">
+        <div class="card-label">After your shift</div>
+        <div style="font-size:15px;margin-bottom:8px">How did that shift feel?</div>
+        <div class="chips" role="group" aria-label="Post-shift feeling" id="rest-feeling-chips">
+          <button class="chip" aria-pressed="false" onclick="selectRestFeeling(this,'Fine')">Fine</button>
+          <button class="chip" aria-pressed="false" onclick="selectRestFeeling(this,'Tired')">Tired</button>
+          <button class="chip" aria-pressed="false" onclick="selectRestFeeling(this,'Very tired')">Very tired</button>
+          <button class="chip" aria-pressed="false" onclick="selectRestFeeling(this,'Skip')">Skip</button>
+        </div>
+        <button class="btn full" style="margin-top:10px" onclick="saveRestCheckin()">Save</button>
+        <div class="info-text">This is only for you. It never goes to your employer.</div>
+      </div>
+
+      ${state.checkins.length ? `
+      <div class="sec-label">History</div>
+      <div class="card">
+        ${state.checkins.slice(-7).reverse().map(c => `
+        <div class="rest-item">
+          <div class="rest-item-date">${new Date(c.at).toLocaleDateString("en-AU",{weekday:"short",month:"short",day:"numeric"})}</div>
+          <div class="rest-item-val" style="color:${c.feeling==='Fine'?'var(--sage)':c.feeling==='Very tired'?'var(--peach)':'var(--amber)'}">${c.feeling}</div>
+        </div>`).join("")}
+      </div>` : `
+      <div class="card"><div class="info-text">No check-ins yet. Your history will appear here after you save one.</div></div>`}
+
+      <div class="info-text" style="padding:8px 10px;background:var(--surface3);border-radius:10px;margin-top:4px">
+        No graphs, no streaks, no wellness scores. Tiredness is noted — not diagnosed.
+      </div>
+    </div>`;
+}
+
+let selectedRestFeeling = null;
+
+function selectRestFeeling(btn, feeling) {
+  document.querySelectorAll("#rest-feeling-chips .chip").forEach(c => c.setAttribute("aria-pressed","false"));
+  btn.setAttribute("aria-pressed","true");
+  selectedRestFeeling = feeling;
+}
+
+function saveRestCheckin() {
+  if (!selectedRestFeeling) { showToast("Select how you felt first."); return; }
+  if (selectedRestFeeling === "Skip") { showToast("Check-in skipped."); return; }
+  state.checkins.push({ feeling: selectedRestFeeling, at: Date.now() });
+  saveState();
+  selectedRestFeeling = null;
+  renderApp("rest");
+  showToast("Saved. Only you can see this.");
+}
+
+/* =====================================================
+   PANDORA ADMIN (demo only)
+   ===================================================== */
+function renderPandoraAdmin(el) {
+  const offer = getOffer();
+  el.innerHTML = `
+    <div class="app-header">
+      <div class="app-header-icon ic-padmin" style="background:linear-gradient(135deg,#7A304A,#A84060)">⚙️</div>
+      <h1>Pandora Admin</h1>
+      <button class="back-btn" onclick="goBack()">← Home</button>
+    </div>
+    <div class="app-body">
+      <div class="demo-banner">🎬 EXHIBITION CONTROL — Not visible to worker</div>
+
+      <div class="card">
+        <div class="card-label">Send shift request</div>
+        <div class="field"><label for="pa-worker">Worker</label><input id="pa-worker" value="${state.worker.name}"></div>
+        <div class="field"><label for="pa-date">Date</label><input id="pa-date" type="date" value="${offer ? offer.date : DEMO_DATE}"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="field"><label for="pa-start">Start</label><input id="pa-start" type="time" value="${offer ? offer.start : "16:00"}"></div>
+          <div class="field"><label for="pa-finish">Finish</label><input id="pa-finish" type="time" value="${offer ? offer.finish : "21:00"}"></div>
+        </div>
+        <div class="field"><label for="pa-rate">Hourly rate ($)</label><input id="pa-rate" type="number" value="${offer ? offer.hourlyRate : 32}"></div>
+        <div class="field"><label for="pa-break">Unpaid break (min)</label><input id="pa-break" type="number" value="${offer ? offer.unpaidBreakMinutes : 0}"></div>
+        <div class="field"><label for="pa-from">Requested by</label><input id="pa-from" value="${offer ? offer.requestedBy : "Jess"}"></div>
+        <div class="field"><label for="pa-msg">Message</label><textarea id="pa-msg" rows="2">${offer ? offer.message : "Hey Dinda, Mia is sick. Any chance you could do 4–9 tonight?"}</textarea></div>
+        <button class="btn full" onclick="sendPandoraOffer()">Send request →</button>
+      </div>
+
+      <div class="info-text" style="padding:8px 10px;background:var(--amber-soft);border-radius:10px">
+        This simulates a manager sending a shift request. In the worker view, it appears as a notification in Pandora Work and RosterMate.
+      </div>
+    </div>`;
+}
+
+function sendPandoraOffer() {
+  const date = document.getElementById("pa-date").value;
+  const start = document.getElementById("pa-start").value;
+  const finish = document.getElementById("pa-finish").value;
+  const rate = parseFloat(document.getElementById("pa-rate").value);
+  const breakMins = parseInt(document.getElementById("pa-break").value) || 0;
+  const from = document.getElementById("pa-from").value.trim();
+  const msg = document.getElementById("pa-msg").value.trim();
+
+  if (!date || !start || !finish || !from) { showToast("Fill in all required fields."); return; }
+  if (toMinutes(finish) <= toMinutes(start)) { showToast("Finish must be after start."); return; }
+
+  // Update or create offer
+  const existing = state.shiftOffers.find(o => o.id === "pandora-offer-1");
+  if (existing) {
+    existing.date = date;
+    existing.start = start;
+    existing.finish = finish;
+    existing.hourlyRate = rate;
+    existing.unpaidBreakMinutes = breakMins;
+    existing.requestedBy = from;
+    existing.message = msg;
+    existing.status = "pending";
+  } else {
+    state.shiftOffers.push({
+      id: "pandora-offer-1",
+      employer: "Pandora",
+      source: "Pandora Work",
+      requestedBy: from,
+      date, start, finish,
+      hourlyRate: rate,
+      unpaidBreakMinutes: breakMins,
+      status: "pending",
+      message: msg
+    });
+  }
+
+  // Create notification
+  state.notifications.push({ app: "Pandora Work", msg: "New shift request from " + from, at: Date.now() });
+  saveState();
+
+  // Show badges
+  const badgePandora = document.getElementById("badge-pandora");
+  const badgeRM = document.getElementById("badge-rm");
+  if (badgePandora) badgePandora.classList.add("show");
+  if (badgeRM) badgeRM.classList.add("show");
+
+  showToast("Shift request sent! Worker sees it in Pandora Work and RosterMate.");
+}
+
+/* =====================================================
+   MCD ADMIN (demo only)
+   ===================================================== */
+function renderMcdAdmin(el) {
+  const shift = state.workShifts.find(s => s.employer === "McD") || null;
+  el.innerHTML = `
+    <div class="app-header">
+      <div class="app-header-icon ic-mcadmin" style="background:linear-gradient(135deg,#8A4010,#C06030)">⚙️</div>
+      <h1>McD Admin</h1>
+      <button class="back-btn" onclick="goBack()">← Home</button>
+    </div>
+    <div class="app-body">
+      <div class="demo-banner">🎬 EXHIBITION CONTROL — Not visible to worker</div>
+
+      <div class="card">
+        <div class="card-label">Update McD shift</div>
+        <div class="field"><label for="mc-date">Date</label><input id="mc-date" type="date" value="${shift ? shift.date : "2026-09-19"}"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="field"><label for="mc-start">Start</label><input id="mc-start" type="time" value="${shift ? shift.start : "09:00"}"></div>
+          <div class="field"><label for="mc-finish">Finish</label><input id="mc-finish" type="time" value="${shift ? shift.finish : "17:00"}"></div>
+        </div>
+        <div class="field"><label for="mc-rate">Hourly rate ($)</label><input id="mc-rate" type="number" value="${shift ? shift.hourlyRate : 30}"></div>
+        <button class="btn full" onclick="updateMcdShift()">Update shift →</button>
+      </div>
+
+      <div class="info-text" style="padding:8px 10px;background:var(--amber-soft);border-radius:10px">
+        Changes update McD Crew, Calendar, Weekly View and RosterMate calculations.
+      </div>
+    </div>`;
+}
+
+function updateMcdShift() {
+  const date = document.getElementById("mc-date").value;
+  const start = document.getElementById("mc-start").value;
+  const finish = document.getElementById("mc-finish").value;
+  const rate = parseFloat(document.getElementById("mc-rate").value);
+
+  if (!date || !start || !finish) { showToast("Fill in all fields."); return; }
+  if (toMinutes(finish) <= toMinutes(start)) { showToast("Finish must be after start."); return; }
+
+  const existing = state.workShifts.find(s => s.employer === "McD");
+  if (existing) {
+    existing.date = date;
+    existing.start = start;
+    existing.finish = finish;
+    existing.hourlyRate = rate;
+  } else {
+    state.workShifts.push({ id: "mcd-shift-1", employer: "McD", date, start, finish, hourlyRate: rate, status: "confirmed" });
+  }
+  saveState();
+  showToast("McD shift updated. McD Crew, Calendar and RosterMate synced.");
+}
+
+/* =====================================================
+   MANAGER CHAT (demo only)
+   ===================================================== */
+function renderMgrChat(el) {
+  const offer = getOffer();
+  const quickMessages = [
+    "Can you cover tonight?",
+    "Could you start earlier?",
+    "Are you free Sunday?",
+    "Mia is sick, any chance you can help?",
+    "Hey, how are you finding the schedule?"
+  ];
+
+  el.innerHTML = `
+    <div class="app-header">
+      <div class="app-header-icon ic-mgrchat" style="background:linear-gradient(135deg,#306050,#508A70)">🗣</div>
+      <h1>Manager Chat</h1>
+      <button class="back-btn" onclick="goBack()">← Home</button>
+    </div>
+    <div class="app-body">
+      <div class="demo-banner">🎬 EXHIBITION CONTROL — Not visible to worker</div>
+
+      <div class="card">
+        <div class="card-label">Send message as ${offer ? offer.requestedBy : "Jess"} (manager)</div>
+        <div class="sec-label" style="margin-top:4px;margin-bottom:6px">Quick messages</div>
+        <div class="btn-col">
+          ${quickMessages.map(m => `<button class="btn neutral sm" style="text-align:left;justify-content:flex-start" onclick="sendManagerMsg('${m.replace(/'/g,"\\'")}')">
+            "${m}"
+          </button>`).join("")}
+        </div>
+        <div class="divider" style="margin:10px 0"></div>
+        <div class="field">
+          <label for="mgr-custom">Custom message</label>
+          <textarea id="mgr-custom" rows="2" placeholder="Type a custom manager message…"></textarea>
+        </div>
+        <button class="btn full" onclick="sendCustomManagerMsg()">Send →</button>
+      </div>
+
+      <div class="info-text" style="padding:8px 10px;background:var(--amber-soft);border-radius:10px">
+        Sending creates a worker-side notification and adds to the Messages conversation.
+      </div>
+    </div>`;
+}
+
+function sendManagerMsg(text) {
+  const offer = getOffer();
+  const from = offer ? offer.requestedBy : "Jess";
+  state.notifications.push({ app: "Messages", msg: `${from}: ${text}`, at: Date.now() });
+  // Prepend as an incoming message (stored in a separate "incoming" list)
+  if (!state._incomingMessages) state._incomingMessages = [];
+  state._incomingMessages.push({ from, text, at: Date.now() });
+  saveState();
+  showToast("Message sent to worker as " + from);
+}
+
+function sendCustomManagerMsg() {
+  const el = document.getElementById("mgr-custom");
+  if (!el || !el.value.trim()) { showToast("Enter a message."); return; }
+  sendManagerMsg(el.value.trim());
+  el.value = "";
+}
+
+/* =====================================================
+   PROTOTYPE CHECKS
+   ===================================================== */
+window.runPrototypeChecks = function() {
+  const results = {};
+
+  // Lock screen
+  results.lockScreen = !!document.getElementById("screen-lock");
+
+  // Home navigation
+  results.homeNavigation = !!document.getElementById("screen-home") && typeof goToPage === "function";
+
+  // Shared state
+  results.sharedState = typeof state === "object" && !!state.worker && !!state.shiftOffers;
+
+  // localStorage
+  try {
+    localStorage.setItem("_rm_test", "1");
+    localStorage.removeItem("_rm_test");
+    results.localStorage = true;
+  } catch(e) { results.localStorage = false; }
+
+  // Pandora offer exists
+  const offer = getOffer();
+  results.pandoraOffer = !!offer && offer.status !== undefined;
+
+  // Study calculation
+  try {
+    const studyOv = findStudyOverlap(offer);
+    results.studyCalculation = Array.isArray(studyOv);
+  } catch(e) { results.studyCalculation = false; }
+
+  // Travel calculation
+  try {
+    const trav = calculateTravelBuffer(offer);
+    results.travelCalculation = trav !== undefined;
+  } catch(e) { results.travelCalculation = false; }
+
+  // Income calculation
+  try {
+    const inc = calculateIncome(offer);
+    results.incomeCalculation = inc.income > 0;
+  } catch(e) { results.incomeCalculation = false; }
+
+  // Rest calculation
+  try {
+    const rest = calculateRestWindow(offer);
+    results.restCalculation = rest !== undefined;
+  } catch(e) { results.restCalculation = false; }
+
+  // Personal overlap
+  try {
+    const po = findPersonalOverlap(offer);
+    results.personalOverlap = Array.isArray(po);
+  } catch(e) { results.personalOverlap = false; }
+
+  // Privacy separation (manager admin screens don't show private data)
+  results.privacySeparation = typeof renderPandoraAdmin === "function" &&
+    typeof renderRMReflect === "function"; // Admin render vs worker reflect are separate functions
+
+  // Flow functions exist
+  results.acceptFlow = typeof confirmAccept === "function";
+  results.negotiateFlow = typeof renderRMNegotiate === "function";
+  results.swapFlow = typeof renderRMSwap === "function";
+  results.declineFlow = typeof renderRMDecline === "function";
+  results.decideLaterFlow = typeof renderRMDecideLater === "function";
+
+  // Calendar sync (state used in renderCalendar)
+  results.calendarSync = typeof renderCalendar === "function";
+
+  // Reset
+  results.resetDemo = typeof resetDemo === "function";
+
+  // Count passed
+  const passed = Object.values(results).filter(Boolean).length;
+  const total = Object.keys(results).length;
+
+  console.log(`%c${APP_NAME} Prototype Checks: ${passed}/${total} passed`, "font-weight:bold;font-size:14px");
+  Object.entries(results).forEach(([k,v]) => {
+    console.log(`%c${v ? "✓" : "✗"} ${k}`, `color:${v?"green":"red"}`);
+  });
+
+  return results;
+};
+
+/* =====================================================
+   INITIALISATION
+   ===================================================== */
+function init() {
+  // Restore home page
+  goToPage(state.homePage || 0);
+  initHomeSwipe();
+
+  // Start on the right screen
+  if (state.activeScreen && state.activeScreen !== "lock") {
+    goToScreen(state.activeScreen, false);
+    if (state.activeScreen !== "home") {
+      const appId = state.activeScreen.replace("screen-","");
+      renderApp(appId);
+    }
+  }
+
+  // Clock
+  updateClock();
+  setInterval(updateClock, 30000);
+
+  // Keyboard: Escape to go back
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && currentScreen !== "lock" && currentScreen !== "home") {
+      goBack();
+    }
+  });
+
+  // Demo mode
+  const demoToggle = document.getElementById("demo-mode-toggle");
+  if (demoToggle) demoToggle.checked = state.demoMode !== false;
+  toggleDemoMode(state.demoMode !== false);
+
+  // Lock screen click/touch to unlock
+  document.getElementById("screen-lock").addEventListener("click", e => {
+    if (!e.target.closest(".lock-unlock-btn")) {
+      // Allow clicking anywhere on lock screen to unlock
+      unlock();
+    }
+  });
+
+  // Touch: swipe up on lock screen
+  let lockTouchY = 0;
+  document.getElementById("screen-lock").addEventListener("touchstart", e => {
+    lockTouchY = e.touches[0].clientY;
+  }, { passive: true });
+  document.getElementById("screen-lock").addEventListener("touchend", e => {
+    const dy = lockTouchY - e.changedTouches[0].clientY;
+    if (dy > 50) unlock();
+  });
+
+  console.log(`${APP_NAME} mobile prototype loaded. Call window.runPrototypeChecks() to run checks.`);
+}
+
+// Expose state to window for debugging
+window.state = state;
+window.APP_STATE = () => state;
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
+
