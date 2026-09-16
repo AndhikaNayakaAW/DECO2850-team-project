@@ -1,0 +1,32 @@
+{
+  "name": "offshift-phone",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Offshift phone-format prototype: a simulated phone where employer, university and personal apps sync into Offshift.",
+  "scripts": {
+    "dev": "next dev -H 0.0.0.0",
+    "dev:https": "next dev --experimental-https -H 0.0.0.0",
+    "build": "next build",
+    "start": "next start -H 0.0.0.0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.125.0",
+    "@mediapipe/tasks-vision": "^1.0.1",
+    "next": "16.3.5",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "three": "^0.186.0",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@types/three": "^0.186.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.11"
+  }
+}
