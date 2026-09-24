@@ -66,6 +66,14 @@ export default function SyncProvider() {
 
     (async () => {
       await pull(true);
+      try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("reset") === "1") {
+          useStore.getState().resetDemo();
+          params.delete("reset");
+          window.history.replaceState(null, "", `${window.location.pathname}${params.toString() ? `?${params}` : ""}`);
+        }
+      } catch {}
       while (!stopped) {
         await new Promise((r) => setTimeout(r, 1000));
         if (!stopped) await pull(false);

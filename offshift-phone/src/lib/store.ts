@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
 import { altSlots, offerChecks, replyDraft, draftFor } from "./checks";
 import { DAY_NAMES, addMinutesToClock, range12, range24 } from "./logic";
 import {
@@ -98,6 +98,24 @@ export interface Actions {
 }
 
 export type Store = DataSlice & UISlice & Actions;
+
+/** Real browser storage when it works; memory when it is blocked, missing, or a half-implemented shim. */
+function safeStorage(): StateStorage {
+  try {
+    const ls = (globalThis as { localStorage?: Storage }).localStorage;
+    if (ls && typeof ls.getItem === "function" && typeof ls.setItem === "function" && typeof ls.removeItem === "function") return ls;
+  } catch {}
+  const mem = new Map<string, string>();
+  return {
+    getItem: (k) => mem.get(k) ?? null,
+    setItem: (k, v) => {
+      mem.set(k, v);
+    },
+    removeItem: (k) => {
+      mem.delete(k);
+    },
+  };
+}
 
 let counter = 0;
 function uid(prefix: string): string {
@@ -474,7 +492,7 @@ export const useStore = create<Store>()(
     {
       name: "offshift-phone-v2",
       version: 2,
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(safeStorage),
       skipHydration: true,
       partialize: (s) => Object.fromEntries(DATA_KEYS.map((k) => [k, s[k]])) as Partial<Store>,
       migrate: () => ({ ...initialData() }) as unknown as Store,
