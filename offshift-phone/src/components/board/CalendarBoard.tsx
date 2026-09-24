@@ -42,6 +42,7 @@ export default function CalendarBoard() {
   const movePersonal = useStore((s) => s.movePersonal);
   const restore = useStore((s) => s.restore);
   const respond = useStore((s) => s.respondToOffer);
+  const resetDemo = useStore((s) => s.resetDemo);
   const [undo, setUndo] = useState<Removed | null>(null);
   const [immersive, setImmersive] = useState(false);
   const immersiveRef = useRef(false);
@@ -175,6 +176,18 @@ export default function CalendarBoard() {
           </button>
           <button className="btn neutral" onClick={() => setImmersive(true)}>
             Enter immersive view
+          </button>
+          <button
+            className="btn ghost small"
+            onClick={() => {
+              if (confirm("Reset the scenario? Jess's ask comes back and every change is cleared on all devices.")) {
+                resetDemo();
+                setOfferId(null);
+                setDay(SCENARIO.today);
+              }
+            }}
+          >
+            Reset
           </button>
         </div>
       </header>

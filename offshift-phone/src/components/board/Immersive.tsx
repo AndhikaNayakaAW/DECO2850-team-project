@@ -97,6 +97,7 @@ export default function Immersive({ onExit }: { onExit: () => void }) {
   const sendMessage = useStore((s) => s.sendMessage);
   const openApp = useStore((s) => s.openApp);
   const notePrivate = useStore((s) => s.notePrivate);
+  const resetDemo = useStore((s) => s.resetDemo);
 
   const handle = useRef<SceneHandle | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -606,6 +607,21 @@ export default function Immersive({ onExit }: { onExit: () => void }) {
           </button>
           <button className={`btn small ${muted ? "" : "neutral"}`} aria-pressed={muted} onClick={() => toggleMute()}>
             {muted ? "Unmute" : "Mute"}
+          </button>
+          <button
+            className="btn small ghost"
+            onClick={() => {
+              if (confirm("Reset the scenario? Jess's ask comes back and every change is cleared on all devices.")) {
+                resetDemo();
+                setPending(null);
+                setSelectedId(null);
+                handle.current?.setSelectedItem(null);
+                setUndo([]);
+                say("Scenario reset. Jess's ask is waiting again.");
+              }
+            }}
+          >
+            Reset scenario
           </button>
           <button className="btn small" onClick={onExit}>
             Exit
