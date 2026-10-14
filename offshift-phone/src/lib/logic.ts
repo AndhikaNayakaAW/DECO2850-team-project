@@ -23,8 +23,23 @@ export function fromMinutes(total: number): string {
   return `${h < 10 ? "0" : ""}${h}:${mm < 10 ? "0" : ""}${mm}`;
 }
 
+/** Earlier end clocks roll into the following day; equal clocks are empty. */
+function elapsedMinutes(start: string, end: string): number {
+  const delta = minutes(end) - minutes(start);
+  return delta < 0 ? delta + 1440 : delta;
+}
+
+function intervalsOverlap(aStart: number, aEnd: number, bStart: number, bEnd: number): boolean {
+  return aEnd > aStart && bEnd > bStart && aStart < bEnd && bStart < aEnd;
+}
+
+/** Clock-only ranges repeat daily. Use shiftImpact when calendar days matter. */
 export function overlap(aStart: string, aEnd: string, bStart: string, bEnd: string): boolean {
-  return minutes(aStart) < minutes(bEnd) && minutes(bStart) < minutes(aEnd);
+  const a = minutes(aStart);
+  const b = minutes(bStart);
+  const aFinish = a + elapsedMinutes(aStart, aEnd);
+  const bFinish = b + elapsedMinutes(bStart, bEnd);
+  return [-1440, 0, 1440].some((offset) => intervalsOverlap(a, aFinish, b + offset, bFinish + offset));
 }
 
 export function dayIndex(day: Day): number {
@@ -46,7 +61,7 @@ export interface Span {
 }
 
 export function paidMinutes(shift: { start: string; end: string; break?: number }): number {
-  return Math.max(0, minutes(shift.end) - minutes(shift.start) - Number(shift.break || 0));
+  return Math.max(0, elapsedMinutes(shift.start, shift.end) - Number(shift.break || 0));
 }
 
 export function income(shift: { start: string; end: string; break?: number }, rate: number): number {
@@ -67,28 +82,38 @@ export function shiftImpact<E extends Span>(
   shift: Span & { travel?: number; break?: number },
   events: E[],
 ): Impact<E> {
-  const dayEvents = events.filter((event) => event.day === shift.day);
-  const previous =
-    dayEvents
-      .filter((event) => minutes(event.end) <= minutes(shift.start))
-      .sort((a, b) => minutes(b.end) - minutes(a.end))[0] || null;
-  const next =
-    events
-      .filter(
-        (event) =>
-          dayIndex(event.day) > dayIndex(shift.day) ||
-          (event.day === shift.day && minutes(event.start) >= minutes(shift.end)),
-      )
-      .sort((a, b) => absMinutes(a.day, a.start) - absMinutes(b.day, b.start))[0] || null;
-  const conflicts = dayEvents.filter((event) => overlap(shift.start, shift.end, event.start, event.end));
-  const gap = previous ? minutes(shift.start) - minutes(previous.end) : null;
-  const restMinutes = next ? absMinutes(next.day, next.start) - absMinutes(shift.day, shift.end) : null;
+  const start = absMinutes(shift.day, shift.start);
+  const end = start + elapsedMinutes(shift.start, shift.end);
+  const dayStart = dayIndex(shift.day) * 1440;
+  const weekMinutes = DAYS.length * 1440;
+  const timeline = events.flatMap((event) => {
+    const eventStart = absMinutes(event.day, event.start);
+    const eventEnd = eventStart + elapsedMinutes(event.start, event.end);
+    const spans = [{ event, start: eventStart, end: eventEnd }];
+    // At the week edges, the neighbouring day's commitments repeat weekly.
+    if (shift.day === "Mon" && eventEnd > weekMinutes) {
+      spans.push({ event, start: eventStart - weekMinutes, end: eventEnd - weekMinutes });
+    }
+    if (end > weekMinutes && event.day === "Mon") {
+      spans.push({ event, start: eventStart + weekMinutes, end: eventEnd + weekMinutes });
+    }
+    return spans;
+  });
+  const previous = timeline
+    .filter((span) => span.end <= start && span.end >= dayStart && span.end > span.start)
+    .sort((a, b) => b.end - a.end)[0];
+  const next = timeline
+    .filter((span) => span.start >= end && span.end > span.start)
+    .sort((a, b) => a.start - b.start)[0];
+  const conflicts = timeline
+    .filter((span) => intervalsOverlap(start, end, span.start, span.end))
+    .map((span) => span.event);
   return {
     conflicts,
-    previous,
-    next,
-    travelBuffer: gap === null ? null : gap - Number(shift.travel || 0),
-    restMinutes,
+    previous: previous?.event ?? null,
+    next: next?.event ?? null,
+    travelBuffer: previous ? start - previous.end - Number(shift.travel || 0) : null,
+    restMinutes: next ? next.start - end : null,
     paidMinutes: paidMinutes(shift),
   };
 }
@@ -130,7 +155,7 @@ export function range24(start: string, end: string): string {
 }
 
 export function hoursBetween(start: string, end: string): number {
-  return (minutes(end) - minutes(start)) / 60;
+  return elapsedMinutes(start, end) / 60;
 }
 
 export function money(n: number): string {
