@@ -1,24 +1,15 @@
 import { create } from "zustand";
 import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
+import { applyResponse } from "./actions";
 import { altSlots, offerChecks, replyDraft, draftFor } from "./checks";
+import { uid } from "./ids";
 import { DAY_NAMES, addMinutesToClock, range12, range24 } from "./logic";
-import {
-  EMPLOYERS,
-  SCENARIO,
-  initialMessages,
-  initialNotifications,
-  initialOffers,
-  initialPersonal,
-  initialSettings,
-  initialShifts,
-  initialSync,
-  initialUni,
-} from "./scenario";
+import { EMPLOYERS, SCENARIO, seedData } from "./scenario";
 import type {
   AltSlot,
   AppId,
   BodyRating,
-  Checkin,
+  DataSlice,
   Day,
   Decision,
   EmployerId,
@@ -34,18 +25,7 @@ import type {
 
 export type OffshiftScreen = "week" | "offer" | "reply" | "checkin" | "money" | "me";
 
-export interface DataSlice {
-  clock: string;
-  shifts: Shift[];
-  uni: UniEvent[];
-  personal: PersonalEvent[];
-  offers: Offer[];
-  messages: Message[];
-  notifications: Notification[];
-  sync: SyncEntry[];
-  settings: Settings;
-  checkins: Checkin[];
-}
+export type { DataSlice } from "./types";
 
 export interface UISlice {
   locked: boolean;
@@ -117,29 +97,8 @@ function safeStorage(): StateStorage {
   };
 }
 
-let counter = 0;
-function uid(prefix: string): string {
-  counter += 1;
-  return `${prefix}-${Date.now().toString(36)}-${counter}`;
-}
-
-function copy<T>(v: T): T {
-  return JSON.parse(JSON.stringify(v)) as T;
-}
-
 function initialData(): DataSlice {
-  return {
-    clock: SCENARIO.clock,
-    shifts: copy(initialShifts),
-    uni: copy(initialUni),
-    personal: copy(initialPersonal),
-    offers: copy(initialOffers),
-    messages: copy(initialMessages),
-    notifications: copy(initialNotifications),
-    sync: copy(initialSync),
-    settings: copy(initialSettings),
-    checkins: [],
-  };
+  return seedData();
 }
 
 const initialUI: UISlice = {
@@ -157,7 +116,7 @@ const initialUI: UISlice = {
   sheet: null,
 };
 
-export const DATA_KEYS: (keyof DataSlice)[] = ["clock", "shifts", "uni", "personal", "offers", "messages", "notifications", "sync", "settings", "checkins"];
+export const DATA_KEYS: (keyof DataSlice)[] = ["clock", "shifts", "uni", "personal", "offers", "messages", "notifications", "sync", "settings", "checkins", "wearable"];
 
 export function pickData(s: DataSlice): DataSlice {
   return Object.fromEntries(DATA_KEYS.map((k) => [k, s[k]])) as unknown as DataSlice;
@@ -275,59 +234,9 @@ export const useStore = create<Store>()(
 
         respondToOffer: (offerId, decision, text, extras) =>
           set((s) => {
-            const offer = s.offers.find((o) => o.id === offerId);
-            if (!offer) return {};
-            const emp = EMPLOYERS[offer.employer];
-            const at = stamp(s);
-            const patch: Partial<Store> = { clock: at, decision: null, offshiftScreen: "week", offerId: null };
-            let next: Offer = { ...offer, repliedAt: at };
-            let messages = s.messages;
-            let sync = s.sync;
-            let shifts = s.shifts;
-            let toast = "";
-            const reply = (t: string) => [...messages, { id: uid("m"), employer: offer.employer, from: "dinda" as const, text: t, at, offerId }];
-            if (decision === "later") {
-              const mins = extras?.reminderMinutes || 30;
-              next = { ...next, status: "deferred", reminderAt: addMinutesToClock(s.clock, mins), reminderDue: Date.now() + Math.min(mins, 120) * 250, reminded: false };
-              sync = log(s, at, "Offshift", "Only you", `Reminder set for ${next.reminderAt}. Nothing sent to ${emp.name}.`);
-              toast = `Reminder set for ${next.reminderAt}.`;
-            } else if (decision === "accept") {
-              next = { ...next, status: "accepted" };
-              shifts = [...shifts, { id: uid("s"), employer: offer.employer, day: offer.day, start: offer.start, end: offer.end, viaOffer: offerId }];
-              messages = reply(text);
-              sync = [
-                ...log(s, at, "Offshift", emp.workerApp, `Reply sent as Dinda: accepted ${offer.day} ${range24(offer.start, offer.end)}.`),
-                { id: uid("y"), at, from: emp.workerApp, to: "Offshift · Calendar", text: `${offer.day} ${range24(offer.start, offer.end)} booked, travel time added around it.` },
-              ];
-              toast = `Sent to ${emp.manager.name}. Shift added to your week.`;
-            } else if (decision === "decline") {
-              next = { ...next, status: "declined" };
-              messages = reply(text);
-              sync = log(s, at, "Offshift", emp.workerApp, `Reply sent as Dinda: declined ${offer.day} ${range24(offer.start, offer.end)}.`);
-              toast = `Sent to ${emp.manager.name}. ${DAY_NAMES[offer.day]} stays yours.`;
-            } else if (decision === "negotiate") {
-              const alt = extras?.alt || altSlots(offer, s)[0];
-              next = { ...next, status: "countered", alt };
-              messages = reply(text);
-              sync = log(s, at, "Offshift", emp.workerApp, `Reply sent as Dinda: offered ${alt.label} instead.`);
-              toast = `Sent to ${emp.manager.name}: ${alt.label}.`;
-            } else if (decision === "swap") {
-              const who = extras?.colleague || emp.colleagues[1];
-              next = { ...next, status: "swap-requested", colleague: who };
-              messages = reply(text);
-              sync = log(s, at, "Offshift", emp.workerApp, `Reply sent as Dinda: swap with ${who} requested.`);
-              toast = `Sent to ${emp.manager.name}. Waiting on a reply.`;
-            }
-            return {
-              ...patch,
-              offers: s.offers.map((o) => (o.id === offerId ? next : o)),
-              messages,
-              sync,
-              shifts,
-              notifications: s.notifications.filter((n) => n.offerId !== offerId || decision === "later"),
-              toast,
-              toastKey: s.toastKey + 1,
-            };
+            const r = applyResponse(pickData(s), offerId, decision, text, extras);
+            if (!r) return {};
+            return { ...r.data, decision: null, offshiftScreen: "week", offerId: null, toast: r.toast, toastKey: s.toastKey + 1 };
           }),
 
         managerResolve: (offerId, action) =>

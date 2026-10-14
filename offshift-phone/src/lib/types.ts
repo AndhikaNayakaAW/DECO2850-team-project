@@ -190,3 +190,26 @@ export interface DayView {
   rest: boolean;
   items: DayItem[];
 }
+
+/** A body reading from the worker's own watch, kept as a word so no raw number travels. */
+export interface Wearable {
+  level: 0 | 1 | 2 | 3;
+  word: string;
+  at: string;
+  source: string;
+}
+
+/** Everything that syncs between the phone, the calendar, the watch and the server. */
+export interface DataSlice {
+  clock: string;
+  shifts: Shift[];
+  uni: UniEvent[];
+  personal: PersonalEvent[];
+  offers: Offer[];
+  messages: Message[];
+  notifications: Notification[];
+  sync: SyncEntry[];
+  settings: Settings;
+  checkins: Checkin[];
+  wearable?: Wearable | null;
+}

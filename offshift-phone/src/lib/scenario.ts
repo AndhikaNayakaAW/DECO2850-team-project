@@ -1,4 +1,5 @@
 import type {
+  DataSlice,
   Day,
   Employer,
   EmployerId,
@@ -161,3 +162,24 @@ export const COLLEAGUE_ROSTER: Record<EmployerId, Record<string, Partial<Record<
     Ken: { Mon: "06–12", Thu: "06–12", Fri: "06–12", Sun: "06–12" },
   },
 };
+
+function copy<T>(v: T): T {
+  return JSON.parse(JSON.stringify(v)) as T;
+}
+
+/** A fresh copy of the whole scenario, for a reset or for a server that has not synced yet. */
+export function seedData(): DataSlice {
+  return {
+    clock: SCENARIO.clock,
+    shifts: copy(initialShifts),
+    uni: copy(initialUni),
+    personal: copy(initialPersonal),
+    offers: copy(initialOffers),
+    messages: copy(initialMessages),
+    notifications: copy(initialNotifications),
+    sync: copy(initialSync),
+    settings: copy(initialSettings),
+    checkins: [],
+    wearable: null,
+  };
+}
