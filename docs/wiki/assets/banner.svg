@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="420" viewBox="0 0 1280 420" role="img" aria-labelledby="title desc">
+<title id="title">Offshift — Your week. Your call.</title>
+<desc id="desc">An ivory and forest-green project banner with a stylised seven-day calendar. Work, study, plans and rest form soft coloured columns.</desc>
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#F5F3E9"/><stop offset="1" stop-color="#E5EBDE"/></linearGradient></defs>
+<rect width="1280" height="420" rx="28" fill="url(#bg)"/>
+<circle cx="1130" cy="95" r="210" fill="#DAAB56" opacity=".09"/>
+<g font-family="Arial, Helvetica, sans-serif" fill="#24443B">
+<rect x="58" y="52" width="38" height="38" rx="10" fill="#647C5F"/>
+<g fill="#FFF"><rect x="66" y="70" width="5" height="14" rx="1"/><rect x="75" y="61" width="5" height="23" rx="1"/><rect x="84" y="66" width="5" height="18" rx="1" fill="#E4BB70"/></g>
+<text x="112" y="78" font-size="15" font-weight="700" letter-spacing="3">OFFSHIFT / PROJECT HANDBOOK</text>
+<text x="58" y="170" font-size="60" font-weight="700" letter-spacing="-2">Your week.</text>
+<text x="58" y="235" font-size="60" font-weight="700" letter-spacing="-2">Your call.</text>
+<text x="60" y="283" font-size="19" fill="#586958">A little room between work and life.</text>
+<rect x="58" y="324" width="236" height="34" rx="17" fill="#24443B"/>
+<text x="77" y="346" font-size="12" font-weight="700" letter-spacing="2" fill="#F5F3E9">DECO2850 · CARE STUDIO</text>
+</g>
+<g transform="translate(670 64)" font-family="Arial, Helvetica, sans-serif">
+<rect width="550" height="296" rx="24" fill="#FBFCF7" opacity=".85"/>
+<text x="28" y="36" font-size="13" fill="#536A55" letter-spacing="2">A WEEK WITH ROOM TO BREATHE</text>
+<g stroke="#DEE5D8"><path d="M28 75H522M28 125H522M28 175H522M28 225H522"/></g>
+<g fill="#687465" font-size="12" text-anchor="middle"><text x="57" y="274">M</text><text x="130" y="274">T</text><text x="203" y="274">W</text><text x="276" y="274">T</text><text x="349" y="274">F</text><text x="422" y="274">S</text><text x="495" y="274">S</text></g>
+<g fill="#6E8665"><rect x="34" y="145" width="46" height="96" rx="9"/><rect x="107" y="165" width="46" height="76" rx="9"/><rect x="180" y="150" width="46" height="54" rx="9"/><rect x="326" y="126" width="46" height="115" rx="9"/><rect x="399" y="101" width="46" height="140" rx="9"/></g>
+<g fill="#A6B3AB"><rect x="34" y="92" width="46" height="35" rx="8"/><rect x="180" y="97" width="46" height="35" rx="8"/><rect x="253" y="120" width="46" height="35" rx="8"/></g>
+<rect x="253" y="167" width="46" height="74" rx="9" fill="#DAAB56"/>
+<rect x="472" y="75" width="46" height="166" rx="9" fill="#D7E4C9"/>
+<circle cx="495" cy="148" r="13" fill="#6E8665"/><path d="m489 148 4 4 8-8" fill="none" stroke="#FFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g></svg>

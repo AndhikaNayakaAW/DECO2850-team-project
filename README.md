@@ -1,6 +1,10 @@
 # DECO2850-team-project
 DECO2850 team project exploring care-centred interaction design for university students balancing casual or part-time work with study, travel, income, rest and personal commitments.
 
+## Project handbook
+
+Explore the [Offshift wiki](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki) for the demo walkthrough, design rationale, architecture, TDD workflow and deployment guide. The [wiki source](docs/wiki/README.md) is versioned with the code.
+
 ## Iteration 2 · Pleasure Framework pass
 
 - [docs/pleasure-framework-iteration.md](docs/pleasure-framework-iteration.md): experience brainstorm, persona (Dinda) built from the five interviews, Four Pleasures mapping with psycho-pleasure applied, and the prototype update.
