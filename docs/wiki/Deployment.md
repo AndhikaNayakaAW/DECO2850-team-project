@@ -75,3 +75,7 @@ flowchart LR
 ```
 
 Merging the teammate's Garmin code into `main` will trigger this same integration if those project settings remain enabled. The native watch app still needs its own Garmin build/install workflow; Vercel redeploys the web app.
+
+## Observed watch release
+
+On 15 October 2026, a push of [`c2c0e15`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/c2c0e15) automatically produced a successful [Vercel production deployment](https://vercel.com/andhikanayakaaws-projects/offshift/DsPgKyDv9n9NS6ZbZ3XqUxhLngVa). The [GitHub validation run](https://github.com/AndhikaNayakaAW/DECO2850-team-project/actions/runs/38673040152) also completed successfully, including the 67-test suite, TypeScript, the production build and the standalone prototype check. The public watch, daily calendar and optional 3D routes returned HTTP 200.

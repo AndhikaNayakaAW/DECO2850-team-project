@@ -21,8 +21,8 @@ This is a proposed focus to evaluate with workers. I have not established reduce
 | [`931bc77`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/931bc77) | Watch work · green | Implement validated imports, explicit provenance, date matching and private reflection state; all 67 tests pass. |
 | [`fe6d698`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/fe6d698) | Watch work · interaction | Build /watch, the daily calendar, optional notes and preview/cancel/confirm recovery flow; retain optional 3D. |
 | [`0767080`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/0767080) | Watch work · delivery | Add GitHub validation and explicitly enable the existing Vercel Git deployments. |
-
 | [`42b8776`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/42b8776) | Watch work · QA refinement | Clarify the cleared-data state after deletion and verify it in the browser walkthrough. |
+| [`c2c0e15`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/c2c0e15) | Watch work · documentation | Publish the weekly contribution record, screenshots, browser walkthrough and updated wiki source. |
 
 The accompanying documentation commit records this report, source screenshots, the browser walkthrough, wiki updates and the integration handoff. The final documentation and separate wiki publication hashes are reported in chat after publication. Existing human authorship is preserved.
 
@@ -97,4 +97,11 @@ Test contracts → observe failure → implement adapter/private store → pass 
     → verify production routes → publish updated wiki
 ```
 
-The live deployment result is verified and reported in the accompanying chat; this document does not invent an outcome before the remote build completes.
+Release evidence verified on 15 October 2026:
+
+- GitHub Actions [Validate Offshift run 38673040152](https://github.com/AndhikaNayakaAW/DECO2850-team-project/actions/runs/38673040152) completed successfully for release commit [`c2c0e15`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/c2c0e15), including installation, all tests, TypeScript, the production build and the standalone prototype check.
+- The [Vercel production deployment](https://vercel.com/andhikanayakaaws-projects/offshift/DsPgKyDv9n9NS6ZbZ3XqUxhLngVa) completed successfully from that GitHub commit, with no manual deploy command.
+- Public `/watch`, `/calendar` and `/calendar?view=3d` routes returned HTTP 200.
+- The separate wiki repository published the new pages in commit `a49c462`; the final evidence update follows in a subsequent wiki publication.
+
+The follow-up documentation commit records these observed outcomes and corrects table formatting; it does not change the deployed application behaviour.
