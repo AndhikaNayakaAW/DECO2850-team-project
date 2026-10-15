@@ -1,10 +1,10 @@
-[Home](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki) · [Get started](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Getting-Started) · [Design](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Design-and-Research) · [Architecture](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Architecture) · [Testing](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Testing-and-TDD) · [Deployment](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Deployment)
+[Home](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki) · [Get started](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Getting-Started) · [Design](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Design-and-Research) · [Architecture](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Architecture) · [Testing](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Testing-and-TDD) · [Deployment](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Deployment) · [Watch & reflection](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Watch-and-Reflection) · [Weekly contribution](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Weekly-Contribution)
 
 # Deployment
 
 The repository documents a Vercel project for the phone and calendar prototype.
 
-**[Phone demo ↗](https://offshift-nine.vercel.app/)** · **[Calendar ↗](https://offshift-nine.vercel.app/calendar)** · **[Exhibition view ↗](https://offshift-nine.vercel.app/calendar?immersive=1)**
+**[Watch preview ↗](https://offshift-nine.vercel.app/watch)** · **[Phone demo ↗](https://offshift-nine.vercel.app/)** · **[Calendar ↗](https://offshift-nine.vercel.app/calendar)** · **[Exhibition view ↗](https://offshift-nine.vercel.app/calendar?immersive=1)**
 
 ## Project configuration
 
@@ -28,7 +28,7 @@ npm run typecheck
 npm run build
 ```
 
-Then inspect the phone, `/calendar`, the immersive view, and Reset. Verify cross-device changes on the intended exhibition network. A push to `main` is documented as triggering a production deployment through the existing Vercel connection.
+Then inspect `/watch`, the daily `/calendar`, the optional `/calendar?view=3d`, the immersive view, and Reset. The watch preview has its own private-data deletion control. Verify cross-device changes on the intended exhibition network. A push to `main` is documented as triggering a production deployment through the existing Vercel connection.
 
 For a manual deployment, an authorised project member can use:
 
@@ -58,3 +58,20 @@ Keep credentials in the hosting platform or local environment files. Never place
 Turbopack reports broad filesystem tracing for the dynamic state-file path in `/api/state`. The production build succeeds, but the traced server bundle can be larger than intended. This warning predates the overnight-shift change.
 
 Durable storage, authenticated sessions, per-user isolation and an explicit privacy review are needed before the prototype is used with real worker data.
+
+## Verified Git push workflow
+
+The existing Vercel project links to `AndhikaNayakaAW/DECO2850-team-project`, uses `main` as its production branch, and builds `offshift-phone`. This link was inspected through the authenticated Vercel API. The prior main commit also had a successful Vercel deployment status.
+
+`offshift-phone/vercel.json` explicitly enables Git deployments. Pushes to `main` deploy production; other eligible Git branches can produce previews under the project's existing settings. No deployment tokens are committed. GitHub Actions separately validates the source using `.github/workflows/validate.yml`.
+
+```mermaid
+flowchart LR
+  P[Push to GitHub] --> C[GitHub Actions: tests + typecheck + build]
+  P --> V[Vercel Git integration]
+  V --> M{Branch}
+  M -->|main| R[Production deployment]
+  M -->|other eligible branch| B[Preview deployment]
+```
+
+Merging the teammate's Garmin code into `main` will trigger this same integration if those project settings remain enabled. The native watch app still needs its own Garmin build/install workflow; Vercel redeploys the web app.

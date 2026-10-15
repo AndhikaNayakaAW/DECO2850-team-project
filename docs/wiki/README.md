@@ -1,6 +1,6 @@
 # Wiki source
 
-The eight Markdown files in this folder are the source for the [GitHub wiki](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki). `assets/banner.svg` is the banner referenced by the Home page from this main repository.
+The ten published Markdown files in this folder are the source for the [GitHub wiki](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki). `assets/banner.svg` is the banner referenced by the Home page from this main repository.
 
 Edit these files, commit them, then publish from the repository root:
 

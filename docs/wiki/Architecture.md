@@ -1,12 +1,16 @@
-[Home](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki) · [Get started](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Getting-Started) · [Design](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Design-and-Research) · [Architecture](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Architecture) · [Testing](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Testing-and-TDD) · [Deployment](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Deployment)
+[Home](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki) · [Get started](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Getting-Started) · [Design](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Design-and-Research) · [Architecture](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Architecture) · [Testing](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Testing-and-TDD) · [Deployment](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Deployment) · [Watch & reflection](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Watch-and-Reflection) · [Weekly contribution](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Weekly-Contribution)
 
 # Architecture
 
-Offshift is a Next.js application with a phone view and calendar view sharing one Zustand data store. Pure TypeScript helpers calculate the trade-offs; components handle presentation and interaction.
+Offshift is a Next.js application with a watch preview, daily reflection calendar, and earlier phone/3D views. The original scenario uses a shared Zustand store. Watch readings, new reflections and recovery blocks use a separate browser-only store and are excluded from the shared state and assistant context.
 
 ```mermaid
 flowchart LR
-    P[Phone view /] --> S[Zustand store]
+    W[Watch preview /watch] <--> R[Private browser store]
+    D[Daily reflection /calendar] <--> R
+    D --> S[Shared scenario store]
+    R --> B[LocalStorage only]
+    P[Phone view /] --> S
     C[Calendar /calendar] --> S
     S --> L[Time helpers + care checks]
     S <--> Y[Sync provider]
@@ -18,10 +22,14 @@ flowchart LR
     C --> M[Local MediaPipe hand tracking]
 ```
 
+The daily view is the default calendar. The optional board is loaded only for `?view=3d` or `?immersive=1`. [Watch & reflection](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Watch-and-Reflection) describes the import boundary and remaining device integration.
+
 ## Where to work
 
 | Area | Source | Responsibility |
 | :--- | :--- | :--- |
+| Watch data | [`watch.ts`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/offshift-phone/src/lib/watch.ts) | Import validation, provenance, timestamp/date matching and recovery previews. |
+| Private watch store | [`watch-store.ts`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/offshift-phone/src/lib/watch-store.ts) | Browser-only readings, reflections, confirmed recovery blocks and deletion. |
 | Domain types | [`types.ts`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/offshift-phone/src/lib/types.ts) | Shifts, offers, plans, messages and settings. |
 | Scenario | [`scenario.ts`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/offshift-phone/src/lib/scenario.ts) | Fixed clock and fictional demonstration data. |
 | Time calculations | [`logic.ts`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/offshift-phone/src/lib/logic.ts) | Paid time, income, overlaps, travel buffers and rest windows. |

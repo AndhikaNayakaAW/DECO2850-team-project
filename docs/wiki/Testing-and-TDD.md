@@ -1,4 +1,4 @@
-[Home](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki) · [Get started](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Getting-Started) · [Design](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Design-and-Research) · [Architecture](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Architecture) · [Testing](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Testing-and-TDD) · [Deployment](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Deployment)
+[Home](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki) · [Get started](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Getting-Started) · [Design](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Design-and-Research) · [Architecture](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Architecture) · [Testing](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Testing-and-TDD) · [Deployment](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Deployment) · [Watch & reflection](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Watch-and-Reflection) · [Weekly contribution](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Weekly-Contribution)
 
 # Testing & TDD
 
@@ -27,12 +27,14 @@ For a short development loop:
 npm run test:watch
 ```
 
-The phone application suite currently has **46 tests across 6 files**. This count describes the overnight-shift change; add meaningful regression tests as behaviour expands.
+The phone application suite currently has **67 tests across 8 files**. This count includes the watch-reflection change; add meaningful regression tests as behaviour expands.
 
 ## What is covered
 
 | Suite | Behaviour |
 | :--- | :--- |
+| `watch.test.ts` | Fifteen import, provenance, date and activity-context tests. |
+| `watch-store.test.ts` | Six private-state, persistence, confirmation and deletion tests. |
 | `logic.test.ts` | Time conversions, income, overlaps, impact calculations and overnight regression cases. |
 | `checks.test.ts` | Body / Week / Money, priority ordering, reply drafts, alternatives and travel. |
 | `assistant.test.ts` | Scripted greetings, briefings, day queries and decisions. |
@@ -68,3 +70,11 @@ Use your configured Git identity for your own commits. Keep original human autho
 Unit tests do not establish browser accessibility, network-race correctness or production privacy. Exhibition checks should also cover touch alternatives, permission refusal and resetting between participants.
 
 **Next:** [Validate a release](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Deployment).
+
+## Watch reflection: test-first delivery
+
+The watch work added 21 contract tests before implementation. Against the explicit contract stubs, **12 tests failed and 9 guard cases passed**. The next commit implemented the adapter and private store, making all **67 tests pass**. Type checking and production builds also passed.
+
+A browser walkthrough checked 13 groups of behaviour: round watch frame, two watch screens, mobile overflow, activity/readings matching, reflection persistence, recovery preview/cancel, recovery confirmation, recovery persistence, import date matching, unverified provenance, confirmed deletion, exclusion from shared API requests and absence of browser exceptions. These checks use synthetic values, not device or worker evidence.
+
+The GitHub Actions workflow runs on main pushes and pull requests with locked dependencies and Node 24. It runs tests, type checking, the production build and the standalone prototype check. The Vercel Git integration deploys independently; no branch protection or CI-before-deployment gate is claimed.

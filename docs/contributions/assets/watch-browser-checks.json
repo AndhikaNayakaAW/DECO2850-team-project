@@ -1,0 +1,19 @@
+{
+  "result": "passed",
+  "checks": [
+    "round watch frame",
+    "reading and reflect screens",
+    "mobile overflow",
+    "calendar activity/readings match",
+    "optional reflection persists",
+    "preview and cancellation do not schedule",
+    "confirmation schedules one recovery block",
+    "recovery persists after navigation",
+    "imported reading displayed on correct date",
+    "import stays unverified and disconnected",
+    "deletion requires confirmation and clears private state",
+    "private note and readings absent from shared API requests",
+    "no browser exceptions"
+  ],
+  "screenshots": "/tmp/offshift-watch-qa"
+}

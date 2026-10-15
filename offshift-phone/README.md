@@ -1,9 +1,11 @@
-# Offshift · phone + calendar prototype
+# Offshift · watch, phone + calendar prototype
 
-Two screens from one Next.js app, kept in sync over your local network.
+The prototype now includes a circular `/watch` preview and a default daily reflection calendar. The earlier phone, 3D and immersive views remain available.
 
 - **Phone** at `/`: lock screen, then the apps page (Offshift, Pandora Team, McDonald's Crew, myUQ, Settings) and the manager page.
-- **Calendar** at `/calendar`: the 3D week, full screen, for an iPad.
+- **Watch** at `/watch`: circular Reading / Reflect screens, demo or unverified imported heart-rate data, and private-data controls.
+- **Daily calendar** at `/calendar`: dated activity timeline, optional private reflections and confirmed recovery blocks.
+- **3D calendar** at `/calendar?view=3d`: the earlier full-screen 3D week.
 
 ## Run
 
@@ -17,7 +19,11 @@ The terminal prints a Network URL such as `http://192.168.1.20:3000`. On the pho
 
 Add to Home Screen on iOS for a full-screen app without browser chrome.
 
-## Calendar (iPad)
+## Watch reflection
+
+Watch readings, new reflection notes and recovery blocks are stored only in this browser under `offshift-private-watch-v1`; they do not use `/api/state` or the assistant. Demo values are explicit; file imports are unverified and replace the demo batch. The native Garmin app is not integrated yet. See [the import contract and walkthrough](../docs/wiki/Watch-and-Reflection.md).
+
+## Optional 3D calendar (iPad)
 
 Touch empty space and drag to orbit, pinch or scroll to zoom, double-tap to reset. Tap a day to see it in the side panel, tap the amber block to see the ask with the Body, Week and Money checks, toggle the legend chips to filter, add a plan with + Plan. Arrow keys move the day.
 

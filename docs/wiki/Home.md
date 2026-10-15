@@ -2,15 +2,15 @@
 
 <p align="center"><strong>DECO2850 · Care studio · Project handbook</strong></p>
 
-[Home](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki) · [Get started](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Getting-Started) · [Design](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Design-and-Research) · [Architecture](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Architecture) · [Testing](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Testing-and-TDD) · [Deployment](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Deployment)
+[Home](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki) · [Get started](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Getting-Started) · [Design](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Design-and-Research) · [Architecture](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Architecture) · [Testing](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Testing-and-TDD) · [Deployment](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Deployment) · [Watch & reflection](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Watch-and-Reflection) · [Weekly contribution](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Weekly-Contribution)
 
 ---
 
 ## Your week. Your call.
 
-Offshift helps university students pause before replying to an extra shift. Work, study, travel, income, personal plans and rest sit in one week, so the trade-offs are visible and the decision stays with the worker.
+The current proposed direction is to help casual workers reflect on how work fits with their energy, rest and other commitments. The watch preview and daily timeline let a worker notice readings, add context in their own words, and choose a small action. This focus responds to tutor feedback and still needs worker testing.
 
-**[Open the phone demo ↗](https://offshift-nine.vercel.app/)** &nbsp; · &nbsp; **[Explore the immersive week ↗](https://offshift-nine.vercel.app/calendar?immersive=1)** &nbsp; · &nbsp; **[View the source ↗](https://github.com/AndhikaNayakaAW/DECO2850-team-project)**
+**[Open the watch preview ↗](https://offshift-nine.vercel.app/watch)** &nbsp; · &nbsp; **[Daily reflection ↗](https://offshift-nine.vercel.app/calendar)** &nbsp; · &nbsp; **[Explore the immersive week ↗](https://offshift-nine.vercel.app/calendar?immersive=1)** &nbsp; · &nbsp; **[View the source ↗](https://github.com/AndhikaNayakaAW/DECO2850-team-project)**
 
 > [!NOTE]
 > This is a university interaction-design prototype with fictional scenario data and simulated employer apps. Use the demo scenario for exhibition testing.
@@ -24,8 +24,14 @@ Offshift helps university students pause before replying to an extra shift. Work
 | **[03 / Architecture](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Architecture)** | Shared state, routes, 3D calendar, gestures and the optional voice assistant. |
 | **[04 / Testing & TDD](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Testing-and-TDD)** | Regression coverage and the genuine failing-test → passing-code workflow. |
 | **[05 / Deployment](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Deployment)** | Production configuration, validation and known prototype limits. |
+| **[06 / Watch & reflection](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Watch-and-Reflection)** | Circular watch preview, import contract, private daily reflections and recovery flow. |
+| **[07 / Weekly contribution](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Weekly-Contribution)** | Commit evidence, test-first workflow and the handoff to the native Garmin app. |
 
-## One offer, three perspectives
+## Current watch-to-reflection prototype
+
+Open the round watch preview, choose **Reflect on my day**, select an activity, add an optional reflection, then preview and confirm recovery time. Readings are labelled demo or unverified imported data; the native Garmin connection remains a teammate handoff. See [Watch & reflection](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Watch-and-Reflection).
+
+## Earlier offer flow: three perspectives
 
 | Body | Week | Money |
 | :--- | :--- | :--- |

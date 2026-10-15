@@ -1,8 +1,8 @@
-[Home](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki) · [Get started](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Getting-Started) · [Design](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Design-and-Research) · [Architecture](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Architecture) · [Testing](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Testing-and-TDD) · [Deployment](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Deployment)
+[Home](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki) · [Get started](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Getting-Started) · [Design](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Design-and-Research) · [Architecture](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Architecture) · [Testing](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Testing-and-TDD) · [Deployment](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Deployment) · [Watch & reflection](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Watch-and-Reflection) · [Weekly contribution](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Weekly-Contribution)
 
 # Get started
 
-Run one app, then open two views on your devices. The phone handles offers and replies; the calendar makes the week visible.
+Run one app, then open the circular watch preview and the daily reflection calendar. The earlier phone and 3D exhibition views remain available.
 
 ## 01 / Start the app
 
@@ -20,11 +20,17 @@ Open `http://localhost:3000` on the computer. Use the **Network URL** printed by
 | View | Path | Use |
 | :--- | :--- | :--- |
 | Phone | `/` | Unlock, open Offshift, inspect an offer, draft a reply. |
-| Calendar | `/calendar` | Browse the 3D week on an iPad or laptop. |
+| Watch | `/watch` | Try the circular watch preview and manage demo/imported readings. |
+| Daily reflection | `/calendar` | See activities and readings, write a private note and preview recovery time. |
+| 3D calendar | `/calendar?view=3d` | Open the earlier 3D week on an iPad or laptop. |
 | Immersive | `/calendar?immersive=1` | Start directly in the wide exhibition view. |
 | Reset calendar | `/calendar?reset=1` | Restore the shared demonstration scenario. |
 
-## 02 / Try the care moment
+## 02 / Try watch reflection
+
+Start at `/watch`, choose **Reflect on my day**, and select the Wednesday 12–4 pm shift. Add an optional note, then preview recovery time. Only confirmation adds the private recovery block. See the [complete flow](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Watch-and-Reflection). The default watch readings are synthetic; native Garmin integration is pending.
+
+## Earlier offer demo
 
 1. Unlock the phone and open **Offshift**.
 2. Open Jess's Thursday shift offer.
@@ -34,7 +40,7 @@ Open `http://localhost:3000` on the computer. Use the **Network URL** printed by
 
 Pandora Team, McDonald's Crew, myUQ and manager screens are simulated apps inside the prototype. They do not connect to those organisations.
 
-## 03 / Use the calendar
+## 03 / Use the optional 3D calendar
 
 | Input | Action |
 | :--- | :--- |

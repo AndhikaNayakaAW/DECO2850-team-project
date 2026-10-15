@@ -20,7 +20,7 @@ if ! git clone --quiet "$wiki_remote" "$wiki_checkout"; then
   exit 1
 fi
 
-for page in Home Getting-Started Design-and-Research Architecture Testing-and-TDD Deployment _Sidebar _Footer; do
+for page in Home Getting-Started Design-and-Research Architecture Testing-and-TDD Deployment Watch-and-Reflection Weekly-Contribution _Sidebar _Footer; do
   cp "$project_root/docs/wiki/$page.md" "$wiki_checkout/$page.md"
 done
 

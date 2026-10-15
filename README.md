@@ -12,8 +12,17 @@ Explore the [Offshift wiki](https://github.com/AndhikaNayakaAW/DECO2850-team-pro
 
 ## Iteration 3 · Phone and iPad prototype
 
-- [offshift-phone/](offshift-phone/): Next.js app with two synced screens: the phone (`/`, lock screen, apps page, manager page) and the full-screen 3D calendar for an iPad (`/calendar`). Run with `cd offshift-phone && npm install && npm run dev` and open the Network URL on each device. See its [README](offshift-phone/README.md).
+- [offshift-phone/](offshift-phone/): Next.js prototype with a phone (`/`), circular watch preview (`/watch`), daily reflection calendar (`/calendar`) and optional 3D week (`/calendar?view=3d`). Run with `cd offshift-phone && npm install && npm run dev` and open the Network URL on each device. See its [README](offshift-phone/README.md).
 - [docs/offshift-console.md](docs/offshift-console.md): physical prototype spec for the Offshift Console.
+
+## Watch and daily reflection
+
+- [Circular watch preview](https://offshift-nine.vercel.app/watch): demo or unverified imported heart-rate readings, recording/source/import metadata, and Reading / Reflect screens.
+- [Daily reflection calendar](https://offshift-nine.vercel.app/calendar): activities beside readings, optional browser-only reflections, and recovery time added only after preview and confirmation.
+- [Watch integration guide](docs/wiki/Watch-and-Reflection.md): provisional file-import contract and the remaining native Garmin handoff. No live device connection is claimed.
+- [Weekly contribution record](docs/contributions/2026-10-15-watch-reflection.md): commit links, TDD evidence and the demonstrated flow.
+
+The optional 3D week is now at `/calendar?view=3d`; immersive mode stays at `/calendar?immersive=1`. Watch data stays outside the shared demo state.
 
 ## Production deployment
 
@@ -34,7 +43,7 @@ The deployment uses the existing Offshift logo at [`offshift-phone/src/app/icon.
 
 ### Redeploy the same Vercel project
 
-The repository is connected to the Vercel project, so a push to `main` creates a production deployment automatically. A collaborator can also deploy manually:
+The repository connection was verified in Vercel: `main` is the production branch and `offshift-phone` is the root. `offshift-phone/vercel.json` explicitly enables Git deployments, so a push to `main` triggers a production deployment. GitHub Actions independently runs tests, type checking, a build and the standalone prototype checks; it is not a deployment gate. A collaborator can also deploy manually:
 
 ```bash
 npm install --global vercel
