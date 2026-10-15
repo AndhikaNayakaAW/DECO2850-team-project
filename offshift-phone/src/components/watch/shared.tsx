@@ -32,6 +32,6 @@ export function Sparkline({ readings }: { readings: WatchReading[] }) {
   const points = readings.map((r, i) => `${span ? 8 + ((times[i] - times[0]) / span) * 284 : 150},${64 - ((r.bpm - min) / (max - min)) * 52}`);
   return <svg className="reflect-spark" viewBox="0 0 300 80" role="img" aria-label={`${readings.length} heart-rate readings, ${Math.min(...values)} to ${Math.max(...values)} beats per minute. Individual values are listed below.`}><path d="M8 65H292" stroke="currentColor" opacity=".15"/><polyline points={points.join(" ")} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round"/>{points.map((p, i) => <circle key={readings[i].id} cx={p.split(",")[0]} cy={p.split(",")[1]} r="3" fill="currentColor"/>)}</svg>;
 }
-export function DataBadge({ imported }: { imported: boolean }) {
-  return <span className={`reflect-badge ${imported ? "imported" : ""}`}><span aria-hidden="true">●</span> {imported ? "Imported · unverified" : "Demo data"}</span>;
+export function DataBadge({ imported, empty = false }: { imported: boolean; empty?: boolean }) {
+  return <span className={`reflect-badge ${imported ? "imported" : ""}`}><span aria-hidden="true">●</span> {empty ? "No readings" : imported ? "Imported · unverified" : "Demo data"}</span>;
 }
