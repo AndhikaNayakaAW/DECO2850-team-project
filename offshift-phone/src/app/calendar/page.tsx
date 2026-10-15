@@ -1,13 +1,7 @@
-import CalendarBoard from "@/components/board/CalendarBoard";
+import { Suspense } from "react";
+import CalendarExperience from "@/components/watch/CalendarExperience";
 import SyncProvider from "@/lib/sync";
-
-export const metadata = { title: "Offshift · Calendar" };
-
+export const metadata = { title: "Offshift · Daily reflection" };
 export default function CalendarPage() {
-  return (
-    <>
-      <CalendarBoard />
-      <SyncProvider />
-    </>
-  );
+  return <><Suspense fallback={<p className="daily-empty">Opening your calendar…</p>}><CalendarExperience/></Suspense><SyncProvider/></>;
 }

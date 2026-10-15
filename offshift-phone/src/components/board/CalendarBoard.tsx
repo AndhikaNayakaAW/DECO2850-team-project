@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Week3D, { type DropTarget } from "@/components/apps/offshift/Week3D";
 import Assistant from "./Assistant";
@@ -166,6 +167,8 @@ export default function CalendarBoard() {
           </span>
         </div>
         <div className="board-actions">
+          <Link className="btn neutral" href="/calendar">Daily reflection</Link>
+          <Link className="btn neutral" href="/watch">Watch ↗</Link>
           {pending.length > 0 && (
             <button className="status-pill lamp big" onClick={() => { setOfferId(pending[0].id); setDay(pending[0].day); }}>
               {pending.length} ask{pending.length > 1 ? "s" : ""}
