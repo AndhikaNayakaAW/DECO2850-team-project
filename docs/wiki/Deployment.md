@@ -50,7 +50,7 @@ node offshift-watch/scripts/build.mjs \
   --access-code-file /private/path/production.env
 ```
 
-The environment file must contain `OFFSHIFT_ACCESS_CODE=...`. The builder defaults to the production origin and `fenix847mm`. It rejects HTTP release endpoints, copies resources and source to a temporary private directory, embeds the private endpoint there and removes that directory after compilation. Only the public origin is printed. The binary is ignored and restricted to owner access.
+The environment file must contain `OFFSHIFT_ACCESS_CODE=...`. The builder defaults to the production origin and `fenix847mm`. It rejects HTTP release endpoints, copies resources and source to a temporary private directory, embeds the private endpoint there keeps MIR/gen intermediates there, and removes that directory after compilation. Only the program and symbol file are published after a successful compilation. Only the public origin is printed. The binary is ignored and restricted to owner access.
 
 Back up the installed Offshift app before copying the release into the watch's `GARMIN/Apps` using MTP. Do not modify firmware, activities or other apps. See the [native README](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/offshift-watch/README.md).
 

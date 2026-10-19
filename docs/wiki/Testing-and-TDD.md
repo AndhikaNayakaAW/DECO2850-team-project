@@ -2,7 +2,7 @@
 
 # Testing and TDD
 
-The current web suite passes **200 tests across 20 files**. The native Garmin suite passes **24 tests** in the `fenix847mm` simulator. The release builder has **7 Node contract tests**, also run in GitHub Actions. Native simulator checks run separately on a Mac with Garmin's SDK and device profile.
+The current web suite passes **200 tests across 20 files**. The native Garmin suite passes **24 tests** in the `fenix847mm` simulator. The release builder has **9 Node contract and artifact tests**, also run in GitHub Actions. Native simulator checks run separately on a Mac with Garmin's SDK and device profile.
 
 ## Run the checks
 
@@ -25,7 +25,7 @@ node offshift-watch/scripts/build.mjs --test
 
 The simulator must be open. Inspect its final `PASSED (passed=24, failed=0, errors=0)` summary. On this SDK installation `monkeydo` returned status 1 even when that complete summary passed; the native result was checked from its output, not inferred from the exit status.
 
-## Four observed test-first cycles
+## Five observed test-first cycles
 
 | Cycle | Red evidence | Green implementation |
 | :--- | :--- | :--- |
@@ -33,6 +33,7 @@ The simulator must be open. Inspect its final `PASSED (passed=24, failed=0, erro
 | Round-screen theme | Original 15 native tests pass; 3 new theme assertions fail. | Cream ground, Offshift branding, readable ink, vector type and page indicators; all 18 pass. |
 | Reply status and confirmation | 21 native tests pass; 2 fail on stale offline status and an opaque 401. | Clear status after a reply and explain access errors; all 23 pass. Cancellation and failed-send safety also verified. |
 | Retained laptop settings | A targeted native regression fails after persisting a laptop URL. | Each build uses its compiled endpoint; all 24 native tests pass. |
+| Private build artifacts | Two new tests fail: MIR is published beside the release and compiler failure replaces a working binary. | Compile privately and publish program/symbol files after success; all nine build tests pass. |
 
 Each red test commit precedes its green implementation commit. The [current contribution record](Weekly-Contribution) links every commit. UI copy and glance polish were subsequent refinements, not represented as additional TDD cycles.
 
@@ -47,3 +48,5 @@ The native log is saved as [release evidence](https://github.com/AndhikaNayakaAW
 Seventeen synthetic checks ran against the deployed HTTPS API with Redis. They verified unauthorized access, the login cookie, shared asks, a pair of concurrent answers resolving only once, one resulting shift, health sharing, the team projection and sharing-off deletion. The synthetic session was cleared afterward. [Machine-readable results](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/contributions/assets/garmin-production-verification-2026-10-19.json).
 
 These checks do not prove physical watch installation, real sensor delivery, accessibility on the wrist or worker outcomes. Record those separately when actually observed. Previous browser-reflection and overnight-shift TDD evidence remains in the [15 October contribution report](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/contributions/2026-10-15-watch-reflection.md).
+
+[Build contract and artifact test output](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/contributions/assets/garmin-build-tests-2026-10-19.txt).

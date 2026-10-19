@@ -17,7 +17,9 @@ I replaced laptop-oriented release defaults with a production HTTPS build workfl
 
 I configured the existing Vercel project with an Upstash Redis database named `offshift-week` on the free plan, with automatic paid upgrades and the production add-on disabled. I connected it to Production and configured a private shared access code as a Vercel secret. The existing server's compare-and-set storage can now synchronize the calendar, team page and watch across Vercel instances. The deployed route is watch → paired phone running Garmin Connect → internet → Vercel → Redis. After installation this architecture does not require the laptop or a tunnel; the paired phone and internet connection are still needed for the communication bridge.
 
-I used four observed red/green cycles. These covered secure build configuration, readable watch theming, sync status and explicit confirmation, and migration away from retained laptop settings. The sync regression also fixed a case where a successful reply left an old offline message on screen. Safety tests verify that cancelling sends nothing, a confirmed reply sends the chosen decision, and a failed send retains the ask and last successful sync. The physiological thresholds from the teammate's implementation were not changed.
+I used five observed red/green cycles. These covered secure build configuration, readable watch theming, sync status and explicit confirmation, and migration away from retained laptop settings. The sync regression also fixed a case where a successful reply left an old offline message on screen. Safety tests verify that cancelling sends nothing, a confirmed reply sends the chosen decision, and a failed send retains the ask and last successful sync. The physiological thresholds from the teammate's implementation were not changed.
+
+I added a final build-safety regression after checking the real compiler output. Garmin writes intermediate MIR files containing deployment constants beside its output, so the builder now keeps compilation entirely inside its private temporary directory and publishes only the program and symbol file with owner-only access after success. Two new integration tests reproduce intermediate leakage and a failed compiler replacing a working binary; both pass with the fix. This also removes the sensitive intermediates left by earlier local builds.
 
 The first eight commits were pushed together, and GitHub validation passed. That Git push automatically deployed the web app to Vercel. I then ran 17 synthetic checks against the live protected API: unauthorized requests were rejected; browser login set a secure HttpOnly cookie; storage reported Redis; a team ask reached the protected watch route; two simultaneous accept requests produced one success and one conflict; and the calendar contained exactly one resulting shift. I also verified synthetic health-band delivery, omission of health and plans from the team response, and deletion when sharing was switched off. I cleared the synthetic session to an empty week afterward.
 
@@ -36,6 +38,9 @@ I updated the wiki's home page, getting-started guide, architecture, deployment 
 | [`6d45f43`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/6d45f43) | Red | Reproduce a retained laptop URL overriding an updated sideload. |
 | [`8b67263`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/8b67263) | Green | Embed the build endpoint independently of retained settings; all 24 native tests pass. |
 | [`89420fd`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/89420fd) | UI refinement | Shorten consent text, match the glance to the calendar and clarify the browser preview boundary. |
+| [`e9c0423`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/e9c0423) | Documentation | Publish the initial Garmin report, verification evidence and current wiki. |
+| [`f9d357b`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/f9d357b) | Red | Reproduce private compiler intermediates and a failed build overwriting the working release; two new tests fail. |
+| [`d9021c1`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/d9021c1) | Green | Keep compiler intermediates private and publish the release only after success; all nine build tests pass. |
 
 The accompanying documentation commit records this report, native simulator screenshot, raw native test output, production-check results and wiki source. Its hash and the separate wiki publication hash are recorded in Git history and the handoff message; they are not invented in advance.
 
@@ -54,13 +59,13 @@ The circular browser `/watch` preview is a separate interaction study. It accept
 | Web tests | 200 tests across 20 files passed. |
 | TypeScript and production build | Both passed; current app routes generated successfully. |
 | Native simulator | 24 tests passed on the `fenix847mm` profile. |
-| Build configuration | All 7 Node contracts passed; included in GitHub Actions. |
+| Build configuration | All 9 Node contracts passed; included in GitHub Actions. |
 | Standalone prototype | Existing logic check passed. |
 | Live production API | 17 synthetic checks passed; test session cleared. |
 | GitHub CI after first push | [Successful run](https://github.com/AndhikaNayakaAW/DECO2850-team-project/actions/runs/39259454484). |
 | Automatic production deployment | [Successful deployment](https://vercel.com/andhikanayakaaws-projects/offshift/E716bF3huNfhVXS4pnwA3jcwNNhB) of `8b67263`. |
 | Native visual review | Refreshed Ask page inspected in Garmin's simulator with an isolated practice session. |
-| Physical installation | Pending: USB device visible, but no MTP app-storage interface available. |
+| Physical installation | Pending: the MTP interface appeared briefly, then the connection dropped before backup. |
 
 [Native simulator output](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/contributions/assets/garmin-native-tests-2026-10-19.txt) · [Production check record](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/contributions/assets/garmin-production-verification-2026-10-19.json)
 
@@ -68,9 +73,13 @@ The circular browser `/watch` preview is a separate interaction study. It accept
 
 *Simulator capture using a synthetic Alex/Cafe ask. It is not a photograph of the physical watch and does not prove real sensor delivery.*
 
+## Final deployment verification
+
+The subsequent documentation/UI push `e9c0423` also passed [GitHub validation](https://github.com/AndhikaNayakaAW/DECO2850-team-project/actions/runs/39260753928) and [automatically deployed](https://vercel.com/andhikanayakaaws-projects/offshift/73VJfqbzaBbNTcfpFLwJuzVYM5GX). The same Redis snapshot and version survived that redeployment unchanged; the calendar, daily view, browser watch and team routes returned HTTP 200 after authentication. The initial wiki publication is `958811d`.
+
 ## Remaining hardware verification
 
-The model was confirmed by the owner and the native release compiled successfully with the fēnix 8 47mm profile. The Mac detects Garmin USB ID `091e:0003`, but libmtp reports no devices and the watch does not expose its app files. No existing watch app has been overwritten, and no physical installation or real sensor-to-calendar delivery is claimed. The private release is prepared for installation once MTP access is available.
+The model was confirmed by the owner and the native release compiled successfully with the fēnix 8 47mm profile. The watch briefly identified itself over MTP as a fēnix 8 47mm (`091e:51b8`, software 23.40), but the connection dropped back to `091e:0003` before the app backup could start. The owner confirmed MTP is selected and reported a verification message. Stable file access is still pending; no app files have been changed. No existing watch app has been overwritten, and no physical installation or real sensor-to-calendar delivery is claimed. The private release is prepared for installation once MTP access is available.
 
 After that connection is available, back up only the installed Offshift program, replace only Offshift, unplug the watch and open the app with the paired phone online. Verify a new watch contact timestamp, one real reading with consent, an ask and an explicitly confirmed reply. The current live API contact time includes synthetic verification requests, so it cannot itself be reported as physical-device evidence. Worker evaluation and comfort on the wrist remain separate from technical tests.
 

@@ -41,6 +41,6 @@ The main `/calendar` is now the dated 3D week, following the teammate's update. 
 
 ## What has been verified
 
-The native app builds for the confirmed fēnix 8 47mm. All 24 native simulator tests pass; the refreshed Ask screen has been visually inspected. The production API passed 17 synthetic checks and the web app passed 200 tests, type checking and a production build. Physical USB installation and a real sensor-to-calendar run remain pending while the Mac cannot access the watch's MTP storage.
+The native app builds for the confirmed fēnix 8 47mm. All 24 native simulator tests pass; the refreshed Ask screen has been visually inspected. The production API passed 17 synthetic checks and the web app passed 200 tests, type checking and a production build. Physical USB installation and a real sensor-to-calendar run remain pending because the MTP connection drops before app backup.
 
 For evaluation, ask workers what they want to understand, which view is easier, whether it supports a useful action and what feels uncomfortable. Test the real data connection, then the visualization, then the whole experience. Technical tests do not establish reduced stress or improved reflection.

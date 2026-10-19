@@ -13,14 +13,14 @@ Offshift explores how casual workers can reflect on work alongside their energy,
 
 ## Current release · 19 October 2026
 
-The fēnix 8 47mm app now uses the calendar's cream and forest-green theme. Its release builder targets protected Vercel HTTPS independently of old laptop settings. Production has free Redis storage and a shared access code. A Git push automatically deployed the release; 200 web tests, 24 native simulator tests, 7 build contracts and 17 synthetic live API checks passed. Physical watch installation remains pending USB file access.
+The fēnix 8 47mm app now uses the calendar's cream and forest-green theme. Its release builder targets protected Vercel HTTPS independently of old laptop settings. Production has free Redis storage and a shared access code. A Git push automatically deployed the release; 200 web tests, 24 native simulator tests, 9 build contracts and 17 synthetic live API checks passed. Physical watch installation remains pending a stable MTP connection.
 
 | Explore | What you will find |
 | :--- | :--- |
 | **[01 / Get started](Getting-Started)** | Current routes, an empty session and the research walkthrough. |
 | **[02 / Design and research](Design-and-Research)** | The care question, earlier design rationale and questions for workers. |
 | **[03 / Architecture](Architecture)** | Garmin Connect, Vercel, Redis and the two watch-data paths. |
-| **[04 / Testing and TDD](Testing-and-TDD)** | Four observed red/green cycles and the verification limits. |
+| **[04 / Testing and TDD](Testing-and-TDD)** | Five observed red/green cycles and the verification limits. |
 | **[05 / Deployment](Deployment)** | Git deployment, free Redis, access protection and native builds. |
 | **[06 / Watch and reflection](Watch-and-Reflection)** | Four native pages, circular browser preview and worker controls. |
 | **[07 / Weekly contribution](Weekly-Contribution)** | Dated changes, commits, screenshots, evidence and remaining hardware work. |

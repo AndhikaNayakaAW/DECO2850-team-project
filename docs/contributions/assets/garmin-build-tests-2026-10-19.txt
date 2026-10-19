@@ -1,0 +1,17 @@
+✔ private compiler intermediates are not published beside the release (349.2505ms)
+✔ a failed compiler preserves the last known good release (344.040375ms)
+✔ a calendar link resolves to the deployed watch API, never /calendar/api/watch (0.961416ms)
+✔ a private device build includes the access code only in its watch route (0.151875ms)
+✔ a preconfigured watch route does not duplicate the access path or the API suffix (0.095125ms)
+✔ release builds reject laptop HTTP URLs rather than installing a broken device endpoint (0.241416ms)
+✔ the simulator can explicitly opt into a loopback development server (0.654792ms)
+✔ unknown paths, credentials and query tokens are rejected instead of silently leaking them (0.1635ms)
+✔ property XML escapes user-provided URL values (0.09575ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 743.13975

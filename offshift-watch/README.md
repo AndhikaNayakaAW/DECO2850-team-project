@@ -26,7 +26,7 @@ node offshift-watch/scripts/build.mjs --access-code-file /private/path/productio
 
 The private file must contain `OFFSHIFT_ACCESS_CODE=...`. The default origin is `https://offshift-nine.vercel.app`; `--url` also accepts the site's calendar link and normalizes it. The output is `offshift-watch/bin/device/OFFSHIFT.PRG`. With no code file the build uses the public API, which will be rejected by a code-protected deployment.
 
-The builder copies source/resources to a private temporary folder, embeds the chosen endpoint and removes the folder afterward. It does not change tracked source or print the private route. The binary contains that route and must stay private. Its file permissions are restricted to the owner and all generated binaries are ignored by Git.
+The builder compiles inside a private temporary folder, embeds the chosen endpoint and removes source and compiler intermediates afterward. Only the owner-readable program and symbol file are published after success; a failed compiler preserves the previous release. It does not change tracked source or print the private route. The binary contains that route and must stay private. Its file permissions are restricted to the owner and all generated binaries are ignored by Git.
 
 The endpoint is compiled into the release. An old saved `baseUrl` setting cannot keep the watch on a laptop URL after an update. To change the deployed address or rotate its access code, build and install again; do not edit the legacy property file and assume it changes an installed release.
 
@@ -36,7 +36,7 @@ Set the unplugged watch to **Settings → System → Advanced → USB Mode → M
 
 After unplugging, open Offshift with the paired phone online and Garmin Connect available. On Calendar, check the last successful sync. Send a test ask, cancel a reply once, then explicitly confirm a reply and verify it on the calendar/team page. Obtain consent before checking real sensor delivery. A new signing key may cause the watch to treat this as a fresh install and ask about sharing again.
 
-**Installation status, 19 October 2026:** the native release compiles, but this Mac currently sees USB `091e:0003` without an MTP file interface. No physical update is claimed. The model is confirmed and the private device build is prepared.
+**Installation status, 19 October 2026:** the native release compiles, but the MTP interface briefly identified the correct model (`091e:51b8`), then dropped back to `091e:0003` before app backup. Stable file access is still pending. No physical update is claimed. The model is confirmed and the private device build is prepared.
 
 ## Simulator and tests
 
@@ -47,7 +47,7 @@ node offshift-watch/scripts/build.mjs --test
 node --test offshift-watch/test/*.test.mjs
 ```
 
-There are 24 native tests and 7 Node build contracts. This SDK returned exit status 1 even for a complete native pass; inspect its final `PASSED (passed=24, failed=0, errors=0)` summary. The native tests use the real device profile's fonts, test round-screen bounds and contrast, and isolate replies from real network activity.
+There are 24 native tests and 9 Node build contracts/artifact checks. This SDK returned exit status 1 even for a complete native pass; inspect its final `PASSED (passed=24, failed=0, errors=0)` summary. The native tests use the real device profile's fonts, test round-screen bounds and contrast, and isolate replies from real network activity.
 
 For an isolated laptop simulation, run the web app with a separate `OFFSHIFT_STATE_FILE`, then build explicitly for loopback:
 
