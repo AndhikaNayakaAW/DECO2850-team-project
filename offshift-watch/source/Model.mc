@@ -95,7 +95,7 @@ class OffshiftModel {
             remember(data);
         } else {
             System.println("Offshift: server answered " + code.toString());
-            _status = (code == Communications.BLE_CONNECTION_UNAVAILABLE) ? "Phone not connected" : "Calendar offline (" + code.toString() + ")";
+            _status = (code == 401 || code == 403) ? "Access code needed" : (code == Communications.BLE_CONNECTION_UNAVAILABLE) ? "Phone not connected" : "Calendar offline (" + code.toString() + ")";
         }
         WatchUi.requestUpdate();
     }
@@ -128,6 +128,7 @@ class OffshiftModel {
     function onAnswered(code as Number, data as Dictionary or String or Null) as Void {
         if ((code == 200 || code == 409) && data instanceof Dictionary) {
             _summary = data;
+            _status = "";
             _syncedAt = Clock.now();
             remember(data);
             var toast = data["toast"];
