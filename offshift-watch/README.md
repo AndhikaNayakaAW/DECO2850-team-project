@@ -32,11 +32,11 @@ The endpoint is compiled into the release. An old saved `baseUrl` setting cannot
 
 ## Install only Offshift
 
-Set the unplugged watch to **Settings → System → Advanced → USB Mode → MTP**, reconnect it and allow the Mac accessory if asked. Back up the existing Offshift PRG before replacing it. On macOS use an MTP client such as libmtp to access `GARMIN/Apps`; MTP storage may not appear in Finder. Copy only the new Offshift program, leaving other apps, activities and firmware alone.
+Set the unplugged watch to **Watch Settings → System → Advanced → USB Mode → MTP**, reconnect it and allow the Mac accessory if asked. Back up the existing Offshift PRG before replacing it. On macOS use an MTP client such as libmtp to access `GARMIN/Apps`; MTP storage may not appear in Finder. Copy only the new Offshift program, leaving other apps, activities and firmware alone.
 
 After unplugging, open Offshift with the paired phone online and Garmin Connect available. On Calendar, check the last successful sync. Send a test ask, cancel a reply once, then explicitly confirm a reply and verify it on the calendar/team page. Obtain consent before checking real sensor delivery. A new signing key may cause the watch to treat this as a fresh install and ask about sharing again.
 
-**Installation status, 19 October 2026:** the native release compiles, but the MTP interface briefly identified the correct model (`091e:51b8`), then dropped back to `091e:0003` before app backup. Stable file access is still pending. No physical update is claimed. The model is confirmed and the private device build is prepared.
+**Installation status, 19 October 2026:** installed on the actual fēnix 8 47mm. There was no existing Offshift PRG, so this was a new installation; existing files were preserved. The 37,420-byte program downloaded back from the watch has exactly the same SHA-256 as the release. The owner confirms Offshift opens, currently reporting “Phone not connected.” The paired-phone communication bridge is being checked; real sensor delivery is not yet verified.
 
 ## Simulator and tests
 
@@ -98,3 +98,13 @@ Every reader looks back for the most recent real sample, because samples are bla
 ## Every five minutes
 
 While the app is closed, a background check shares the body (if allowed), updates the glance, and offers to open Offshift when a new ask arrives. It never answers anything.
+
+## If the watch says Phone not connected
+
+Keep Bluetooth enabled and open Garmin Connect on the paired phone with internet access, then leave and reopen Offshift. The Mac USB cable does not supply the Garmin Connect communication bridge. If pairing was never completed, use Garmin Connect → Garmin Devices → Add Device and the watch's Watch Settings → Connectivity → Phone → Pair Phone, following [Garmin's pairing guide](https://www8.garmin.com/manuals-apac/webhelp/fenix8series/EN-SG/GUID-071CBA5B-A374-47E7-89D3-17EAFF55AF52-9119.html). Pair through Garmin Connect, not only the phone's Bluetooth settings.
+
+This status corresponds to Garmin's `BLE_CONNECTION_UNAVAILABLE` (`-104`), before an HTTP response from Vercel. A connected indicator in Garmin Connect does not prove that this app's web request succeeded. If reopening both apps does not help, restart the phone and watch normally, keep them nearby, and check Garmin Connect is current, as described in [Garmin's connection troubleshooting](https://www8.garmin.com/manuals/webhelp/GUID-EECCAC99-90D6-4AB1-9A3A-EC433D3365E2/EN-US/GUID-4442F808-670B-4EF3-AC60-32666F173DFD.html). Do not factory-reset the watch for this check.
+
+The glance can retain the last saved ask while disconnected. A name or shift there is not proof of a current server connection. Verify Calendar's successful sync time and a fresh server `watchSeenAt` timestamp instead. Body's “No reading” means the signal is unavailable; a USB connection, a working API or an old glance does not establish that sensors supplied data. The installed physical watch cannot be viewed or controlled through the development simulator.
+
+The paired phone must actually be nearby and available. On 19 October the owner clarified that this watch was paired to another person's phone, which was unavailable for continued testing. Pair an available phone through Garmin Connect to use the installed release. Garmin Express on the Mac handles device management and Garmin sync; it is not the mobile communication bridge for this app. A separate `Communications.SyncDelegate` Wi-Fi mode is supported by Garmin on the target model but is not implemented in this release.

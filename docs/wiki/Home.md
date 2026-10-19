@@ -13,7 +13,7 @@ Offshift explores how casual workers can reflect on work alongside their energy,
 
 ## Current release · 19 October 2026
 
-The fēnix 8 47mm app now uses the calendar's cream and forest-green theme. Its release builder targets protected Vercel HTTPS independently of old laptop settings. Production has free Redis storage and a shared access code. A Git push automatically deployed the release; 200 web tests, 24 native simulator tests, 9 build contracts and 17 synthetic live API checks passed. Physical watch installation remains pending a stable MTP connection.
+The fēnix 8 47mm app now uses the calendar's cream and forest-green theme. Its release builder targets protected Vercel HTTPS independently of old laptop settings. Production has free Redis storage and a shared access code. A Git push automatically deployed the release; 200 web tests, 24 native simulator tests, 9 build contracts and 17 synthetic live API checks passed. The watch app is installed and its readback hash verified; the paired-phone internet connection is still being checked.
 
 | Explore | What you will find |
 | :--- | :--- |

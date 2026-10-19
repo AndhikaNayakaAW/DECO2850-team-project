@@ -41,6 +41,7 @@ I updated the wiki's home page, getting-started guide, architecture, deployment 
 | [`e9c0423`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/e9c0423) | Documentation | Publish the initial Garmin report, verification evidence and current wiki. |
 | [`f9d357b`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/f9d357b) | Red | Reproduce private compiler intermediates and a failed build overwriting the working release; two new tests fail. |
 | [`d9021c1`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/d9021c1) | Green | Keep compiler intermediates private and publish the release only after success; all nine build tests pass. |
+| [`4c6b0d1`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/4c6b0d1) | Documentation | Record the fifth TDD cycle, cloud persistence proof and device-installation status at that point. |
 
 The accompanying documentation commit records this report, native simulator screenshot, raw native test output, production-check results and wiki source. Its hash and the separate wiki publication hash are recorded in Git history and the handoff message; they are not invented in advance.
 
@@ -65,7 +66,8 @@ The circular browser `/watch` preview is a separate interaction study. It accept
 | GitHub CI after first push | [Successful run](https://github.com/AndhikaNayakaAW/DECO2850-team-project/actions/runs/39259454484). |
 | Automatic production deployment | [Successful deployment](https://vercel.com/andhikanayakaaws-projects/offshift/E716bF3huNfhVXS4pnwA3jcwNNhB) of `8b67263`. |
 | Native visual review | Refreshed Ask page inspected in Garmin's simulator with an isolated practice session. |
-| Physical installation | Pending: the MTP interface appeared briefly, then the connection dropped before backup. |
+| Physical installation | Installed on the actual fēnix 8 47mm; MTP readback exactly matches the compiled release. Owner confirms the app opens. |
+| Physical internet connection | Pending: app reports Phone not connected; paired-phone bridge is being checked. |
 
 [Native simulator output](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/contributions/assets/garmin-native-tests-2026-10-19.txt) · [Production check record](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/contributions/assets/garmin-production-verification-2026-10-19.json)
 
@@ -77,11 +79,21 @@ The circular browser `/watch` preview is a separate interaction study. It accept
 
 The subsequent documentation/UI push `e9c0423` also passed [GitHub validation](https://github.com/AndhikaNayakaAW/DECO2850-team-project/actions/runs/39260753928) and [automatically deployed](https://vercel.com/andhikanayakaaws-projects/offshift/73VJfqbzaBbNTcfpFLwJuzVYM5GX). The same Redis snapshot and version survived that redeployment unchanged; the calendar, daily view, browser watch and team routes returned HTTP 200 after authentication. The initial wiki publication is `958811d`.
 
-## Remaining hardware verification
+The build-safety fix and updated record were also released in `4c6b0d1`, with [successful GitHub validation](https://github.com/AndhikaNayakaAW/DECO2850-team-project/actions/runs/39262276937) and an [automatic Vercel deployment](https://vercel.com/andhikanayakaaws-projects/offshift/H2ug6pSPhqieoTcBYP3Zya8de3Yt). The second wiki publication is `3e250af`.
 
-The model was confirmed by the owner and the native release compiled successfully with the fēnix 8 47mm profile. The watch briefly identified itself over MTP as a fēnix 8 47mm (`091e:51b8`, software 23.40), but the connection dropped back to `091e:0003` before the app backup could start. The owner confirmed MTP is selected and reported a verification message. Stable file access is still pending; no app files have been changed. No existing watch app has been overwritten, and no physical installation or real sensor-to-calendar delivery is claimed. The private release is prepared for installation once MTP access is available.
+## Physical installation and remaining connection check
 
-After that connection is available, back up only the installed Offshift program, replace only Offshift, unplug the watch and open the app with the paired phone online. Verify a new watch contact timestamp, one real reading with consent, an ask and an explicitly confirmed reply. The current live API contact time includes synthetic verification requests, so it cannot itself be reported as physical-device evidence. Worker evaluation and comfort on the wrist remain separate from technical tests.
+The initial USB connection was intermittent, but MTP became stable after reconnecting. The device identified itself as a fēnix 8 47mm with software 23.40. Inspection of `GARMIN/Apps` found no existing PRG application, so this was a new Offshift installation rather than replacement of an older build. I saved the directory listing privately and left the existing folders and `OUT.BIN` unchanged.
+
+I installed the protected `OFFSHIFT.PRG`, downloaded the installed file back from the watch and compared SHA-256 hashes. Both hashes matched exactly for the 37,420-byte release. The owner then unplugged the watch, opened Offshift and confirmed that it launches. [Installation and readback record](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/contributions/assets/garmin-install-verification-2026-10-19.json).
+
+The app currently reports “Phone not connected.” The owner says Garmin Connect shows the watch as connected and confirmed that reopening Offshift with Garmin Connect open did not resolve the message. This is the app's mapping of Garmin's `BLE_CONNECTION_UNAVAILABLE` (`-104`), rather than an HTTP access-code or Vercel error. The owner also reported a saved shift in the glance and “No reading” on the Body page. The glance reads persisted app storage, so that text does not prove a fresh request; missing sensor values remain unavailable rather than being replaced with demo readings.
+
+The owner subsequently clarified that the watch is paired with another person's phone, which is leaving and will not be available for the test. This identifies a missing dependency in the installed app's phone-based route; seeing that phone's connected indicator was not evidence of an available communication bridge here. The Mac's USB installation connection cannot substitute for Garmin Connect Mobile. Pairing an available phone through Garmin Connect is the direct next step. Garmin also exposes a separate Wi-Fi sync mode for this model, but that feature is not implemented in this installed release.
+
+No new watch request has yet reached Vercel after installation. The server observation checks `/api/state` without calling the watch endpoint, and the simulator is stopped, so the observation does not create its own watch-contact timestamp. Physical installation and launch are verified, while actual phone-to-Vercel sync, real sensor delivery and an on-wrist reply remain unverified. The earlier live API and simulator checks are separate evidence, and development tools do not provide remote screen control of the physical watch.
+
+The next runtime check is a new watch contact timestamp after opening the installed app, followed by an ask and an explicitly confirmed reply. Check real body delivery only if the wearer chooses to share it. Worker evaluation and comfort on the wrist remain separate from technical tests.
 
 ## Earlier contribution
 

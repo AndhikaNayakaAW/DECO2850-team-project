@@ -41,6 +41,10 @@ The main `/calendar` is now the dated 3D week, following the teammate's update. 
 
 ## What has been verified
 
-The native app builds for the confirmed fēnix 8 47mm. All 24 native simulator tests pass; the refreshed Ask screen has been visually inspected. The production API passed 17 synthetic checks and the web app passed 200 tests, type checking and a production build. Physical USB installation and a real sensor-to-calendar run remain pending because the MTP connection drops before app backup.
+The native app builds for the confirmed fēnix 8 47mm. All 24 native simulator tests pass; the refreshed Ask screen has been visually inspected. The production API passed 17 synthetic checks and the web app passed 200 tests, type checking and a production build. The app is now installed on the physical fēnix 8 47mm, with an exact SHA-256 match after MTP readback. The owner confirms it opens, currently showing “Phone not connected.” The phone-to-Vercel link and real sensor delivery remain pending.
+
+Reopening with Garmin Connect in the foreground did not resolve the reported connection error. A saved shift in the glance is cached information, not proof of fresh sync; “No reading” is unavailable sensor data. Check a successful Calendar sync time and a fresh server contact before claiming a working physical connection. See the [contribution record](Weekly-Contribution) for the observation method and next device check.
+
+The owner then clarified that the paired phone belongs to someone else and is unavailable for continued testing. This installed release needs an available paired phone running Garmin Connect. USB installation on the Mac does not provide that bridge, and a separate manual Wi-Fi sync feature has not been implemented.
 
 For evaluation, ask workers what they want to understand, which view is easier, whether it supports a useful action and what feels uncomfortable. Test the real data connection, then the visualization, then the whole experience. Technical tests do not establish reduced stress or improved reflection.

@@ -46,4 +46,4 @@ The `/watch` browser preview has a different file-import path. Its numeric readi
 
 ## Evidence boundary
 
-The native app builds for `fenix847mm` and passes simulator tests. The live Vercel API has passed synthetic integration checks. These do not prove that the physical watch has been updated or that its sensors have delivered a real reading. See the dated [contribution record](Weekly-Contribution) for the installation status.
+The native app builds for `fenix847mm` and passes simulator tests. The live Vercel API has passed synthetic integration checks. A separate MTP readback verifies the installed physical program, and the owner confirms it opens. The physical phone-to-Vercel connection and real sensor delivery are still being checked. See the dated [contribution record](Weekly-Contribution) for the installation status.

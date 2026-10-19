@@ -1,0 +1,21 @@
+{
+  "installedAt": "2026-10-19T13:42:57.054253+00:00",
+  "model": "fenix 8 47mm",
+  "operation": "new Offshift app installation; no existing PRG in Apps",
+  "filename": "OFFSHIFT.PRG",
+  "bytes": 37420,
+  "sha256": "b63267d1f18547dc4c3946e960daf972f7ea5556ce8e2401369bd74706fdccda",
+  "mtpReadbackSha256": "b63267d1f18547dc4c3946e960daf972f7ea5556ce8e2401369bd74706fdccda",
+  "readbackMatches": true,
+  "runtime": "owner confirms Offshift opens; currently Phone not connected",
+  "ownerConfirmedAppOpens": true,
+  "ownerReportedGarminConnectConnected": true,
+  "serverContactAfterInstall": false,
+  "serverObservationCheckedAt": "2026-10-19T13:52:46.827135+00:00",
+  "latestObservedWatchContactAt": "2026-10-19T13:23:08.722Z",
+  "ownerConfirmedReopenWithConnectForegroundDidNotResolve": true,
+  "ownerReportedSavedGlance": true,
+  "ownerReportedBodyUnavailable": true,
+  "ownerClarifiedPairedPhoneUnavailable": true,
+  "remainingDependency": "available paired phone running Garmin Connect; installed release has no manual Wi-Fi sync mode"
+}
