@@ -19,7 +19,8 @@ Explore the [Offshift wiki](https://github.com/AndhikaNayakaAW/DECO2850-team-pro
 
 - [Circular watch preview](https://offshift-nine.vercel.app/watch): demo or unverified imported heart-rate readings, recording/source/import metadata, and Reading / Reflect screens.
 - [Daily reflection calendar](https://offshift-nine.vercel.app/calendar): activities beside readings, optional browser-only reflections, and recovery time added only after preview and confirmation.
-- [Watch integration guide](docs/wiki/Watch-and-Reflection.md): provisional file-import contract and the remaining native Garmin handoff. No live device connection is claimed.
+- [Watch integration guide](docs/wiki/Watch-and-Reflection.md): provisional file-import contract for the browser `/watch` preview.
+- [Garmin watch app](offshift-watch/README.md): the native fēnix 8 app, with a live connection to the calendar through `/api/watch`: build, install, pages, what it reads, privacy and tests.
 - [Weekly contribution record](docs/contributions/2026-10-15-watch-reflection.md): commit links, TDD evidence and the demonstrated flow.
 
 The optional 3D week is now at `/calendar?view=3d`; immersive mode stays at `/calendar?immersive=1`. Watch data stays outside the shared demo state.
