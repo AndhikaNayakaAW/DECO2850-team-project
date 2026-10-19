@@ -1,5 +1,5 @@
 /** Builds with a temporary private resource override; secrets never enter tracked properties. */
-import { mkdtemp, cp, writeFile, readFile, mkdir, rm, chmod } from 'node:fs/promises';
+import { mkdtemp, cp, writeFile, readFile, mkdir, rm, chmod, rename } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -36,7 +36,9 @@ try {
   // Jungle values can contain spaces; the compiler parses the whole value to the right of '='.
   await writeFile(jungle, `project.manifest = ${path.join(root, 'manifest.xml')}\nbase.sourcePath = ${source}\nbase.resourcePath = ${resources}\n`, { mode: 0o600 });
   await mkdir(path.dirname(output), { recursive: true });
-  const compilerArgs = ['-f', jungle, '-d', option('--device', 'fenix847mm'), '-y', key, '-o', output];
+  const compiled = path.join(temporary, 'compiled', path.basename(output));
+  await mkdir(path.dirname(compiled), { recursive: true });
+  const compilerArgs = ['-f', jungle, '-d', option('--device', 'fenix847mm'), '-y', key, '-o', compiled];
   if (test) compilerArgs.push('--unit-test');
   else compilerArgs.push('-r');
   const java = option('--java', process.env.OFFSHIFT_JAVA);
@@ -45,7 +47,24 @@ try {
   const result = spawnSync(executable, passed, { stdio: 'inherit' });
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error(`Garmin compiler exited ${result.status}.`);
-  await chmod(output, 0o600);
+  // Garmin also emits MIR/gen files containing string constants. Keep all of them in the private build.
+  async function publish(from, to) {
+    const staging = await mkdtemp(path.join(path.dirname(to), '.offshift-publish-'));
+    try {
+      const staged = path.join(staging, 'artifact');
+      await cp(from, staged);
+      await chmod(staged, 0o600);
+      await rename(staged, to);
+    } finally {
+      await rm(staging, { recursive: true, force: true });
+    }
+  }
+  await publish(compiled, output);
+  try {
+    await publish(`${compiled}.debug.xml`, `${output}.debug.xml`);
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
   // Report only the public origin, never a secret-bearing /w/<code> route.
   console.log(JSON.stringify({ output, device: option('--device', 'fenix847mm'), origin: config.origin, accessProtected: config.protected, unitTests: test }));
 } finally {
