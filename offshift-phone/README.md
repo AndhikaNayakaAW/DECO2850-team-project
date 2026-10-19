@@ -21,7 +21,7 @@ Add to Home Screen on iOS for a full-screen app without browser chrome.
 
 ## Watch reflection
 
-Watch readings, new reflection notes and recovery blocks are stored only in this browser under `offshift-private-watch-v1`; they do not use `/api/state` or the assistant. Demo values are explicit; file imports are unverified and replace the demo batch. The native Garmin app is not integrated yet. See [the import contract and walkthrough](../docs/wiki/Watch-and-Reflection.md).
+Watch readings, new reflection notes and recovery blocks are stored only in this browser under `offshift-private-watch-v1`; they do not use `/api/state` or the assistant. Demo values are explicit; file imports are unverified and replace the demo batch. The native Garmin app is a separate path, described under Garmin watch app below. See [the import contract and walkthrough](../docs/wiki/Watch-and-Reflection.md).
 
 ## Optional 3D calendar (iPad)
 
@@ -60,3 +60,9 @@ Offshift: Week (3D week, asks, agenda, add plan), Offer (checks, impact tiles, t
 ## Sync
 
 Every device reads and writes `/api/state`, a small route in this app that keeps the scenario in memory and in `.offshift-state.json`. Changes on one device reach the others within about a second. Reset from Settings on the phone.
+
+## Garmin watch app
+
+The Garmin app in `offshift-watch` is separate from the browser `/watch` preview above. It runs on a fēnix 8 and uses `/api/watch`: it fetches the waiting ask with its week lines, sends answers, and, only after the worker agrees on the watch, sends body readings as words (one level from 0 to 3 per signal, never a number). Those words do go into the shared state, so the calendar can show them in the Body card and the ask's body check and the immersive greeting can read them out. Turning sharing off on the watch clears them. Nothing about the body goes to an employer.
+
+A real watch only talks to https, so run `npm run watch-gateway` (forwards `/api/watch` and nothing else, on :3001) and point a tunnel at it, for example `cloudflared tunnel --url http://127.0.0.1:3001`. See `offshift-watch/README.md`.
