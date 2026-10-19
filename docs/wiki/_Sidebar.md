@@ -18,8 +18,8 @@
 **Explore**
 
 - [Watch preview ↗](https://offshift-nine.vercel.app/watch)
-- [Daily reflection ↗](https://offshift-nine.vercel.app/calendar)
-- [Phone demo ↗](https://offshift-nine.vercel.app/)
+- [Daily reflection ↗](https://offshift-nine.vercel.app/calendar?view=day)
+- [Week calendar ↗](https://offshift-nine.vercel.app/calendar)
 - [Immersive week ↗](https://offshift-nine.vercel.app/calendar?immersive=1)
 - [Source code ↗](https://github.com/AndhikaNayakaAW/DECO2850-team-project)
 - [Research notes](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/pleasure-framework-iteration.md)

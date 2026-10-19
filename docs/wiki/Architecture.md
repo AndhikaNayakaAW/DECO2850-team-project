@@ -2,60 +2,48 @@
 
 # Architecture
 
-Offshift is a Next.js application with a watch preview, daily reflection calendar, and earlier phone/3D views. The original scenario uses a shared Zustand store. Watch readings, new reflections and recovery blocks use a separate browser-only store and are excluded from the shared state and assistant context.
+Offshift has a Next.js calendar and a native Monkey C Garmin app. Both read and update one shared session through server APIs. The public deployment uses durable Redis storage; local development can use a JSON file.
 
 ```mermaid
 flowchart LR
-    W[Watch preview /watch] <--> R[Private browser store]
-    D[Daily reflection /calendar] <--> R
-    D --> S[Shared scenario store]
-    R --> B[LocalStorage only]
-    P[Phone view /] --> S
-    C[Calendar /calendar] --> S
-    S --> L[Time helpers + care checks]
-    S <--> Y[Sync provider]
-    Y <--> A[State API /api/state]
-    A --> F[Process memory + local JSON]
-    C --> V[Assistant API /api/assistant]
-    V --> O[Scripted fallback]
-    V --> H[Optional hosted language model]
-    C --> M[Local MediaPipe hand tracking]
+  G[Garmin Offshift app] --> P[Paired phone / Garmin Connect]
+  P --> W[Protected watch API]
+  C[Calendar browser] <--> S[State API]
+  T[Research team page] <--> A[Team API / restricted response]
+  W <--> R[(Redis: week + version)]
+  S <--> R
+  A <--> R
+  B[Browser watch preview] <--> L[Private browser storage]
 ```
 
-The daily view is the default calendar. The optional board is loaded only for `?view=3d` or `?immersive=1`. [Watch & reflection](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Watch-and-Reflection) describes the import boundary and remaining device integration.
+## Shared session
 
-## Where to work
+Events have dates and a time zone, Australia/Brisbane by default. A session has shifts, university commitments, personal plans, offers, messages, settings and an optional wearable record. The browser merges edits against its last synchronized base. Redis uses compare-and-set writes and retries so concurrent instances do not silently overwrite the week. Duplicate answers cannot both accept the same ask.
 
-| Area | Source | Responsibility |
+| Boundary | Source | Responsibility |
 | :--- | :--- | :--- |
-| Watch data | [`watch.ts`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/offshift-phone/src/lib/watch.ts) | Import validation, provenance, timestamp/date matching and recovery previews. |
-| Private watch store | [`watch-store.ts`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/offshift-phone/src/lib/watch-store.ts) | Browser-only readings, reflections, confirmed recovery blocks and deletion. |
-| Domain types | [`types.ts`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/offshift-phone/src/lib/types.ts) | Shifts, offers, plans, messages and settings. |
-| Scenario | [`scenario.ts`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/offshift-phone/src/lib/scenario.ts) | Fixed clock and fictional demonstration data. |
-| Time calculations | [`logic.ts`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/offshift-phone/src/lib/logic.ts) | Paid time, income, overlaps, travel buffers and rest windows. |
-| Care checks | [`checks.ts`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/offshift-phone/src/lib/checks.ts) | Body / Week / Money, alternatives and reply drafts. |
-| Store | [`store.ts`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/offshift-phone/src/lib/store.ts) | State, persistence, offer responses and reset actions. |
-| Cross-device sync | [`sync.tsx`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/offshift-phone/src/lib/sync.tsx) | Debounced writes and one-second polling. |
-| Board | [Calendar components](https://github.com/AndhikaNayakaAW/DECO2850-team-project/tree/main/offshift-phone/src/components/board) | Three.js scene, immersive controls and assistant UI. |
-| Gestures | [`gestures.ts`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/offshift-phone/src/lib/gestures.ts) | Pure gesture-state engine tested separately from the camera. |
-| Hand input | [`hands.ts`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/offshift-phone/src/lib/hands.ts) | MediaPipe landmarks and browser camera processing. |
+| State and persistence | `offshift-phone/src/lib/server-state.ts` | Redis REST commands, versions and conflict retries. |
+| Browser sync | `offshift-phone/src/lib/sync.tsx` | Polling, browser merges and session changes. |
+| Watch API | `offshift-phone/src/app/api/watch/route.ts` | Summary, confirmed replies, optional health bands and sharing-off. |
+| Garmin mapping | `offshift-phone/src/lib/garmin.ts` | Words and watch-sized summaries. |
+| Team API | `offshift-phone/src/app/api/team/route.ts` | Research session controls and restricted projection. |
+| Native watch | `offshift-watch/source` | Circular pages, answer confirmation, sensors and serial requests. |
+| Release builder | `offshift-watch/scripts/build.mjs` | Validate HTTPS and privately embed the deployment endpoint. |
 
-## State and sync
+## Native watch flow
 
-The store separates scenario data from UI state such as which app or sheet is open. `pickData` selects the shared data. Browser persistence uses localStorage when available and falls back to memory when it is unavailable.
+The foreground app polls every five seconds and reads sensors roughly once a minute. With consent, changed health bands are uploaded, with a periodic refresh. A five-minute background request is registered with Garmin; actual background delivery is subject to the watch operating system. Requests run serially so polling does not collide with a reply.
 
-Changes queue a write after 150 ms. Other clients poll `/api/state` roughly once a second. The route tracks a version and client ID, keeps data in process memory, and attempts to write a JSON file. This is prototype synchronization: there is no transactional merge, authentication or per-user isolation.
+The native release embeds the Vercel endpoint in a temporary source copy. Retained settings from an older sideload cannot redirect it to a laptop. A protected release includes the access code only in its private build artifact. The key, code, Redis credentials and binary are excluded from Git.
 
-## Time model
+The intended deployed route is watch → Garmin Connect on the paired phone → internet → Vercel → Redis. The laptop is needed for development and sideload installation, not for the server once installed. The phone must still be paired and able to provide the communication bridge.
 
-The scenario uses weekday labels and 24-hour clock strings, rather than dated, timezone-aware events. An end clock earlier than the start means the next day. Equal clocks mean an empty interval. Touching endpoints do not overlap.
+## Two data paths
 
-`shiftImpact` compares dated intervals within the scenario week and accounts for adjacent-day events. When a Sunday shift crosses midnight, Monday commitments are treated as the next weekly occurrence. The calendar rendering and every higher-level narrative are not a complete overnight scheduling system; the regression change specifically covers the shared time calculations.
+Native body data belongs to the shared session as timestamped bands and is displayed by the calendar. Raw sensor values remain on the watch. The `/team` response omits body data and private plans. However, this is a shared-code prototype: it does not implement separate employer and worker API roles or separate accounts.
 
-## Assistant and camera
+The `/watch` browser preview has a different file-import path. Its numeric readings, written reflections and recovery blocks use private browser storage, scoped to the current session. Demo data is loaded explicitly; imported origin is self-reported and unverified. Those local records do not become a live Garmin feed.
 
-`/api/assistant` uses an optional hosted language model when server credentials are present and falls back to scripted responses. It returns speech text and structured actions; the client applies those actions to the scenario. This does not connect to a real employer messaging service.
+## Evidence boundary
 
-Hand and face-presence processing runs in the browser with locally served model files. Presence detection does not identify a person. The optional hosted assistant is a separate data path and receives scenario context.
-
-**Next:** [Test behaviour before changing it](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Testing-and-TDD).
+The native app builds for `fenix847mm` and passes simulator tests. The live Vercel API has passed synthetic integration checks. These do not prove that the physical watch has been updated or that its sensors have delivered a real reading. See the dated [contribution record](Weekly-Contribution) for the installation status.

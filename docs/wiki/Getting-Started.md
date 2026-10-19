@@ -2,11 +2,23 @@
 
 # Get started
 
-Run one app, then open the circular watch preview and the daily reflection calendar. The earlier phone and 3D exhibition views remain available.
+The current app opens a dated 3D week calendar. Each participant starts with an empty week; the research team can explicitly load a practice week. The native Garmin app and the circular browser preview are separate experiences.
 
-## 01 / Start the app
+## Open the prototype
 
-Use Node.js 24 LTS with npm (the release used for local validation). [Next.js requires Node.js 20.9 or newer](https://nextjs.org/docs/app/getting-started/installation#system-requirements).
+**[Calendar ↗](https://offshift-nine.vercel.app/calendar)** · **[Browser watch preview ↗](https://offshift-nine.vercel.app/watch)** · **[Daily reflection ↗](https://offshift-nine.vercel.app/calendar?view=day)**
+
+Production requires the access code supplied privately by the project owner. The code is never published in the wiki. One deployment holds one shared session, so the research team runs one participant at a time.
+
+| View | Route | Purpose |
+| :--- | :--- | :--- |
+| Main week | `/` or `/calendar` | Work, study, personal plans and waiting asks in the current week. |
+| Daily reflection | `/calendar?view=day&date=YYYY-MM-DD` | A selected day's activities, optional notes and confirmed recovery blocks. |
+| Browser watch | `/watch` | Circular preview with explicitly loaded demo readings or unverified file imports. |
+| Research team | `/team` | New session, practice week, asks and replies. Not linked from the worker's screen. |
+| Access | `/access` | Enter the deployment's shared access code. |
+
+## Run locally
 
 ```bash
 git clone https://github.com/AndhikaNayakaAW/DECO2850-team-project.git
@@ -15,58 +27,14 @@ npm ci
 npm run dev
 ```
 
-Open `http://localhost:3000` on the computer. Use the **Network URL** printed by Next.js on other devices; both devices must be on the same Wi-Fi network as the computer.
+Use Node 24, matching CI. For browser devices on the same Wi-Fi, use Next.js's printed Network URL. The local file store is suitable for development; the public Vercel deployment uses Redis.
 
-| View | Path | Use |
-| :--- | :--- | :--- |
-| Phone | `/` | Unlock, open Offshift, inspect an offer, draft a reply. |
-| Watch | `/watch` | Try the circular watch preview and manage demo/imported readings. |
-| Daily reflection | `/calendar` | See activities and readings, write a private note and preview recovery time. |
-| 3D calendar | `/calendar?view=3d` | Open the earlier 3D week on an iPad or laptop. |
-| Immersive | `/calendar?immersive=1` | Start directly in the wide exhibition view. |
-| Reset calendar | `/calendar?reset=1` | Restore the shared demonstration scenario. |
+## Try the complete interaction
 
-## 02 / Try watch reflection
+Open `/team` and start a new session. Load the practice week only for a demonstration, or let the worker add their own commitments. Send an ask dated in the future. Read it on the calendar and on the Garmin, inspect the surrounding week, choose a reply and confirm sending. An accepted ask becomes a shift; the team page sees the reply.
 
-Start at `/watch`, choose **Reflect on my day**, and select the Wednesday 12–4 pm shift. Add an optional note, then preview recovery time. Only confirmation adds the private recovery block. See the [complete flow](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Watch-and-Reflection). The default watch readings are synthetic; native Garmin integration is pending.
+On the watch, body sharing is optional. Declining keeps readings on the watch. When sharing is enabled, the server receives bands encoded as 0–3 and timestamps; raw physiological values stay on the watch. Turning sharing off removes the shared wearable record.
 
-## Earlier offer demo
+The phone and manager apps retained under `prototype/` are earlier course artifacts. They are not the main deployed interface. Camera and voice remain optional; normal touch and button controls work independently.
 
-1. Unlock the phone and open **Offshift**.
-2. Open Jess's Thursday shift offer.
-3. Read **Body**, **Week** and **Money**.
-4. Choose a response and inspect the editable reply.
-5. Keep the calendar open on the second device to see the shared scenario update.
-
-Pandora Team, McDonald's Crew, myUQ and manager screens are simulated apps inside the prototype. They do not connect to those organisations.
-
-## 03 / Use the optional 3D calendar
-
-| Input | Action |
-| :--- | :--- |
-| Drag empty space | Rotate the week. |
-| Pinch or scroll | Zoom. |
-| Tap a day or block | Inspect its details. |
-| Double-tap | Reset the view. |
-| **+ Plan** | Add a personal commitment. |
-| **Reset** | Restore the demo data. |
-
-Immersive mode adds optional camera gestures, voice, layer controls and confirmation steps. Touch, mouse and keyboard controls remain available; see the [prototype README](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/offshift-phone/README.md) for the full gesture guide.
-
-## Microphone and camera
-
-For testing on an iPad, use HTTPS:
-
-```bash
-npm run dev:https
-```
-
-Open the printed HTTPS Network URL and accept the development certificate when prompted. Enable the camera or microphone through the app's consent controls. Typed input and response chips work without microphone access.
-
-MediaPipe models are served locally from `public/mediapipe`. The optional hosted assistant needs server credentials; the scripted assistant works without them. Do not assume that the whole web application works offline.
-
-## When the demo needs a fresh start
-
-Use **Settings → Reset** on the phone, **Reset** on the calendar, or append `?reset=1` to the calendar URL. Accepted or declined offers are saved, so a missing amber offer may simply mean somebody already answered it.
-
-**Next:** [Understand the architecture](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Architecture) or [run the checks](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Testing-and-TDD).
+**Next:** [Watch and reflection](Watch-and-Reflection) · [Build and deploy](Deployment) · [Testing](Testing-and-TDD).

@@ -1,0 +1,25 @@
+{
+  "date": "2026-10-19",
+  "origin": "https://offshift-nine.vercel.app",
+  "data": "synthetic API requests, not physical watch sensor evidence",
+  "checks": [
+    "Unauthenticated shared API is blocked",
+    "Unauthenticated watch API is blocked",
+    "Wrong native access code is blocked",
+    "Wrong browser access code is rejected",
+    "Browser login sets a secure HttpOnly cookie",
+    "Authenticated state uses Redis",
+    "New empty session persists",
+    "Team ask is saved",
+    "Protected native route reads the same ask",
+    "Concurrent duplicate answers resolve once",
+    "Calendar receives exactly one accepted shift",
+    "Synthetic words-only health payload is accepted",
+    "Calendar receives the synthetic wearable record",
+    "Team response excludes wearable and private plan fields",
+    "Turning sharing off removes the wearable record",
+    "Watch contact time is present",
+    "Synthetic session is cleared to an empty week"
+  ],
+  "passed": 17
+}

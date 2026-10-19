@@ -1,80 +1,75 @@
 # Offshift · Garmin watch app
 
-Offshift on the wrist. It shows the waiting ask with its Week lines from the calendar, your body as the watch reads it, and the five answers. It's a Connect IQ app in Monkey C for the fēnix 8 47mm and talks to the same server as the calendar (`offshift-phone`, route `/api/watch`).
+A native Monkey C app for the confirmed **fēnix 8 47mm** (`fenix847mm`), extending the teammate's watch implementation. Four round pages show the waiting ask, the surrounding week, available body words and calendar sync. The UI uses the calendar's cream, forest-green and warm accent theme.
 
-## Build
+## Build a protected release
 
-You need the Connect IQ SDK (9.2, through the SDK Manager), the fēnix 8 47mm device files, Java, and a developer key. Make the key once and keep it out of the repo:
-
-```bash
-mkdir -p ~/garmin-keys && cd ~/garmin-keys
-openssl genrsa -out developer_key.pem 4096
-openssl pkcs8 -topk8 -inform PEM -outform DER -in developer_key.pem -out developer_key.der -nocrypt
-```
-
-Then build:
+Install Garmin's Connect IQ SDK, Java and the fēnix 8 47mm device profile through SDK Manager. Keep a developer signing key outside the repository:
 
 ```bash
-cd offshift-watch
-SDK="$HOME/Library/Application Support/Garmin/ConnectIQ/Sdks/connectiq-sdk-mac-9.2.0-2026-06-09-92a1605b2"
-"$SDK/bin/monkeyc" -o bin/offshift.prg -f monkey.jungle -y ~/garmin-keys/developer_key.der -d fenix847mm
+mkdir -p ~/garmin-keys
+openssl genrsa -out ~/garmin-keys/developer_key.pem 4096
+openssl pkcs8 -topk8 -inform PEM -outform DER \
+  -in ~/garmin-keys/developer_key.pem -out ~/garmin-keys/developer_key.der -nocrypt
+chmod 600 ~/garmin-keys/developer_key.*
 ```
 
-## Run in the simulator
+Set the SDK and key paths for your machine, then run from the repository root:
 
-1. Start the server: `cd offshift-phone && npm run dev`.
-2. Open the simulator: `open "$SDK/bin/ConnectIQ.app"`. Once, untick Settings › Use Device HTTPS Requirements, because the laptop server is plain http.
-3. Load the app: `"$SDK/bin/monkeydo" bin/offshift.prg fenix847mm`.
+```bash
+export OFFSHIFT_GARMIN_SDK="/path/to/connect-iq-sdk"
+export OFFSHIFT_GARMIN_KEY="$HOME/garmin-keys/developer_key.der"
+# Optional when Java is not already on PATH:
+# export OFFSHIFT_JAVA="/path/to/java/bin/java"
+node offshift-watch/scripts/build.mjs --access-code-file /private/path/production.env
+```
 
-On first open the app asks whether to share body readings with the calendar. If the simulator shows "Jess asked you to cover tonight… Open Offshift?" before the app appears, that is the background check finding the ask. Choose Yes.
+The private file must contain `OFFSHIFT_ACCESS_CODE=...`. The default origin is `https://offshift-nine.vercel.app`; `--url` also accepts the site's calendar link and normalizes it. The output is `offshift-watch/bin/device/OFFSHIFT.PRG`. With no code file the build uses the public API, which will be rejected by a code-protected deployment.
 
-## On the wrist
+The builder copies source/resources to a private temporary folder, embeds the chosen endpoint and removes the folder afterward. It does not change tracked source or print the private route. The binary contains that route and must stay private. Its file permissions are restricted to the owner and all generated binaries are ignored by Git.
 
-A real watch only talks to https, and the watch reaches the internet through the Garmin Connect app on the paired phone.
+The endpoint is compiled into the release. An old saved `baseUrl` setting cannot keep the watch on a laptop URL after an update. To change the deployed address or rotate its access code, build and install again; do not edit the legacy property file and assume it changes an installed release.
 
-**With the deployed site** (Vercel), skip the laptop. Put the site's address in `baseUrl`, for example `https://offshift-nine.vercel.app`. If the site has an access code, add `/w/<code>`: `https://offshift-nine.vercel.app/w/maple-river-42-kite`. No trailing slash either way. Then build and install as in steps 2 and 3.
+## Install only Offshift
 
-**With the laptop:**
+Set the unplugged watch to **Settings → System → Advanced → USB Mode → MTP**, reconnect it and allow the Mac accessory if asked. Back up the existing Offshift PRG before replacing it. On macOS use an MTP client such as libmtp to access `GARMIN/Apps`; MTP storage may not appear in Finder. Copy only the new Offshift program, leaving other apps, activities and firmware alone.
 
-1. On the laptop, start the server and the watch gateway, which forwards `/api/watch` and nothing else:
-   ```bash
-   cd offshift-phone && npm run dev            # :3000
-   npm run watch-gateway                       # :3001, in a second terminal
-   cloudflared tunnel --url http://127.0.0.1:3001
-   ```
-   cloudflared prints an address like `https://some-words.trycloudflare.com`. A quick tunnel's address changes every time it restarts, and it dies if the laptop sleeps for long. For the exhibit, use a fixed address.
-2. Put that address in `baseUrl` in `resources/properties/properties.xml`, and build a release copy:
-   ```bash
-   "$SDK/bin/monkeyc" -o bin/device/OFFSHIFT.PRG -f monkey.jungle -y ~/garmin-keys/developer_key.der -d fenix847mm -r
-   ```
-   Put `baseUrl` back to `http://127.0.0.1:3000` before committing, since the simulator uses that.
-3. Plug the watch in by USB and copy the file into `GARMIN/Apps`. On a Mac, use OpenMTP, or libmtp (`brew install libmtp`):
-   ```bash
-   mtp-folders                                   # note the number next to "Apps"
-   mtp-sendfile bin/device/OFFSHIFT.PRG <AppsNumber>/OFFSHIFT.PRG
-   ```
-4. Unplug the watch and open Offshift from the apps list. The Calendar page says "Synced" with the time once it can reach the laptop. "Calendar offline (-300)" means the address isn't answering. "(-1001)" means the build still has the http address.
+After unplugging, open Offshift with the paired phone online and Garmin Connect available. On Calendar, check the last successful sync. Send a test ask, cancel a reply once, then explicitly confirm a reply and verify it on the calendar/team page. Obtain consent before checking real sensor delivery. A new signing key may cause the watch to treat this as a fresh install and ask about sharing again.
 
-## Working on it together
+**Installation status, 19 October 2026:** the native release compiles, but this Mac currently sees USB `091e:0003` without an MTP file interface. No physical update is claimed. The model is confirmed and the private device build is prepared.
 
-- Pull, edit and build with your own developer key; keys never go in the repo. Run the tests before installing: `npm test` in `offshift-phone`, and the watch tests below. The layout tests catch text that overlaps or runs off the round screen.
-- A bug in your build can crash the app ("IQ!" on the watch), but never the watch itself. Copy a working build over it and it's back.
-- The watch talks to whichever address was in the last build installed on it. If two people install onto the same watch, the last install wins.
-- Replacing a sideloaded build with one signed by a different developer key may be treated as a fresh install, so the watch may ask about sharing again.
-- The manifest lists the fēnix 8 47mm only. For another Garmin, add its product id to `manifest.xml`, download it in the SDK Manager, and check the layout tests still pass at its screen size.
+## Simulator and tests
+
+```bash
+open "$OFFSHIFT_GARMIN_SDK/bin/ConnectIQ.app"
+node offshift-watch/scripts/build.mjs --test
+"$OFFSHIFT_GARMIN_SDK/bin/monkeydo" offshift-watch/bin/offshift-test.prg fenix847mm -t
+node --test offshift-watch/test/*.test.mjs
+```
+
+There are 24 native tests and 7 Node build contracts. This SDK returned exit status 1 even for a complete native pass; inspect its final `PASSED (passed=24, failed=0, errors=0)` summary. The native tests use the real device profile's fonts, test round-screen bounds and contrast, and isolate replies from real network activity.
+
+For an isolated laptop simulation, run the web app with a separate `OFFSHIFT_STATE_FILE`, then build explicitly for loopback:
+
+```bash
+node offshift-watch/scripts/build.mjs --development \
+  --url http://127.0.0.1:3000 --out offshift-watch/bin/simulator.prg
+"$OFFSHIFT_GARMIN_SDK/bin/monkeydo" offshift-watch/bin/simulator.prg fenix847mm
+```
+
+Use **Settings → Glance Launch Mode → Launch in Normal Mode** for the full app. Disable **Use Device HTTPS Requirements** only for this loopback simulation, then re-enable it when testing a real HTTPS release. Simulator sensor values are synthetic and cannot be reported as real Garmin measurements. Do not send them into a participant's live session.
 
 ## Pages and controls
 
-Four pages, one idea each. Scroll with Up and Down or swipe:
+Up/Down or a swipe moves between Ask, Around it/Today, Body and Calendar. Select on the first two pages opens the five answers; a manager reply requires confirmation. Decide later sets a reminder without sending the manager a message. Select on Body or Calendar opens reading details, sources and the sharing switch.
 
-1. **Ask**: who is asking, what, and when, e.g. "Jess - Pandora / Cover tonight? / 4-9 pm". While you're deciding later, the reminder shows at the bottom.
-2. **Around it**: the week around the ask (a clash, the trip there, tomorrow's start). When nothing is waiting, it shows today's plans instead.
-3. **Body**: the overall word from Body Battery, then sleep, stress and heart.
-4. **Calendar**: when the watch last synced, what is waiting, and whether the body is shared ("words only") or stays on the watch.
+The calendar page shows the last successful sync and sharing choice. A failed answer retains the ask for retry. A successful answer clears an old offline status. An access-code error is shown without exposing the private endpoint.
 
-Select (top right) or a tap answers the ask on the first two pages: pick one of the five answers, then confirm. Decide later sends nothing and sets a reminder. On the last two pages, Select opens Your body: every signal in words with the watch's own number, where each reading comes from, and the Share with calendar switch.
+## Cloud connection
 
-Text is laid out to the round screen. Each line wraps to the width of the circle where it sits and steps down a font size before it would be cut short. A page that is still too tall leaves out its last line rather than overlapping. Layout tests draw every page off-screen with the watch's real fonts and fail on any overlap or text past the edge.
+The deployed route is watch → paired phone/Garmin Connect → internet → Vercel → Redis. Once installed it does not depend on a laptop server or tunnel. The app polls every five seconds while open and registers a five-minute background event; Garmin controls actual background scheduling. The public server uses `KV_REST_API_URL` and `KV_REST_API_TOKEN` and a shared access code.
+
+One deployment holds one participant session at a time. The `/team` response omits body readings and private plans, but the shared code does not implement separate employer and worker account roles. The `/watch` browser preview uses a separate import/reflection store and is not the native Garmin feed.
 
 ## What it reads
 
@@ -89,7 +84,7 @@ Text is laid out to the round screen. Each line wraps to the width of the circle
 | Recovery | Garmin recovery time after the last workout | Recovered, Recovering (to 24 h), Still recovering (to 48 h), Long way off |
 | Steps | Steps today, intensity minutes this week | Shown on the watch only |
 
-The overall word is Body Battery, which Garmin already builds from sleep, stress, heart-rate variability and activity. Without it the watch isn't being worn, so the calendar keeps the last reading. Breathing and pulse ox are single moments that change when you walk upstairs, so they show on the watch and the calendar but never colour the check on their own.
+The overall word is Body Battery, which Garmin already builds from sleep, stress, heart-rate variability and activity. When it is unavailable, the app does not invent a reading. Availability depends on the watch, permissions and recent sensor history. Breathing and pulse ox are single moments that change when you walk upstairs, so they show on the watch and the calendar but never colour the check on their own.
 
 Every reader looks back for the most recent real sample, because samples are blank while the watch is off the wrist or on its cable. Sleep and resting heart come from last night only (10 pm to an hour after your usual wake time). They are worked out once a day and remembered, and only when the watch still holds the night from before 3 am. Otherwise they read "No reading", because a guess about someone's night is worse than none.
 
@@ -103,12 +98,3 @@ Every reader looks back for the most recent real sample, because samples are bla
 ## Every five minutes
 
 While the app is closed, a background check shares the body (if allowed), updates the glance, and offers to open Offshift when a new ask arrives. It never answers anything.
-
-## Tests
-
-```bash
-"$SDK/bin/monkeyc" -o bin/offshift-test.prg -f monkey.jungle -y ~/garmin-keys/developer_key.der -d fenix847mm --unit-test
-"$SDK/bin/monkeydo" bin/offshift-test.prg fenix847mm -t
-```
-
-The server side (words, the body check, `/api/watch`) is tested with `npm test` in `offshift-phone`.

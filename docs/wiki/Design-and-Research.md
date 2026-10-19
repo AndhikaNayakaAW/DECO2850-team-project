@@ -2,6 +2,8 @@
 
 # Design & research
 
+> **Current implementation:** The dated 3D calendar and native Garmin app now share a protected Redis-backed server. Earlier phone/scenario sections below are design history. The focus on reflection remains a proposed direction; no worker outcome is established. See [Watch and reflection](Watch-and-Reflection).
+
 ## The moment we are designing for
 
 An extra shift arrives. Before replying, a student weighs their body, coursework, rent, travel and a manager they may feel guilty disappointing. Offshift makes those trade-offs legible and helps with the words, while leaving the decision with the worker.

@@ -4,53 +4,35 @@
 
 [Home](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki) · [Get started](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Getting-Started) · [Design](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Design-and-Research) · [Architecture](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Architecture) · [Testing](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Testing-and-TDD) · [Deployment](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Deployment) · [Watch & reflection](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Watch-and-Reflection) · [Weekly contribution](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Weekly-Contribution)
 
----
 
 ## Your week. Your call.
 
-The current proposed direction is to help casual workers reflect on how work fits with their energy, rest and other commitments. The watch preview and daily timeline let a worker notice readings, add context in their own words, and choose a small action. This focus responds to tutor feedback and still needs worker testing.
+Offshift explores how casual workers can reflect on work alongside their energy, rest and other commitments. The current prototype combines a dated 3D calendar with a native Garmin watch app and an optional daily reflection view. The worker chooses what to share and when to send a reply. The proposed care focus still needs worker evaluation.
 
-**[Open the watch preview ↗](https://offshift-nine.vercel.app/watch)** &nbsp; · &nbsp; **[Daily reflection ↗](https://offshift-nine.vercel.app/calendar)** &nbsp; · &nbsp; **[Explore the immersive week ↗](https://offshift-nine.vercel.app/calendar?immersive=1)** &nbsp; · &nbsp; **[View the source ↗](https://github.com/AndhikaNayakaAW/DECO2850-team-project)**
+**[Open the calendar ↗](https://offshift-nine.vercel.app/calendar)** · **[Daily reflection ↗](https://offshift-nine.vercel.app/calendar?view=day)** · **[Circular browser preview ↗](https://offshift-nine.vercel.app/watch)**
 
-> [!NOTE]
-> This is a university interaction-design prototype with fictional scenario data and simulated employer apps. Use the demo scenario for exhibition testing.
+## Current release · 19 October 2026
 
-## Find your way
+The fēnix 8 47mm app now uses the calendar's cream and forest-green theme. Its release builder targets protected Vercel HTTPS independently of old laptop settings. Production has free Redis storage and a shared access code. A Git push automatically deployed the release; 200 web tests, 24 native simulator tests, 7 build contracts and 17 synthetic live API checks passed. Physical watch installation remains pending USB file access.
 
-| Start here | What you will find |
+| Explore | What you will find |
 | :--- | :--- |
-| **[01 / Get started](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Getting-Started)** | Run locally, connect the phone and iPad, and restore the demo. |
-| **[02 / Design & research](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Design-and-Research)** | The care question, Dinda's persona, the Four Pleasures, and evaluation tasks. |
-| **[03 / Architecture](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Architecture)** | Shared state, routes, 3D calendar, gestures and the optional voice assistant. |
-| **[04 / Testing & TDD](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Testing-and-TDD)** | Regression coverage and the genuine failing-test → passing-code workflow. |
-| **[05 / Deployment](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Deployment)** | Production configuration, validation and known prototype limits. |
-| **[06 / Watch & reflection](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Watch-and-Reflection)** | Circular watch preview, import contract, private daily reflections and recovery flow. |
-| **[07 / Weekly contribution](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Weekly-Contribution)** | Commit evidence, test-first workflow and the handoff to the native Garmin app. |
+| **[01 / Get started](Getting-Started)** | Current routes, an empty session and the research walkthrough. |
+| **[02 / Design and research](Design-and-Research)** | The care question, earlier design rationale and questions for workers. |
+| **[03 / Architecture](Architecture)** | Garmin Connect, Vercel, Redis and the two watch-data paths. |
+| **[04 / Testing and TDD](Testing-and-TDD)** | Four observed red/green cycles and the verification limits. |
+| **[05 / Deployment](Deployment)** | Git deployment, free Redis, access protection and native builds. |
+| **[06 / Watch and reflection](Watch-and-Reflection)** | Four native pages, circular browser preview and worker controls. |
+| **[07 / Weekly contribution](Weekly-Contribution)** | Dated changes, commits, screenshots, evidence and remaining hardware work. |
 
-## Current watch-to-reflection prototype
+## One session, five responses
 
-Open the round watch preview, choose **Reflect on my day**, select an activity, add an optional reflection, then preview and confirm recovery time. Readings are labelled demo or unverified imported data; the native Garmin connection remains a teammate handoff. See [Watch & reflection](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Watch-and-Reflection).
+The researcher starts a session and sends an ask. The worker sees it beside the week, inspects context, chooses **Take it**, **Another time**, **Ask for a swap**, **Not now** or **Decide later**, then confirms a reply. Accepting adds the shift. Personal body readings do not become an employer explanation.
 
-## Earlier offer flow: three perspectives
+The deployment holds one shared session at a time. The shared access code is supplied privately. The team page omits body data and plans, but the prototype does not have separate employer and worker accounts.
 
-| Body | Week | Money |
-| :--- | :--- | :--- |
-| Notice long days, recent closes and the worker's own check-ins. | See classes, plans, travel gaps and protected rest. | Understand what the shift adds and when essentials are covered. |
+## Course history
 
-**Take it · Another time · Swap · Not tonight · Decide later**
+The mobile prototype, September demonstration scenario and earlier phone interface remain in the repository as iteration evidence. The current app uses real dates in Australia/Brisbane and starts with an empty week. A practice week and synthetic browser readings must be loaded explicitly.
 
-The current phone prototype gives these five responses equal standing. A reply draft helps the worker find their words; there is no wellness score or recommended answer.
-
-## From interviews to interaction
-
-| Iteration | Explore |
-| :--- | :--- |
-| **1 — Mobile exploration** | [RosterMate mobile prototype](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/prototype/mobile-prototype.html) |
-| **2 — Pleasure Framework** | [Research and design rationale](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/pleasure-framework-iteration.md) · [Offshift HTML prototype](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/prototype/offshift.html) |
-| **3 — Phone + calendar** | [Next.js prototype](https://github.com/AndhikaNayakaAW/DECO2850-team-project/tree/main/offshift-phone) · [Physical console concept](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/offshift-console.md) |
-
-The exhibition scenario is fixed at Thursday lunchtime in the week of 14 September 2026. That stable clock makes demonstrations repeatable; it does not track today's date.
-
----
-
-**Building on this project?** Start with [Getting started](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Getting-Started), then use [Testing & TDD](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Testing-and-TDD) before changing the behaviour.
+[Research notes](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/pleasure-framework-iteration.md) · [Original HTML prototype](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/prototype/offshift.html) · [Source code](https://github.com/AndhikaNayakaAW/DECO2850-team-project)

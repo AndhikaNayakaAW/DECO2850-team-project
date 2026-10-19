@@ -1,82 +1,46 @@
 [Home](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki) · [Get started](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Getting-Started) · [Design](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Design-and-Research) · [Architecture](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Architecture) · [Testing](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Testing-and-TDD) · [Deployment](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Deployment) · [Watch & reflection](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Watch-and-Reflection) · [Weekly contribution](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Weekly-Contribution)
 
-# Watch & reflection
+# Watch and reflection
 
-**Proposed focus:** Offshift helps casual workers reflect on how work fits with their energy, rest and other commitments. This direction responds to tutor feedback and still needs testing with workers; reduced stress and improved reflection are not established outcomes.
+**Proposed focus:** Offshift helps casual workers reflect on how work fits with their energy, rest and other commitments. This responds to tutor feedback and remains a direction to test with workers.
 
-**[Watch preview ↗](https://offshift-nine.vercel.app/watch)** · **[Daily reflection ↗](https://offshift-nine.vercel.app/calendar)** · **[Optional 3D week ↗](https://offshift-nine.vercel.app/calendar?view=3d)**
+**[Week calendar ↗](https://offshift-nine.vercel.app/calendar)** · **[Daily reflection ↗](https://offshift-nine.vercel.app/calendar?view=day)** · **[Browser watch preview ↗](https://offshift-nine.vercel.app/watch)**
 
-![Circular Offshift watch preview](https://raw.githubusercontent.com/AndhikaNayakaAW/DECO2850-team-project/main/docs/contributions/assets/watch-desktop.png)
+## Native Garmin experience
 
-## What is working
+The teammate's native Garmin app is now in the repository. This release extends it with the calendar's cream ground, forest-green ink, warm accent, paper cards, scalable type and four page indicators. Small text uses dark semantic colours; native tests require at least 4.5:1 contrast against cream. Green native menus retain familiar watch controls.
 
-| Step | Interaction |
-| --- | --- |
-| **Notice** | A circular watch preview shows a recorded heart-rate value, recording time, source and demo/import provenance. Reading and Reflect are working screens. |
-| **See context** | The daily calendar shows work, study, personal activities and timestamped readings together. Selecting an activity shows samples during it and 30 minutes either side. |
-| **Add your words** | An optional 500-character reflection is saved privately in this browser. No physiological label is generated. |
-| **Choose an action** | Preview a 30-minute recovery block starting 30 minutes after the activity. Cancel leaves the timeline unchanged; Confirm adds one private block. The work roster is not edited. |
-| **Stay in control** | Hide readings, replace them with an imported file, explicitly load demo data, or confirm deletion of readings, reflections and recovery blocks. |
+<p align="center"><img src="https://raw.githubusercontent.com/AndhikaNayakaAW/DECO2850-team-project/main/docs/contributions/assets/garmin-ask-simulator.png" width="320" alt="Garmin simulator showing the cream Offshift Ask page, a synthetic Alex/Cafe ask, 4–9 pm and a Press to answer hint" /></p>
 
-> [!IMPORTANT]
-> This release is a browser preview with a tested file-import connection. The teammate's native Garmin app has not been pushed and is not integrated here. Demo readings are synthetic. Imported readings are labelled **unverified** because a pasted file cannot prove its origin. There is no live device feed, Bluetooth pairing or Garmin account connection.
+*Garmin simulator capture with a synthetic ask. This is not a photograph of the physical watch or evidence of real sensor data.*
 
-## Demonstration flow
+| Page | What the worker sees |
+| :--- | :--- |
+| Ask | Sender, workplace, date context and time; press to choose a reply. |
+| Around it / Today | Nearby commitments for an ask, or today's plans. |
+| Body | Available body words; press for values and sources on the watch. |
+| Calendar | Last successful sync, waiting asks and the current sharing choice. |
 
-1. Open `/watch`. The default fixture is Wednesday 16 September 2026 and is labelled Demo data.
-2. Switch between **Reading** and **Reflect** on the circular watch face.
-3. Choose **Reflect on my day** to open `/calendar?date=2026-09-16`.
-4. Select the McDonald's 12–4 pm shift. Five demo readings appear in its context window.
-5. Add a short reflection and select **Save reflection**; leaving it empty is allowed.
-6. Select **Preview recovery time**. Review the proposed 4:30–5 pm block.
-7. Choose **Cancel**, or **Confirm recovery time** to add the private block.
-8. Return to `/watch` to manage visibility or delete the private data.
+Up/Down or a swipe moves between pages. Select opens the five replies on the first two pages and body details on the last two. Replies require confirmation; deciding later sets a reminder without sending a manager message. Failed sends retain the ask. Successful replies clear any old offline message.
 
-The daily timeline is the default calendar. The earlier 3D calendar is at `/calendar?view=3d`; `/calendar?immersive=1` retains the immersive exhibition view.
+## Connection and privacy
 
-## File-import contract for the Garmin handoff
+The private release targets the protected Vercel watch endpoint. Garmin Connect on the paired phone provides the communication bridge, and Redis holds the shared session. The laptop server and tunnel are no longer required by the deployed architecture.
 
-The adapter lives in [`src/lib/watch.ts`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/offshift-phone/src/lib/watch.ts). It accepts this provisional JSON structure:
+Sharing is a worker choice. The server receives timestamped bands encoded 0–3, not raw heart rate, Body Battery or other physiological values. Turning sharing off removes the shared wearable record. The team projection does not contain body readings or private plans; shared-code access is still a prototype limitation, not separate employer accounts.
 
-```json
-{
-  "version": 1,
-  "device": "Garmin device label from the export",
-  "readings": [
-    {
-      "id": "sample-001",
-      "recordedAt": "2026-09-16T14:20:00+10:00",
-      "bpm": 96
-    }
-  ]
-}
-```
+Body words are an interaction representation of available Garmin readings, not a diagnosis or evidence that work caused stress. “Sleep” is an overnight Body Battery recharge proxy, not Garmin's sleep score. Missing readings stay missing.
 
-The sample above illustrates the format; it is not a real watch measurement. Open **Import a watch export**, paste the JSON, then choose **Import to this browser**. Import replaces the current reading batch instead of mixing it with demo readings. Invalid imports leave the previous batch intact.
+## Browser reflection remains separate
 
-| Field | Contract |
-| --- | --- |
-| `version` | Exactly `1`. |
-| `device` | A non-empty self-reported source label, maximum 100 characters. |
-| `readings` | Between 1 and 5,000 samples. |
-| `id` | Unique non-empty identifier within the batch, maximum 80 characters. |
-| `recordedAt` | Valid ISO timestamp with seconds and `Z` or an explicit timezone offset. |
-| `bpm` | Finite number greater than zero and no greater than 300. This is an input constraint, not a health classification. |
+`/watch` is a circular browser preview with explicit demo loading and file import. Imported numeric readings are unverified because the file's device label is self-reported. This preview does not pair with the Garmin and does not display the live native health bands.
 
-The browser adds `origin: imported`, `source` and an import receipt timestamp. Samples are sorted by recording time. Extra fields such as stress labels are discarded. All calendar matching uses **Australia/Brisbane** dates. Imports from October are never silently attached to September's demo activities.
+Use **Reflect on my day** to open `/calendar?view=day&date=YYYY-MM-DD`. Select an activity, optionally write context, then preview and confirm recovery time. Cancel changes nothing. Reflections and recovery blocks remain in the private browser store rather than a manager reply. A new shared session clears this browser's previous participant data when it next loads.
 
-When the teammate pushes the native app, inspect its actual measurements and payload, agree on a transport, and map its output into this adapter. Do not assume that this JSON format is already implemented by the native app. A real device test is still needed to establish source, freshness and end-to-end delivery.
+The main `/calendar` is now the dated 3D week, following the teammate's update. The daily view is selected explicitly with `?view=day`. Earlier September fixtures and phone screens are course history, not the default current scenario.
 
-## Privacy boundary
+## What has been verified
 
-Watch readings, new reflections and recovery blocks use the separate localStorage key `offshift-private-watch-v1`. They are excluded from the shared `DataSlice`, `/api/state`, manager views and assistant context. LocalStorage is browser storage, not encryption or an authenticated private account. People with access to this browser can access its local data.
+The native app builds for the confirmed fēnix 8 47mm. All 24 native simulator tests pass; the refreshed Ask screen has been visually inspected. The production API passed 17 synthetic checks and the web app passed 200 tests, type checking and a production build. Physical USB installation and a real sensor-to-calendar run remain pending while the Mac cannot access the watch's MTP storage.
 
-The watch preview does not start a sensor or background collection. Visibility controls affect display, and deletion removes the private contents. Cross-device watch sync is deliberately not claimed; separate devices do not share these local records.
-
-The older shared calendar remains a fictional multi-device demo with an unauthenticated API. This change does not retrofit production access control onto that API.
-
-## Evidence and evaluation
-
-The 21 new domain/store tests cover import validation, provenance, recording dates, overnight context, optional notes, persistence, confirmation and deletion. The browser walkthrough checks the circular display, mobile overflow, imports, cancellation, recovery persistence and exclusion from shared requests. See [Testing & TDD](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Testing-and-TDD) and the [weekly contribution record](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Weekly-Contribution).
-
-Next, show workers the daily and 3D alternatives and ask: “What would you want to understand from this information?”, “Which view is easiest to understand?”, “Does this help you do anything useful?” and “What feels unnecessary or uncomfortable?” Test the real data connection first, then the visualization, then the complete experience. No worker evaluation results are claimed by this release.
+For evaluation, ask workers what they want to understand, which view is easier, whether it supports a useful action and what feels uncomfortable. Test the real data connection, then the visualization, then the whole experience. Technical tests do not establish reduced stress or improved reflection.

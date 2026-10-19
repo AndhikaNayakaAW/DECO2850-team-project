@@ -2,23 +2,25 @@
 
 # Deployment
 
-The repository documents a Vercel project for the phone and calendar prototype.
+A push to `main` automatically deploys the Next.js app through the existing Vercel Git integration. Garmin binaries are built and installed separately; a web deployment does not update a watch automatically.
 
-**[Watch preview ↗](https://offshift-nine.vercel.app/watch)** · **[Phone demo ↗](https://offshift-nine.vercel.app/)** · **[Calendar ↗](https://offshift-nine.vercel.app/calendar)** · **[Exhibition view ↗](https://offshift-nine.vercel.app/calendar?immersive=1)**
-
-## Project configuration
-
-| Setting | Value |
+| Setting | Current configuration |
 | :--- | :--- |
-| Vercel project | `offshift` |
-| Scope | `andhikanayakaaws-projects` |
+| Vercel project | `andhikanayakaaws-projects / offshift` |
+| Production URL | `https://offshift-nine.vercel.app` |
 | Root directory | `offshift-phone` |
-| Framework | Next.js |
 | Production branch | `main` |
+| Shared storage | Upstash Redis resource `offshift-week`, connected to Production |
+| Billing choice | Free plan; `autoUpgrade=false`, `prodPack=false` |
+| Access | `OFFSHIFT_ACCESS_CODE`, stored as a Production secret |
 
-The [repository README](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/README.md) records the project IDs and original deployment details. Check the Vercel dashboard for the current deployment status.
+## Verified release
 
-## Before a release
+The push of [`8b67263`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/8b67263) automatically produced a successful [production deployment](https://vercel.com/andhikanayakaaws-projects/offshift/E716bF3huNfhVXS4pnwA3jcwNNhB) and a successful [GitHub validation run](https://github.com/AndhikaNayakaAW/DECO2850-team-project/actions/runs/39259454484). No manual deployment command was needed for that release.
+
+The live deployment passed 17 synthetic integration checks: access protection, a secure HttpOnly browser cookie, Redis storage, an ask read through the private watch route, concurrent duplicate answers, one accepted calendar shift, optional health bands, the team projection and deletion on sharing-off. The test session was cleared to an empty week. [Verification record](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/contributions/assets/garmin-production-verification-2026-10-19.json).
+
+## Release checks
 
 ```bash
 cd offshift-phone
@@ -26,56 +28,32 @@ npm ci
 npm test
 npm run typecheck
 npm run build
+cd ..
+node --test offshift-watch/test/*.test.mjs
+node --test prototype/offshift.logic.test.js
 ```
 
-Then inspect `/watch`, the daily `/calendar`, the optional `/calendar?view=3d`, the immersive view, and Reset. The watch preview has its own private-data deletion control. Verify cross-device changes on the intended exhibition network. A push to `main` is documented as triggering a production deployment through the existing Vercel connection.
+GitHub Actions runs these checks on main pushes and pull requests. Vercel deploys independently; CI is not a deployment approval gate. Confirm both statuses after a push.
 
-For a manual deployment, an authorised project member can use:
+## Server configuration
+
+The server recognizes `KV_REST_API_URL` plus `KV_REST_API_TOKEN`, or `UPSTASH_REDIS_REST_URL` plus `UPSTASH_REDIS_REST_TOKEN`. The connected Vercel integration supplies the KV pair. Without Redis the app falls back to a development file; that fallback is not durable shared storage on Vercel.
+
+Production browser routes require the shared access code. After login, an HttpOnly cookie authorizes the browser. The watch uses the same code in its dedicated watch route. Keep the code and private watch URL out of screenshots, chat reports, source files and GitHub artifacts. Rotating the code requires a new private watch build and a browser login.
+
+## Build the Garmin release
+
+Set `OFFSHIFT_GARMIN_SDK` and `OFFSHIFT_GARMIN_KEY` to local paths outside the repository, then run from the repository root:
 
 ```bash
-npm install --global vercel
-cd offshift-phone
-vercel login
-vercel link --yes --project offshift --scope andhikanayakaaws-projects
-vercel deploy --prod
+node offshift-watch/scripts/build.mjs \
+  --access-code-file /private/path/production.env
 ```
 
-## Configuration and limits
+The environment file must contain `OFFSHIFT_ACCESS_CODE=...`. The builder defaults to the production origin and `fenix847mm`. It rejects HTTP release endpoints, copies resources and source to a temporary private directory, embeds the private endpoint there and removes that directory after compilation. Only the public origin is printed. The binary is ignored and restricted to owner access.
 
-| Item | Behaviour |
-| :--- | :--- |
-| Assistant credentials | Optional server credentials enable the hosted assistant. Without them, scripted replies keep the demo usable. |
-| `OFFSHIFT_STATE_FILE` | Optional server path override for the shared-state JSON file. |
-| State persistence | Process memory and local files can disappear or diverge across serverless instances. |
-| Access control | The shared-state API has no authentication or per-user isolation. Use fictional demo data. |
-| State conflicts | Version/client tracking is not transactional conflict resolution. |
-| Camera | Browser processing uses bundled MediaPipe models; user consent is still required. |
+Back up the installed Offshift app before copying the release into the watch's `GARMIN/Apps` using MTP. Do not modify firmware, activities or other apps. See the [native README](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/offshift-watch/README.md).
 
-Keep credentials in the hosting platform or local environment files. Never place keys in source files, commits or wiki pages.
+## Prototype limits
 
-## Existing build warning
-
-Turbopack reports broad filesystem tracing for the dynamic state-file path in `/api/state`. The production build succeeds, but the traced server bundle can be larger than intended. This warning predates the overnight-shift change.
-
-Durable storage, authenticated sessions, per-user isolation and an explicit privacy review are needed before the prototype is used with real worker data.
-
-## Verified Git push workflow
-
-The existing Vercel project links to `AndhikaNayakaAW/DECO2850-team-project`, uses `main` as its production branch, and builds `offshift-phone`. This link was inspected through the authenticated Vercel API. The prior main commit also had a successful Vercel deployment status.
-
-`offshift-phone/vercel.json` explicitly enables Git deployments. Pushes to `main` deploy production; other eligible Git branches can produce previews under the project's existing settings. No deployment tokens are committed. GitHub Actions separately validates the source using `.github/workflows/validate.yml`.
-
-```mermaid
-flowchart LR
-  P[Push to GitHub] --> C[GitHub Actions: tests + typecheck + build]
-  P --> V[Vercel Git integration]
-  V --> M{Branch}
-  M -->|main| R[Production deployment]
-  M -->|other eligible branch| B[Preview deployment]
-```
-
-Merging the teammate's Garmin code into `main` will trigger this same integration if those project settings remain enabled. The native watch app still needs its own Garmin build/install workflow; Vercel redeploys the web app.
-
-## Observed watch release
-
-On 15 October 2026, a push of [`c2c0e15`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/c2c0e15) automatically produced a successful [Vercel production deployment](https://vercel.com/andhikanayakaaws-projects/offshift/DsPgKyDv9n9NS6ZbZ3XqUxhLngVa). The [GitHub validation run](https://github.com/AndhikaNayakaAW/DECO2850-team-project/actions/runs/38673040152) also completed successfully, including the 67-test suite, TypeScript, the production build and the standalone prototype check. The public watch, daily calendar and optional 3D routes returned HTTP 200.
+One deployment serves one shared session. A shared code is not separate participant accounts or employer/worker role authorization. The `/team` response hides private fields, but everyone with the shared code has access to the prototype's other routes. The free storage plan has quotas; automatic paid upgrades are disabled. No worker evaluation or clinical interpretation is established by these technical checks.
