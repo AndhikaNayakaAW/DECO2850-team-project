@@ -5,7 +5,7 @@ import Toybox.WatchUi;
 function pushBodyMenu(model as OffshiftModel) as Void {
     var r = model.readings();
     var levels = model.levels();
-    var menu = new WatchUi.Menu2({ :title => "Your body" });
+    var menu = new WatchUi.Menu2({ :theme => WatchUi.MENU_THEME_GREEN, :title => "Your body" });
     var signals = Health.SIGNALS;
     for (var i = 0; i < signals.size(); i++) {
         menu.addItem(new WatchUi.MenuItem(BodyWords.label(signals[i]), BodyWords.detail(signals[i], r, levels), signals[i], null));

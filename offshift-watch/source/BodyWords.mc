@@ -107,12 +107,12 @@ module BodyWords {
         return (week != null) ? week.toString() + " intensity min this week" : "Steps since midnight";
     }
 
-    //! A reading's colour: coral when very low, mustard when low, cream otherwise, muted when missing.
+    //! Dark semantic inks remain readable against the calendar's cream background.
     function colour(level as Number?) as Number {
         if (level == null) {
             return Palette.MUTED;
         }
-        return (level == 0) ? Palette.CORAL : (level == 1) ? Palette.MUSTARD : Palette.CREAM;
+        return (level == 0) ? Palette.ALERT_INK : (level == 1) ? Palette.WARM_INK : Palette.STRONG;
     }
 
     //! The overall word's colour, as on the calendar: Body Battery sets it, and a steady signal reading low makes it at least mustard.
@@ -122,16 +122,16 @@ module BodyWords {
             return Palette.MUTED;
         }
         if (overall <= 1) {
-            return (overall == 0) ? Palette.CORAL : Palette.MUSTARD;
+            return (overall == 0) ? Palette.ALERT_INK : Palette.WARM_INK;
         }
         var steady = ["sleep", "stress", "heart", "recovery"] as Array<String>;
         for (var i = 0; i < steady.size(); i++) {
             var v = levels[steady[i]];
             if (v != null && v <= 1) {
-                return Palette.MUSTARD;
+                return Palette.WARM_INK;
             }
         }
-        return Palette.SAGE;
+        return Palette.INK;
     }
 
     function num(v as Number?) as String {

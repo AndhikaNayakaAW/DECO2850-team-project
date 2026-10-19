@@ -6,7 +6,7 @@ import Toybox.System;
 //! One block of text on a page, wrapped to at most maxLines lines.
 class Row {
     var text as String;
-    var font as Graphics.FontDefinition;
+    var font as Graphics.FontType;
     var colour as Number;
     var maxLines as Number;
     var gap as Number;
@@ -14,9 +14,9 @@ class Row {
     var y as Number = 0;
     var height as Number = 0;
     //! Smaller fonts to step down to before the text would be cut short.
-    var smaller as Array<Graphics.FontDefinition>?;
+    var smaller as Array<Graphics.FontType>?;
 
-    function initialize(text as String, font as Graphics.FontDefinition, colour as Number, maxLines as Number, gap as Number) {
+    function initialize(text as String, font as Graphics.FontType, colour as Number, maxLines as Number, gap as Number) {
         self.text = text;
         self.font = font;
         self.colour = colour;
@@ -27,17 +27,17 @@ class Row {
     //! How many of the smaller fonts have been used.
     var step as Number = 0;
 
-    function orSmaller(fonts as Array<Graphics.FontDefinition>) as Row {
+    function orSmaller(fonts as Array<Graphics.FontType>) as Row {
         smaller = fonts;
         return self;
     }
 
     function canShrink() as Boolean {
-        return smaller != null && step < (smaller as Array<Graphics.FontDefinition>).size();
+        return smaller != null && step < (smaller as Array<Graphics.FontType>).size();
     }
 
     function shrink() as Void {
-        font = (smaller as Array<Graphics.FontDefinition>)[step];
+        font = (smaller as Array<Graphics.FontType>)[step];
         step += 1;
     }
 

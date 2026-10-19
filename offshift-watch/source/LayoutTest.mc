@@ -117,7 +117,7 @@ function dumpPagesForReview(logger as Test.Logger) as Boolean {
                     at = rest.find("\n");
                 }
                 flat += rest;
-                logger.debug("ROW|" + c + "|" + i + "|" + (row.font as Number) + "|" + row.y + "|" + row.height + "|" + row.colour.format("%06X") + "|" + flat);
+                logger.debug("ROW|" + c + "|" + i + "|" + dc.getFontHeight(row.font) + "|" + row.y + "|" + row.height + "|" + row.colour.format("%06X") + "|" + flat);
             }
         }
     }

@@ -4,7 +4,7 @@ import Toybox.WatchUi;
 //! The same five answers as the phone, each sent only after a confirmation.
 function pushAnswerMenu(model as OffshiftModel, ask as Dictionary) as Void {
     var from = ask["from"] as String;
-    var menu = new WatchUi.Menu2({ :title => "Answer " + from });
+    var menu = new WatchUi.Menu2({ :theme => WatchUi.MENU_THEME_GREEN, :title => "Answer " + from });
     menu.addItem(new WatchUi.MenuItem("Take it", "Adds it to your week", "accept", null));
     menu.addItem(new WatchUi.MenuItem("Another time", ask["alt"] as String, "negotiate", null));
     menu.addItem(new WatchUi.MenuItem("Ask for a swap", (ask["swap"] as String) + " could take it", "swap", null));
