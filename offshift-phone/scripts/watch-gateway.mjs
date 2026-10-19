@@ -12,7 +12,8 @@ const SERVER = { host: "127.0.0.1", port: Number(process.env.OFFSHIFT_PORT ?? 30
 http
   .createServer((req, res) => {
     const path = (req.url || "").split("?")[0];
-    if (path !== "/api/watch") {
+    // /api/watch, or /w/<access code>/api/watch when the server has an access code.
+    if (!/^\/(w\/[^/]+\/)?api\/watch$/.test(path)) {
       res.writeHead(404, { "content-type": "text/plain" });
       res.end("Not here");
       return;
