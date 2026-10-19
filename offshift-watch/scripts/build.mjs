@@ -1,5 +1,5 @@
 /** Builds with a temporary private resource override; secrets never enter tracked properties. */
-import { mkdtemp, cp, writeFile, readFile, mkdir, rm } from 'node:fs/promises';
+import { mkdtemp, cp, writeFile, readFile, mkdir, rm, chmod } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -29,9 +29,12 @@ try {
   const resources = path.join(temporary, 'resources');
   await cp(path.join(root, 'resources'), resources, { recursive: true });
   await writeFile(path.join(resources, 'properties/properties.xml'), propertiesXml(config.baseUrl), { mode: 0o600 });
+  const source = path.join(temporary, 'source');
+  await cp(path.join(root, 'source'), source, { recursive: true });
+  await writeFile(path.join(source, 'Deployment.mc'), `(:background)\nmodule Deployment { const BASE_URL = ${JSON.stringify(config.baseUrl)}; }\n`, { mode: 0o600 });
   const jungle = path.join(temporary, 'build.jungle');
   // Jungle values can contain spaces; the compiler parses the whole value to the right of '='.
-  await writeFile(jungle, `project.manifest = ${path.join(root, 'manifest.xml')}\nbase.sourcePath = ${path.join(root, 'source')}\nbase.resourcePath = ${resources}\n`, { mode: 0o600 });
+  await writeFile(jungle, `project.manifest = ${path.join(root, 'manifest.xml')}\nbase.sourcePath = ${source}\nbase.resourcePath = ${resources}\n`, { mode: 0o600 });
   await mkdir(path.dirname(output), { recursive: true });
   const compilerArgs = ['-f', jungle, '-d', option('--device', 'fenix847mm'), '-y', key, '-o', output];
   if (test) compilerArgs.push('--unit-test');
@@ -42,6 +45,7 @@ try {
   const result = spawnSync(executable, passed, { stdio: 'inherit' });
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error(`Garmin compiler exited ${result.status}.`);
+  await chmod(output, 0o600);
   // Report only the public origin, never a secret-bearing /w/<code> route.
   console.log(JSON.stringify({ output, device: option('--device', 'fenix847mm'), origin: config.origin, accessProtected: config.protected, unitTests: test }));
 } finally {

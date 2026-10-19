@@ -25,8 +25,7 @@ module Sharing {
 module Server {
 
     function baseUrl() as String {
-        var url = Application.Properties.getValue("baseUrl");
-        return (url instanceof String) ? url : "https://offshift-nine.vercel.app";
+        return Deployment.BASE_URL;
     }
 }
 
