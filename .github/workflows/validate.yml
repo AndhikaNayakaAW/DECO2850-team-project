@@ -40,3 +40,6 @@ jobs:
       - name: Check the standalone prototype
         working-directory: .
         run: node --test prototype/offshift.logic.test.js
+      - name: Check Garmin release configuration
+        working-directory: .
+        run: node --test offshift-watch/test/*.test.mjs

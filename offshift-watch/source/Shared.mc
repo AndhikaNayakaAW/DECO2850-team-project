@@ -26,7 +26,7 @@ module Server {
 
     function baseUrl() as String {
         var url = Application.Properties.getValue("baseUrl");
-        return (url instanceof String) ? url : "http://127.0.0.1:3000";
+        return (url instanceof String) ? url : "https://offshift-nine.vercel.app";
     }
 }
 
