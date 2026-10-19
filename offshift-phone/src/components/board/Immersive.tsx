@@ -5,6 +5,7 @@ import Week3D, { type SceneHandle, type SlotTarget } from "@/components/apps/off
 import { buildDays, dayListWithTravel, type DataState } from "@/lib/checks";
 import { GestureEngine, type FaceBox, type GestureEvent, type HandFrame } from "@/lib/gestures";
 import { openingLines } from "@/lib/assistant";
+import BodyCard from "./BodyCard";
 import { startHandTracking, type HandTracker } from "@/lib/hands";
 import { DAYS, DAY_NAMES, clock12, dayIndex, minutes, range12 } from "@/lib/logic";
 import { EMPLOYERS, SCENARIO } from "@/lib/scenario";
@@ -784,6 +785,7 @@ export default function Immersive({ onExit }: { onExit: () => void }) {
             </div>
           ) : (
             <div className="sel empty">
+              <BodyCard />
               <div className="eyebrow">Selection</div>
               <p>Pinch or click a block to see it here.</p>
             </div>

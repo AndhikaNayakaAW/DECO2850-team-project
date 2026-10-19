@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Week3D, { type DropTarget } from "@/components/apps/offshift/Week3D";
 import Assistant from "./Assistant";
+import BodyCard from "./BodyCard";
 import Immersive from "./Immersive";
 import { PlanForm, Sheet } from "@/components/phone/Sheet";
 import { buildDays, clashes, dayListWithTravel, draftFor, impactTiles, offerChecks, offerWhen, replyDraft } from "@/lib/checks";
@@ -237,6 +238,7 @@ export default function CalendarBoard() {
                   </button>
                 </div>
               </div>
+              {view.today && <BodyCard />}
               <div className="cal-list">
                 {list.length === 0 && <p className="quiet">{view.rest ? "Rest. Booked like a shift." : "Nothing on."}</p>}
                 {list.map((it) => (
@@ -335,6 +337,7 @@ function OfferPanel({ offerId, onClose }: { offerId: string; onClose: () => void
           <p style={{ fontSize: 14 }}>“{offer.note}”</p>
         </div>
       </div>
+      <BodyCard />
       {checks.map((c) => (
         <div key={c.key} className={`check ${c.state}`}>
           <div className="ck">{c.key}</div>

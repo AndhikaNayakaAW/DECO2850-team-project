@@ -1,3 +1,4 @@
+import { BODY_SIGNALS, SIGNAL_LABELS, bodySentence, signalWord } from "./body";
 import { altSlots, bodyTile, buildDays, draftFor, moneySummary, offerChecks, offerWhen, replyDraft, shiftIncome, type DataState } from "./checks";
 import { DAY_NAMES, DAYS, clock12, dayIndex, minutes, money, nextDay } from "./logic";
 import { EMPLOYERS, PERSON, SCENARIO } from "./scenario";
@@ -83,7 +84,13 @@ export function assistantContext(state: DataState & { clock: string; notificatio
     }),
     replied_asks: state.offers.filter((o) => o.status !== "pending" && o.status !== "deferred").map((o) => ({ from: o.from, day: o.day, time: spokenRange(o.start, o.end), status: o.status })),
     money: { essentials: money(m.essentials), earned: money(m.earned), booked: money(m.booked), covered_by: m.coveredBy ? DAY_NAMES[m.coveredBy] : null, past_essentials: money(m.past) },
-    body: { label: body.label, detail: body.detail },
+    body: {
+      label: body.label,
+      detail: body.detail,
+      from_watch: state.wearable?.signals
+        ? Object.fromEntries(BODY_SIGNALS.filter((k) => state.wearable!.signals![k] !== undefined).map((k) => [SIGNAL_LABELS[k], signalWord(k, state.wearable!.signals![k]!)]))
+        : null,
+    },
     protected_day: DAY_NAMES[state.settings.protectedDay],
     priority_this_month: state.settings.priority,
     unread: (state.notifications || []).slice(0, 4).map((n) => `${n.title}: ${n.body}`),
@@ -98,6 +105,7 @@ export function openingLines(state: DataState & { clock: string }): string[] {
   const pending = state.offers.filter((o) => o.status === "pending" || o.status === "deferred");
   const lines = [`${greeting(state.clock)}, ${PERSON.name}. It's ${DAY_NAMES[SCENARIO.today]} the ${SCENARIO.dates[SCENARIO.today]}th of ${SCENARIO.month}.`];
   lines.push(items.length ? `Today we have ${joinList(items.map(spokenItem))}.` : "Nothing is booked today.");
+  if (state.wearable) lines.push(bodySentence(state.wearable));
   if (pending.length) {
     const o = pending[0];
     lines.push(`${o.from} from ${EMPLOYERS[o.employer].name} has asked whether you could cover ${offerWhen(o)}, ${spokenRange(o.start, o.end)}. It's waiting for you.`);

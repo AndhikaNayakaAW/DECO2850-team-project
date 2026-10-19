@@ -36,6 +36,13 @@ describe("the scripted voice", () => {
     expect(lines[1]).toContain("Today we have");
     expect(lines[2]).toContain("Jess from Pandora has asked");
   });
+  it("says what the watch reads, in words, once the worker shares it", () => {
+    const wearable = { level: 1 as const, word: "Running low", at: "07:10", source: "Garmin", signals: { energy: 1 as const, sleep: 1 as const } };
+    const lines = openingLines({ ...state(), wearable });
+    expect(lines[2]).toBe("Your watch reads running low, with a poor night's sleep.");
+    expect(lines[3]).toContain("Jess from Pandora has asked");
+    expect(openingLines({ ...state(), wearable: null }).join(" ")).not.toContain("watch");
+  });
 });
 
 describe("speech text", () => {
