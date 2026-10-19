@@ -10,15 +10,24 @@ Explore the [Offshift wiki](https://github.com/AndhikaNayakaAW/DECO2850-team-pro
 - [docs/pleasure-framework-iteration.md](docs/pleasure-framework-iteration.md): experience brainstorm, persona (Dinda) built from the five interviews, Four Pleasures mapping with psycho-pleasure applied, and the prototype update.
 - [prototype/offshift.html](prototype/offshift.html): clickable prototype of Offshift with design notes beside each screen. Open it in a browser.
 
-## Iteration 3 · Phone and iPad prototype
+## Iteration 4 · Watch and calendar, ready for field testing
 
-- [offshift-phone/](offshift-phone/): Next.js prototype with a phone (`/`), circular watch preview (`/watch`), daily reflection calendar (`/calendar`) and optional 3D week (`/calendar?view=3d`). Run with `cd offshift-phone && npm install && npm run dev` and open the Network URL on each device. See its [README](offshift-phone/README.md).
+The phone mock-up and its demo story are gone. Offshift is now a Garmin watch app and a dated 3D week calendar that real workers can use in field tests.
+
+- [offshift-phone/](offshift-phone/): the Next.js web app. The folder keeps its old name so the Vercel root directory and CI stay the same. It contains:
+  - the 3D week at `/calendar`, the main screen;
+  - the daily reflection at `/calendar?view=day`;
+  - a research-team page at `/team` for running sessions and sending asks;
+  - the browser watch preview at `/watch`.
+
+  Run it with `cd offshift-phone && npm install && npm run dev` and open the Network URL on each device. Its [README](offshift-phone/README.md) explains how to run a field-testing session.
+- [offshift-watch/](offshift-watch/README.md): the native Garmin fēnix 8 app, with a live connection to the calendar through `/api/watch`.
 - [docs/offshift-console.md](docs/offshift-console.md): physical prototype spec for the Offshift Console.
 
 ## Watch and daily reflection
 
 - [Circular watch preview](https://offshift-nine.vercel.app/watch): demo or unverified imported heart-rate readings, recording/source/import metadata, and Reading / Reflect screens.
-- [Daily reflection calendar](https://offshift-nine.vercel.app/calendar): activities beside readings, optional browser-only reflections, and recovery time added only after preview and confirmation.
+- [Daily reflection](https://offshift-nine.vercel.app/calendar?view=day): activities beside readings, optional browser-only reflections, and recovery time added only after preview and confirmation.
 - [Watch integration guide](docs/wiki/Watch-and-Reflection.md): provisional file-import contract for the browser `/watch` preview.
 - [Garmin watch app](offshift-watch/README.md): the native fēnix 8 app, with a live connection to the calendar through `/api/watch`: build, install, pages, what it reads, privacy and tests.
 - [Weekly contribution record](docs/contributions/2026-10-15-watch-reflection.md): commit links, TDD evidence and the demonstrated flow.
@@ -66,4 +75,10 @@ npm run typecheck
 npm run build
 ```
 
-`ANTHROPIC_API_KEY` is optional; without it, the assistant uses its scripted fallback. The `/api/state` endpoint stores prototype state in process memory and the local filesystem, so state is not guaranteed to survive a Vercel serverless restart. Use a durable database before relying on it for production data.
+Before field testing on Vercel:
+
+- **Connect an Upstash Redis database** to the project. The integration sets `KV_REST_API_URL` and `KV_REST_API_TOKEN`. Without it, `/api/state` keeps the week only in one server instance's memory, so the calendar, the team page and the watch can drift apart and lose it on a restart.
+- **Set `OFFSHIFT_ACCESS_CODE`.** The site is public, and participants' weeks shouldn't be.
+- **`ANTHROPIC_API_KEY`** is optional. Without it, the assistant uses its scripted voice.
+
+See [offshift-phone/README.md](offshift-phone/README.md) for both.

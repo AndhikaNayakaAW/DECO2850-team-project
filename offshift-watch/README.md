@@ -32,6 +32,10 @@ On first open the app asks whether to share body readings with the calendar. If 
 
 A real watch only talks to https, and the watch reaches the internet through the Garmin Connect app on the paired phone.
 
+**With the deployed site** (Vercel), skip the laptop. Put the site's address in `baseUrl`, for example `https://offshift-nine.vercel.app`. If the site has an access code, add `/w/<code>`: `https://offshift-nine.vercel.app/w/maple-river-42-kite`. No trailing slash either way. Then build and install as in steps 2 and 3.
+
+**With the laptop:**
+
 1. On the laptop, start the server and the watch gateway, which forwards `/api/watch` and nothing else:
    ```bash
    cd offshift-phone && npm run dev            # :3000

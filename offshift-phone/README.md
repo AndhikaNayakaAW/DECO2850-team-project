@@ -1,13 +1,28 @@
-# Offshift · watch, phone + calendar prototype
+# Offshift · calendar and watch
 
-The prototype now includes a circular `/watch` preview and a default daily reflection calendar. The earlier phone, 3D and immersive views remain available.
+Offshift helps students who work casual shifts answer a shift ask on their own terms. When a manager asks "can you cover tonight?", the ask lands on the worker's week, in 3D, and on their Garmin watch, next to their classes, plans, rest days and how tired they are. The worker chooses: take it, offer another time, ask for a swap, say no, or decide later. Offshift drafts the reply, and the worker edits it and sends it. Nothing is sent without them.
 
-- **Phone** at `/`: lock screen, then the apps page (Offshift, Pandora Team, McDonald's Crew, myUQ, Settings) and the manager page.
-- **Watch** at `/watch`: circular Reading / Reflect screens, demo or unverified imported heart-rate data, and private-data controls.
-- **Daily calendar** at `/calendar`: dated activity timeline, optional private reflections and confirmed recovery blocks.
-- **3D calendar** at `/calendar?view=3d`: the earlier full-screen 3D week.
+## What's here
 
-## Run
+- **`/calendar`** is the worker's week in 3D and the main screen. It works on a phone, an iPad or a laptop.
+  - **+ Add**, or **+ Add to {day}** in the side panel, adds a shift, class, due date or plan. Tap anything in the side panel to change or delete it. A deletion can be undone for a few seconds.
+  - **‹ Today ›** moves between weeks, and the arrow keys move the day.
+  - **In the 3D week**, drag to turn it and pinch or scroll to zoom. Hold a block still for a moment to pick it up. You can then move a plan to another day, or drop anything on the bin to remove it, and Undo is offered either way. A quick swipe only ever turns the view. Throwing an ask away opens a drafted "no", and nothing reaches the manager until you press Send.
+  - A waiting ask shows as an amber block, in the side list and as a pill in the header. Open it to see the Body and Week checks, pick an answer, edit the drafted reply and send it. "Decide later" sends nothing and reminds the worker in half an hour.
+  - **⚙** opens settings: first name, days kept clear, how replies sound, and what counts as a late finish.
+  - **Reflect** opens the daily reflection for the selected day (`/calendar?view=day&date=YYYY-MM-DD`).
+  - **Immersive** opens the wide, hands-free week (`/calendar?immersive=1`), described below.
+- **`/team`** is for the research team only and isn't linked from the worker's screens. From here you can:
+  - start a new session and set the participant's first name;
+  - load a practice week;
+  - send asks as the manager, see the replies, and confirm another time or approve a swap;
+  - see when the watch last checked in.
+
+  Body readings and private notes never appear on this page.
+- **`/watch`** is the browser watch preview with file import. It is a separate prototype from the Garmin app.
+- **`/api/state`** holds the shared week, **`/api/watch`** is the watch's door, and **`/api/assistant`** is the voice assistant.
+
+## Run it
 
 ```bash
 cd offshift-phone
@@ -15,54 +30,95 @@ npm install
 npm run dev
 ```
 
-The terminal prints a Network URL such as `http://192.168.1.20:3000`. On the phone open that URL. On the iPad open the same URL with `/calendar` on the end. Both devices must be on the same Wi-Fi as the computer running it.
+The terminal prints a Network URL such as `http://192.168.1.20:3000`. Open `…/calendar` on the worker's phone or iPad and `…/team` on the researcher's laptop. All devices must be on the same Wi-Fi. On iOS, Add to Home Screen gives a full-screen app.
 
-Add to Home Screen on iOS for a full-screen app without browser chrome.
+## Running a field-testing session
 
-## Watch reflection
+1. On `/team`, press **New session**. Every open calendar empties. You can enter the participant's first name; it is used in greetings and drafted replies, and is optional.
+2. The participant adds their real week on `/calendar`. For a walkthrough instead, press **Load practice week**, which loads a generic week with no real names.
+3. Send an ask from `/team`. It reaches the calendar and the watch within about two seconds.
+4. The participant answers on the calendar or on the watch. The reply shows on `/team`. If they offered another time or a swap, confirm it there.
+5. Press **New session** before the next participant. `/calendar?reset=1` does the same from the worker's device.
 
-Watch readings, new reflection notes and recovery blocks are stored only in this browser under `offshift-private-watch-v1`; they do not use `/api/state` or the assistant. Demo values are explicit; file imports are unverified and replace the demo batch. The native Garmin app is a separate path, described under Garmin watch app below. See [the import contract and walkthrough](../docs/wiki/Watch-and-Reflection.md).
+One running server holds one shared week. Anyone who opens the same server sees it, so run one session at a time and start a new one between participants.
 
-## Optional 3D calendar (iPad)
+## Dates and time
 
-Touch empty space and drag to orbit, pinch or scroll to zoom, double-tap to reset. Tap a day to see it in the side panel, tap the amber block to see the ask with the Body, Week and Money checks, toggle the legend chips to filter, add a plan with + Plan. Arrow keys move the day.
+Everything is dated in the worker's time zone: Australia/Brisbane by default (`settings.timeZone`). The calendar shows the real current week and moves to the next week by itself. "Tonight" means an ask that starts at 4 pm or later today. A shift whose finish is earlier than its start runs past midnight.
 
-Touch a block to pick it up. Drag a plan onto another day to move it. Flick any block away, or drop it on the bin, and it shatters: plans, shifts and classes are removed, an ask is declined. Undo appears for a few seconds.
+## Sync and storage
 
-## Immersive view (iPad or laptop)
+Every open page polls `/api/state`, every second or every two seconds with Redis, and merges changes three ways. Edits from the calendar, the team page and the watch then don't overwrite each other, even when two arrive at once. Where the week is stored:
 
-"Enter immersive view" on the calendar opens a wide 16:9 layout: gesture guide on the left, the detailed week in the centre, the selected block on the right, spoken captions along the bottom. Every block shows title, time, category and status; travel time and quiet-hour boundaries are drawn too. It reads the same shared state as the phone.
+- **Upstash Redis or Vercel KV**, when `KV_REST_API_URL` and `KV_REST_API_TOKEN` are set (or `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`). Use this on Vercel.
+- **A file** otherwise: `.offshift-state.json` in this folder, or the path in `OFFSHIFT_STATE_FILE`.
 
-Buttons: Exit, Reset view, Camera on/off, Voice on/off, Use touch controls, Mute, Expand layers, Combine layers, zoom + and −, Add event, Undo. Mouse and keyboard: drag to rotate, wheel or +/− to zoom, click to select, drag a block to preview a move, arrow keys rotate and tilt, Esc exits.
+A serverless host such as Vercel doesn't keep files, so it needs Redis.
 
-Optional hand tracking uses MediaPipe Hand Landmarker served from `public/mediapipe` (no internet needed). Camera on asks for consent first; video is processed in the browser and nothing is saved. A hand cursor follows your index finger (it fills in while you pinch) and the block under it lights up.
+## Access code
 
-Gestures: both palms open for half a second separates the week into layers (work forward, study up, plans back, rest aside, asks floating, travel drawn as links); closing both hands combines it; hands apart or together zoom; moving both hands rotates and tilts; pinch selects; pinch and drag previews a move (snapped to 15 minutes, with overlap, travel, rest and boundary notes); pinch and hold empty space for a second starts a new event, then raise one finger for study, two for personal, three for rest, four for an appointment; an open palm held over the selection offers to protect it. Thumbs up confirms, thumbs down cancels or keeps the original, a held fist undoes. Nothing changes without a confirmation. Rostered shifts never move directly: the view offers to prepare a request to the manager instead.
+On a public deployment, set `OFFSHIFT_ACCESS_CODE`. Only people who enter that code can then open Offshift or its API, and each browser remembers the code for 60 days. The watch can't type, so its server address carries the code: `https://<your-site>/w/<code>`.
 
-When the immersive week opens, the assistant greets by the time of day and the date, lists today's items and any waiting ask, then asks two questions answered by thumbs up or down: whether you wish to change your plan, and how you are today. The mood answer is noted privately and never used to decide anything. With the camera on, a small face detector notices when someone arrives (presence only, no identity or expressions), draws a scanning frame on the preview, and greets again if it has been a while.
-
-For the exhibit, open `/calendar?immersive=1` to start straight in the immersive week. Camera consent is remembered for the browser session.
-
-Voice on (HTTPS only) listens for: confirm, cancel, undo, expand calendar, show full week, add rest.
-
-## Voice assistant (iPad)
-
-The glowing orb at the bottom left of the calendar. Tap it and it greets Dinda by the time of day, runs through her day, mentions any waiting ask with the trade-offs Offshift flagged, and asks what she wants to do. Answer by voice, by the chips, or by typing: take it, another time, swap, not tonight, later. It also speaks up on its own when a new ask arrives while it is on.
-
-It talks through Claude Sonnet 5. Put an API key from console.anthropic.com in `.env.local` (copy `.env.example`) and restart the dev server. Without a key it falls back to a scripted voice with the same lines, so the demo still runs. The panel header shows which one is active.
-
-Speech output works over plain HTTP. The microphone on an iPad needs HTTPS: run `npm run dev:https`, open the `https://` Network URL on the iPad, accept the certificate warning once, and allow the microphone. Without that, use the chips or type.
-
-## Phone
-
-Offshift: Week (3D week, asks, agenda, add plan), Offer (checks, impact tiles, take it / another time / swap / not tonight / decide later), Reply, Check-in, Money, Me. Pandora Team and McDonald's Crew: roster and chat. Manager page: ask Dinda, roster, chat for Jess (Pandora) or Raj (McDonald's).
-
-## Sync
-
-Every device reads and writes `/api/state`, a small route in this app that keeps the scenario in memory and in `.offshift-state.json`. Changes on one device reach the others within about a second. Reset from Settings on the phone.
+Without the variable nothing asks for a code, as on a laptop. Use a long code made of letters, numbers and dashes, such as `maple-river-42-kite`. Changing the code locks everyone out until they enter the new one.
 
 ## Garmin watch app
 
-The Garmin app in `offshift-watch` is separate from the browser `/watch` preview above. It runs on a fēnix 8 and uses `/api/watch`: it fetches the waiting ask with its week lines, sends answers, and, only after the worker agrees on the watch, sends body readings as words (one level from 0 to 3 per signal, never a number). Those words do go into the shared state, so the calendar can show them in the Body card and the ask's body check and the immersive greeting can read them out. Turning sharing off on the watch clears them. Nothing about the body goes to an employer.
+The Garmin app in [`offshift-watch`](../offshift-watch/README.md) runs on a fēnix 8 and uses `/api/watch`:
 
-A real watch only talks to https, so run `npm run watch-gateway` (forwards `/api/watch` and nothing else, on :3001) and point a tunnel at it, for example `cloudflared tunnel --url http://127.0.0.1:3001`. See `offshift-watch/README.md`.
+- it fetches the waiting ask with its week lines and today's plans;
+- it sends the worker's answer;
+- only after the worker agrees on the watch, it sends body readings as words, one level from 0 to 3 per signal and never a number.
+
+The calendar shows those words in the Body card, in the ask's body check and in the assistant's greeting. Turning sharing off on the watch clears them. Nothing about the body reaches `/team` or an employer.
+
+A real watch only talks to https. Run `npm run watch-gateway`, which forwards `/api/watch` and nothing else on port 3001, and point a tunnel at it, for example `cloudflared tunnel --url http://127.0.0.1:3001`. A deployed https site such as Vercel needs no gateway: set the watch's server address to it.
+
+## Phone calendars
+
+Offshift doesn't read or write the phone's own calendar (Apple Calendar, Google Calendar or Outlook). The worker's week is entered in Offshift. A read-only calendar subscription could be added later if the team wants one.
+
+## Immersive view
+
+**Immersive** opens a wide 16:9 layout:
+
+- a gesture guide on the left;
+- the detailed week in the centre, where every block shows its title, time, category and status, and quiet-hour boundaries are drawn;
+- the selected block on the right;
+- spoken captions along the bottom.
+
+Every gesture has a button as well, and **Use touch controls** gives large touch buttons.
+
+Hand tracking is optional. It uses MediaPipe Hand Landmarker served from `public/mediapipe`, so no internet is needed. Turning the camera on asks for consent first. Video is processed in the browser and nothing is saved. A small face detector notices only that someone has arrived, so the view can say hello. It doesn't identify anyone or read expressions.
+
+| Gesture | What it does |
+| --- | --- |
+| Both palms open | Separates the week into layers |
+| Both hands closed | Combines the layers again |
+| Hands apart or together | Zooms |
+| Both hands move | Rotates and tilts the week |
+| Pinch | Selects a block |
+| Pinch and drag | Previews a move, snapped to 15 minutes |
+| Pinch and hold empty space | Starts a new event |
+| Thumbs up | Confirms |
+| Thumbs down | Cancels |
+| A held fist | Undoes |
+
+Nothing changes without a confirmation. Rostered shifts never move here; the view offers to draft a request to the manager instead. On opening, the assistant greets the worker, reads out today and any waiting ask, and asks how they are. That answer stays private.
+
+With the voice on (https only), it listens for: confirm, cancel, undo, expand calendar, show full week, add rest.
+
+## Voice assistant
+
+The orb at the bottom left of the calendar briefs the worker on their day and any waiting ask, with the trade-offs Offshift flagged, and asks what they want to do. They answer by voice, with the chips or by typing. It uses the worker's first name only if one is set. It never diagnoses, never advises on health and never decides for the worker.
+
+It talks through Claude Sonnet 5 when `ANTHROPIC_API_KEY` is set in `.env.local` (copy `.env.example`). Without a key it uses a scripted voice with the same lines. Speech output works over plain http. The microphone needs https (`npm run dev:https`).
+
+## Tests
+
+```bash
+npm test            # unit tests (vitest)
+npm run typecheck
+npm run build
+```
+
+The tests cover dates and weeks, the Body and Week checks, drafted replies, answers and team actions, the three-way merge, the watch summary and health readings, the API routes, the assistant's script and the store.
