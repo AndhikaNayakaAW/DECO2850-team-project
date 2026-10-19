@@ -1,13 +1,17 @@
 import { BODY_SIGNALS, SIGNAL_LABELS, bodySentence, signalWord } from "./body";
-import { altSlots, bodyTile, buildDays, draftFor, moneySummary, offerChecks, offerWhen, replyDraft, shiftIncome, type DataState } from "./checks";
-import { DAY_NAMES, DAYS, clock12, dayIndex, minutes, money, nextDay } from "./logic";
-import { EMPLOYERS, PERSON, SCENARIO } from "./scenario";
-import type { Day, DayItem, Decision } from "./types";
+import { altSlots, bodyTile, buildWeek, currentWearable, dayItems, draftFor, isRestDay, offerChecks, offerWhen, replyDraft, waitingAsks, type DataState } from "./checks";
+import { DAY_NAMES, DAYS, clock12, dayIndex, minutes } from "./logic";
+import { addDays, longDate, weekdayOf, type Now } from "./time";
+import type { DateKey, Day, DayItem, Decision, Offer } from "./types";
 
+/**
+ * What the assistant can do. "respond" never sends anything by itself: the calendar opens the drafted reply
+ * for the worker to check and send. Only "later", which sends nothing, applies straight away.
+ */
 export type AssistantAction =
   | { type: "respond"; offerId: string; decision: Decision }
-  | { type: "add_plan"; title: string; day: Day; start: string; end: string }
-  | { type: "show_day"; day: Day };
+  | { type: "add_plan"; title: string; date: DateKey; start: string; end: string }
+  | { type: "show_day"; date: DateKey };
 
 export interface AssistantReply {
   text: string;
@@ -16,6 +20,11 @@ export interface AssistantReply {
 
 export const BRIEF = "__brief__";
 export const ANNOUNCE = "__announce__:";
+/** A chip's answer names its ask outright: `${ANSWER}${offerId}:${decision}`, so it can never land on another ask. */
+export const ANSWER = "__answer__:";
+const DECISIONS: Decision[] = ["accept", "negotiate", "swap", "decline", "later"];
+
+type When = Pick<Now, "date" | "time">;
 
 export function greeting(clock: string): string {
   const h = minutes(clock) / 60;
@@ -31,13 +40,13 @@ export function spokenRange(start: string, end: string): string {
 function spokenItem(it: DayItem): string {
   switch (it.kind) {
     case "uni":
-      return `your ${it.label.replace(" · ", " ")} from ${spokenRange(it.start, it.end)}`;
+      return `your ${it.label.charAt(0).toLowerCase() + it.label.slice(1)} from ${spokenRange(it.start, it.end)}`;
     case "shift":
-      return `a ${it.label.split(" · ")[0]} shift from ${spokenRange(it.start, it.end)}`;
+      return `a ${it.workplace ?? "work"} shift from ${spokenRange(it.start, it.end)}`;
     case "personal":
       return `${it.label.charAt(0).toLowerCase() + it.label.slice(1)} at ${clock12(it.start)}`;
     case "due":
-      return `your ${it.label} at ${clock12(it.start)}`;
+      return `your ${it.label.charAt(0).toLowerCase() + it.label.slice(1)} at ${clock12(it.start)}`;
     default:
       return it.label;
   }
@@ -45,170 +54,215 @@ function spokenItem(it: DayItem): string {
 
 function joinList(parts: string[]): string {
   if (parts.length <= 1) return parts.join("");
+  if (parts.length === 2) return `${parts[0]} and ${parts[1]}`;
   return `${parts.slice(0, -1).join(", ")}, and ${parts[parts.length - 1]}`;
 }
 
+function ordinal(n: number): string {
+  const rem = n % 100;
+  if (rem >= 11 && rem <= 13) return `${n}th`;
+  return `${n}${["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
+}
+
+/** "Monday the 19th of October" */
+function spokenDate(date: string): string {
+  const [weekday, day, month] = longDate(date).split(" ");
+  return `${weekday} the ${ordinal(Number(day))} of ${month}`;
+}
+
+function pendingOf(state: DataState) {
+  return waitingAsks(state.offers);
+}
+
+function nameOf(state: DataState): string {
+  return state.settings.name.trim();
+}
+
+
 /** Everything the assistant may talk about, as plain data. */
-export function assistantContext(state: DataState & { clock: string; notifications?: { title: string; body: string; at: string }[] }) {
-  const days = buildDays(state);
-  const today = days.find((d) => d.today)!;
-  const tomorrow = days.find((d) => d.day === nextDay(SCENARIO.today));
-  const pending = state.offers.filter((o) => o.status === "pending" || o.status === "deferred");
-  const m = moneySummary(state);
-  const body = bodyTile(state);
+export function assistantContext(state: DataState, now: When) {
+  const week = buildWeek(state, now.date, now);
+  const today = dayItems(state, now.date).filter((it) => it.kind !== "offer" && it.kind !== "rest");
+  const tomorrow = dayItems(state, addDays(now.date, 1)).filter((it) => it.kind !== "offer" && it.kind !== "rest");
+  const body = bodyTile(state, now);
+  const watch = currentWearable(state, now);
   return {
-    person: { name: PERSON.name, pronouns: "she/her" },
-    clock: state.clock,
-    today: `${DAY_NAMES[SCENARIO.today]} ${SCENARIO.dates[SCENARIO.today]} ${SCENARIO.month}`,
-    today_items: today.items.filter((it) => it.kind !== "offer" && it.kind !== "rest").map((it) => ({ time: it.kind === "due" ? clock12(it.start) : spokenRange(it.start, it.end), what: it.label, source: it.source })),
-    tomorrow_items: tomorrow?.items.filter((it) => it.kind !== "offer" && it.kind !== "rest").map((it) => ({ time: spokenRange(it.start, it.end), what: it.label })) ?? [],
-    week: days.map((d) => ({ day: d.day, items: d.items.filter((it) => it.kind !== "rest").map((it) => `${it.start}–${it.end} ${it.label}`), rest: d.rest })),
-    pending_asks: pending.map((o) => {
-      const emp = EMPLOYERS[o.employer];
-      const checks = offerChecks(o, state);
-      return {
-        id: o.id,
-        from: o.from,
-        employer: emp.name,
-        asked_at: o.sentAt,
-        when: offerWhen(o),
-        time: spokenRange(o.start, o.end),
-        message: o.note,
-        pays_about: money(shiftIncome(o)),
-        checks: Object.fromEntries(checks.map((c) => [c.key, { state: c.state, text: c.text }])),
-        alternative_times: altSlots(o, state).map((a) => a.label),
-        possible_swap_with: emp.colleagues[1],
-        status: o.status,
-        reminder_at: o.reminderAt,
-      };
-    }),
-    replied_asks: state.offers.filter((o) => o.status !== "pending" && o.status !== "deferred").map((o) => ({ from: o.from, day: o.day, time: spokenRange(o.start, o.end), status: o.status })),
-    money: { essentials: money(m.essentials), earned: money(m.earned), booked: money(m.booked), covered_by: m.coveredBy ? DAY_NAMES[m.coveredBy] : null, past_essentials: money(m.past) },
+    person: { name: nameOf(state) || null },
+    clock: now.time,
+    today: longDate(now.date),
+    today_items: today.map((it) => ({ time: it.kind === "due" ? clock12(it.start) : spokenRange(it.start, it.end), what: it.label, source: it.source })),
+    tomorrow_items: tomorrow.map((it) => ({ time: spokenRange(it.start, it.end), what: it.label })),
+    week: week.map((d) => ({ day: d.day, date: d.date, items: d.items.filter((it) => it.kind !== "rest").map((it) => `${it.start}–${it.end} ${it.label}`), rest: d.rest })),
+    pending_asks: pendingOf(state).map((o) => ({
+      id: o.id,
+      from: o.from,
+      workplace: o.workplace,
+      when: offerWhen(o, now),
+      date: o.date,
+      time: spokenRange(o.start, o.end),
+      message: o.note,
+      checks: Object.fromEntries(offerChecks(o, state, now).map((c) => [c.key, { state: c.state, text: c.text }])),
+      alternative_times: altSlots(o, state, now).map((a) => a.label),
+      status: o.status,
+    })),
+    replied_asks: state.offers.filter((o) => o.status !== "pending" && o.status !== "deferred").map((o) => ({ from: o.from, date: o.date, time: spokenRange(o.start, o.end), status: o.status })),
     body: {
       label: body.label,
       detail: body.detail,
-      from_watch: state.wearable?.signals
-        ? Object.fromEntries(BODY_SIGNALS.filter((k) => state.wearable!.signals![k] !== undefined).map((k) => [SIGNAL_LABELS[k], signalWord(k, state.wearable!.signals![k]!)]))
-        : null,
+      from_watch: watch?.signals ? Object.fromEntries(BODY_SIGNALS.filter((k) => watch.signals![k] !== undefined).map((k) => [SIGNAL_LABELS[k], signalWord(k, watch.signals![k]!)])) : null,
     },
-    protected_day: DAY_NAMES[state.settings.protectedDay],
-    priority_this_month: state.settings.priority,
-    unread: (state.notifications || []).slice(0, 4).map((n) => `${n.title}: ${n.body}`),
+    rest_days: state.settings.restDays.map((d) => DAY_NAMES[d]),
   };
 }
 
-/** The opening words when the calendar wakes up: greeting, the date, today's items, any ask. */
-export function openingLines(state: DataState & { clock: string }): string[] {
-  const days = buildDays(state);
-  const today = days.find((d) => d.today)!;
-  const items = today.items.filter((it) => it.kind !== "offer" && it.kind !== "rest");
-  const pending = state.offers.filter((o) => o.status === "pending" || o.status === "deferred");
-  const lines = [`${greeting(state.clock)}, ${PERSON.name}. It's ${DAY_NAMES[SCENARIO.today]} the ${SCENARIO.dates[SCENARIO.today]}th of ${SCENARIO.month}.`];
+/** The opening words when the calendar wakes up: greeting, the date, today's items, the body, any ask. */
+export function openingLines(state: DataState, now: When): string[] {
+  const items = dayItems(state, now.date).filter((it) => it.kind !== "offer" && it.kind !== "rest");
+  const pending = pendingOf(state);
+  const name = nameOf(state);
+  const lines = [`${greeting(now.time)}${name ? `, ${name}` : ""}. It's ${spokenDate(now.date)}.`];
   lines.push(items.length ? `Today we have ${joinList(items.map(spokenItem))}.` : "Nothing is booked today.");
-  if (state.wearable) lines.push(bodySentence(state.wearable));
+  const watch = currentWearable(state, now);
+  if (watch) lines.push(bodySentence(watch));
   if (pending.length) {
     const o = pending[0];
-    lines.push(`${o.from} from ${EMPLOYERS[o.employer].name} has asked whether you could cover ${offerWhen(o)}, ${spokenRange(o.start, o.end)}. It's waiting for you.`);
+    lines.push(`${o.from} has asked whether you could cover ${offerWhen(o, now)} at ${o.workplace}, ${spokenRange(o.start, o.end)}. It's waiting for you.`);
   }
   return lines;
 }
 
-/* ---------- scripted voice, used when no Claude credentials are configured ---------- */
+/* ---------- scripted voice, used when no API credentials are configured ---------- */
 
-function briefing(state: DataState & { clock: string }): string {
-  const days = buildDays(state);
-  const today = days.find((d) => d.today)!;
-  const items = today.items.filter((it) => it.kind !== "offer" && it.kind !== "rest");
-  const pending = state.offers.filter((o) => o.status === "pending" || o.status === "deferred");
-  let text = `${greeting(state.clock)}, ${PERSON.name}. `;
+function briefing(state: DataState, now: When): string {
+  const items = dayItems(state, now.date).filter((it) => it.kind !== "offer" && it.kind !== "rest");
+  const pending = pendingOf(state);
+  const name = nameOf(state);
+  let text = `${greeting(now.time)}${name ? `, ${name}` : ""}. `;
   text += items.length ? `Today you have ${joinList(items.map(spokenItem))}. ` : "Nothing is booked today. ";
   if (pending.length) {
     const o = pending[0];
-    const emp = EMPLOYERS[o.employer];
-    const checks = offerChecks(o, state);
-    const flagged = checks.filter((c) => c.state !== "ok").slice(0, 2);
-    text += `${o.from} from ${emp.name} asked at ${o.sentAt} whether you could cover ${offerWhen(o)}, ${spokenRange(o.start, o.end)}. `;
-    text += flagged.length ? `${flagged.map((c) => c.text).join(" ")} ` : `Nothing is in the way. `;
-    text += `It would add about ${money(shiftIncome(o))}. Would you like to take it, offer another time, ask for a swap, say not ${offerWhen(o)}, or decide later?`;
+    const flagged = offerChecks(o, state, now).filter((c) => c.state !== "ok").slice(0, 2);
+    text += `${o.from} asked whether you could cover ${offerWhen(o, now)} at ${o.workplace}, ${spokenRange(o.start, o.end)}. `;
+    text += flagged.length ? `${flagged.map((c) => c.text).join(" ")} ` : "Nothing is in the way. ";
+    text += `Would you like to take it, offer another time, ask for a swap, say not ${offerWhen(o, now)}, or decide later?`;
   } else {
-    text += `No one is asking anything of you. ${DAY_NAMES[state.settings.protectedDay]} is still yours.`;
+    text += "No one is asking anything of you.";
+    const rest = state.settings.restDays[0];
+    if (rest) text += ` ${DAY_NAMES[rest]} is still yours.`;
   }
   return text;
 }
 
-function announce(state: DataState & { clock: string }, offerId: string): string {
+function announce(state: DataState, offerId: string, now: When): string {
   const o = state.offers.find((x) => x.id === offerId);
   if (!o) return "";
-  const emp = EMPLOYERS[o.employer];
-  const flagged = offerChecks(o, state).filter((c) => c.state !== "ok")[0];
-  return `${PERSON.name}, ${o.from} from ${emp.name} just asked whether you could cover ${offerWhen(o)}, ${spokenRange(o.start, o.end)}. ${flagged ? flagged.text + " " : ""}Would you like to take it, offer another time, ask for a swap, say no, or decide later?`;
+  const flagged = offerChecks(o, state, now).filter((c) => c.state !== "ok")[0];
+  const name = nameOf(state);
+  return `${name ? `${name}, ` : ""}${o.from} just asked whether you could cover ${offerWhen(o, now)} at ${o.workplace}, ${spokenRange(o.start, o.end)}. ${flagged ? flagged.text + " " : ""}Would you like to take it, offer another time, ask for a swap, say no, or decide later?`;
 }
 
-function decide(input: string): Decision | null {
+/** Hedges mean the worker isn't sure yet, so nothing is chosen for them. */
+const UNSURE = /\b(maybe|might|not sure|unsure|perhaps|dunno|don't know|do not know|i guess|kind of|sort of|hmm+)\b/;
+
+function decide(input: string): Decision | "unsure" | null {
+  // "No worries", "no problem" and "can't wait" are friendly, not a no.
+  const t = input
+    .toLowerCase()
+    .trim()
+    .replace(/\b(no worries|no problem|no prob|not a problem|can't wait|cannot wait)\b[,.!]?\s*/g, "")
+    .trim();
+  let d: Decision | null = null;
+  if (/\byeah,? nah\b/.test(t)) d = "decline";
+  else if (/\bnah,? yeah\b/.test(t)) d = "accept";
+  else if (/\b(later|remind|not now|let me think|think about it|give me a (minute|moment|bit))\b/.test(t)) d = "later";
+  else if (/\b(swap|someone else|cover for me|hand it)\b/.test(t)) d = "swap";
+  else if (/\b(another time|different time|counter|instead|next week|other time)\b/.test(t)) d = "negotiate";
+  else if (/^(no|nope|nah|not)\b/.test(t) || /\b(not tonight|not today|not tomorrow|no thanks|decline|can't|cannot|pass|say no|turn it down)\b/.test(t) || /\b(don't|dont|do not|won't|will not)\b[^.!?]*\b(take|accept|do|want)\b/.test(t)) d = "decline";
+  else if (/\b(take it|accept|yes|yeah|yep|sure|do it|i'll do it|okay take|go ahead)\b/.test(t)) d = "accept";
+  if (d && d !== "later" && UNSURE.test(t)) return "unsure";
+  return d;
+}
+
+/** "tomorrow", "today", or a weekday: the next one, counting today. */
+function dateFrom(input: string, now: When): DateKey | null {
   const t = input.toLowerCase();
-  if (/\b(later|remind|not now|wait|think about)\b/.test(t)) return "later";
-  if (/\b(swap|someone else|cover for me|hand it)\b/.test(t)) return "swap";
-  if (/\b(another time|different time|counter|instead|tomorrow|next week|other time)\b/.test(t)) return "negotiate";
-  if (/\b(not tonight|not today|no thanks|decline|can't|cannot|pass|say no|turn it down|nope)\b/.test(t) || /^no\b/.test(t)) return "decline";
-  if (/\b(take it|accept|yes|yeah|yep|sure|do it|i'll do it|okay take|go ahead)\b/.test(t)) return "accept";
-  return null;
-}
-
-function dayFrom(input: string): Day | null {
-  const t = input.toLowerCase();
-  if (/\btomorrow\b/.test(t)) return nextDay(SCENARIO.today);
-  if (/\btoday\b/.test(t)) return SCENARIO.today;
-  for (const d of DAYS) if (new RegExp(`\\b${DAY_NAMES[d].toLowerCase()}|\\b${d.toLowerCase()}\\b`).test(t)) return d;
-  return null;
-}
-
-export function scriptedTurn(input: string, state: DataState & { clock: string }): AssistantReply {
-  if (input.startsWith(ANNOUNCE)) return { text: announce(state, input.slice(ANNOUNCE.length)), actions: [] };
-  const namedDay = input === BRIEF ? null : dayFrom(input);
-  if (namedDay && namedDay !== SCENARIO.today && /\b(what|show|on|have|anything|about)\b/i.test(input)) {
-    const view = buildDays(state).find((d) => d.day === namedDay)!;
-    const items = view.items.filter((it) => it.kind !== "rest");
-    const text = items.length ? `${DAY_NAMES[namedDay]} has ${joinList(items.map(spokenItem))}.` : `${DAY_NAMES[namedDay]} is clear${view.rest ? ", and protected" : ""}.`;
-    return { text, actions: [{ type: "show_day", day: namedDay }] };
+  if (/\btomorrow\b/.test(t)) return addDays(now.date, 1);
+  if (/\btoday\b|\btonight\b/.test(t)) return now.date;
+  for (const d of DAYS) {
+    if (new RegExp(`\\b${DAY_NAMES[d].toLowerCase()}|\\b${d.toLowerCase()}\\b`).test(t)) {
+      for (let i = 0; i < 7; i++) if (weekdayOf(addDays(now.date, i)) === d) return addDays(now.date, i);
+    }
   }
-  if (input === BRIEF || /\b(brief|good (morning|afternoon|evening|day)|my day|what('s| is) on today|what('s| is) today)\b/i.test(input)) return { text: briefing(state), actions: [] };
-  const pending = state.offers.filter((o) => o.status === "pending" || o.status === "deferred");
-  const decision = decide(input);
+  return null;
+}
+
+function describeDay(state: DataState, date: DateKey): string {
+  const name = DAY_NAMES[weekdayOf(date)];
+  const items = dayItems(state, date).filter((it) => it.kind !== "rest");
+  return items.length ? `${name} has ${joinList(items.map(spokenItem))}.` : `${name} is clear${isRestDay(date, state.settings) ? ", and kept for rest" : ""}.`;
+}
+
+/** What the assistant says when it opens a drafted answer (or, for later, sets the reminder). */
+function answerReply(o: Offer, decision: Decision, state: DataState, now: When): AssistantReply {
+  const when = offerWhen(o, now);
+  const alt = altSlots(o, state, now)[0];
+  const check = "Have a look, change anything you like, then press Send reply.";
+  const text =
+    decision === "accept"
+      ? `Here's a yes to ${o.from} for ${when}. ${check}`
+      : decision === "decline"
+        ? `Here's a kind no to ${o.from} for ${when}. ${check}`
+        : decision === "negotiate"
+          ? `Here's a reply offering ${o.from} ${alt ? alt.label : "another time"} instead. ${check}`
+          : decision === "swap"
+            ? `Here's a reply offering ${o.from} a swap. Add who could take it if you know, then press Send reply.`
+            : `All right. I'll remind you in half an hour. Nothing has been sent to ${o.from}.`;
+  return { text, actions: [{ type: "respond", offerId: o.id, decision }] };
+}
+
+export function scriptedTurn(input: string, state: DataState, now: When): AssistantReply {
+  if (input.startsWith(ANNOUNCE)) return { text: announce(state, input.slice(ANNOUNCE.length), now), actions: [] };
+  const pending = pendingOf(state);
+  if (input.startsWith(ANSWER)) {
+    const [id, decision] = input.slice(ANSWER.length).split(":");
+    const o = pending.find((x) => x.id === id);
+    if (o && DECISIONS.includes(decision as Decision)) return answerReply(o, decision as Decision, state, now);
+    return { text: "That ask has already been answered.", actions: [] };
+  }
+  const named = input === BRIEF ? null : dateFrom(input, now);
+  const decision = input === BRIEF ? null : decide(input);
+  if (!decision && named && named !== now.date && /\b(what|show|on|have|anything|about)\b/i.test(input)) {
+    return { text: describeDay(state, named), actions: [{ type: "show_day", date: named }] };
+  }
+  if (input === BRIEF || /\b(brief|good (morning|afternoon|evening|day)|my day|what('s| is) on today|what('s| is) today)\b/i.test(input)) return { text: briefing(state, now), actions: [] };
   if (decision && pending.length) {
-    const o = pending[0];
-    const emp = EMPLOYERS[o.employer];
-    const draft = decision === "later" ? null : replyDraft(o, decision, state);
-    const text =
-      decision === "accept"
-        ? `Done. I've told ${o.from} you'll take ${offerWhen(o)}. ${draft!.after}`
-        : decision === "decline"
-          ? `Done. I've told ${o.from} not ${offerWhen(o)}, kindly. ${draft!.after}`
-          : decision === "negotiate"
-            ? `Done. I've offered ${o.from} ${altSlots(o, state)[0].label} instead. ${draft!.after}`
-            : decision === "swap"
-              ? `Done. I've asked ${o.from} whether ${emp.colleagues[1]} can take it. ${draft!.after}`
-              : `All right. I'll remind you in half an hour. Nothing has been sent to ${o.from}.`;
-    return { text, actions: [{ type: "respond", offerId: o.id, decision }] };
+    // The ask the worker named: by its own words ("tonight", "Thu 5 Nov"), else by the day. Never a guess between two.
+    const lower = input.toLowerCase();
+    const byWords = pending.filter((x) => lower.includes(offerWhen(x, now).toLowerCase()));
+    let o: Offer | undefined = byWords.length === 1 ? byWords[0] : undefined;
+    if (!o && named) o = pending.find((x) => x.date === named);
+    if (!o && pending.length > 1 && (named || byWords.length > 1)) {
+      return { text: `Which ask do you mean? ${joinList(pending.map((x) => `${x.from} for ${offerWhen(x, now)}`))}.`, actions: [] };
+    }
+    o ??= pending[0];
+    if (decision === "unsure") {
+      return { text: `That's okay, there's no rush. You can take it, offer another time, ask for a swap, say not ${offerWhen(o, now)}, or decide later. Which would you like?`, actions: [] };
+    }
+    return answerReply(o, decision, state, now);
   }
-  const day = dayFrom(input);
-  if (day && /\b(what|show|on|have|anything)\b/i.test(input)) {
-    const view = buildDays(state).find((d) => d.day === day)!;
-    const items = view.items.filter((it) => it.kind !== "rest");
-    const text = items.length ? `${DAY_NAMES[day]} has ${joinList(items.map(spokenItem))}.` : `${DAY_NAMES[day]} is clear${view.rest ? ", and protected" : ""}.`;
-    return { text, actions: [{ type: "show_day", day }] };
-  }
+  if (named && /\b(what|show|on|have|anything)\b/i.test(input)) return { text: describeDay(state, named), actions: [{ type: "show_day", date: named }] };
   if (pending.length) {
     const o = pending[0];
-    return { text: `For ${o.from}'s ask, you can take it, offer another time, ask for a swap, say not ${offerWhen(o)}, or decide later. Which would you like?`, actions: [] };
+    return { text: `For ${o.from}'s ask, you can take it, offer another time, ask for a swap, say not ${offerWhen(o, now)}, or decide later. Which would you like?`, actions: [] };
   }
-  return { text: `Nothing is waiting on you. Ask me about any day of the week, or say "brief me".`, actions: [] };
+  return { text: `Nothing is waiting on you. Ask me about any day this week, or say "brief me".`, actions: [] };
 }
 
-/** The message Offshift sends on Dinda's behalf when the assistant applies a decision. */
-export function replyTextFor(state: DataState, offerId: string, decision: Decision): string {
+/** The reply Offshift records for the manager when the assistant applies a decision. */
+export function replyTextFor(state: DataState, offerId: string, decision: Decision, now: When): string {
   const o = state.offers.find((x) => x.id === offerId);
   if (!o || decision === "later") return "";
-  return draftFor(replyDraft(o, decision, state), state.settings.tone);
+  return draftFor(replyDraft(o, decision, state, now), state.settings.tone);
 }
 
 export function weekdayOrder(a: Day, b: Day): number {

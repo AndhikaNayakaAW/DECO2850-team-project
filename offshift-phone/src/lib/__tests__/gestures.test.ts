@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GestureEngine, type GestureEvent, type HandInfo } from "@/lib/gestures";
+import { GestureEngine, throwSpeed, type GestureEvent, type HandInfo } from "@/lib/gestures";
 
 const hand = (o: Partial<HandInfo> = {}): HandInfo => ({ handedness: "Right", open: false, closed: false, pinch: false, palmFacing: true, center: { x: 0.5, y: 0.5 }, index: { x: 0.5, y: 0.5 }, pinchPoint: { x: 0.5, y: 0.5 }, size: 0.15, fingers: 0, thumb: null, ...o });
 const at = (x: number, y: number, o: Partial<HandInfo> = {}) => hand({ index: { x, y }, pinchPoint: { x, y }, center: { x, y: y + 0.1 }, ...o });
@@ -77,5 +77,17 @@ describe("one-hand gestures", () => {
     const evs = run(e, [at(0.8, 0.8)], 40, 40, 200);
     const c = evs.find((x) => x.type === "cursor");
     expect(c && c.type === "cursor" && Math.abs(c.x - 0.8) < 0.01).toBe(true);
+  });
+});
+
+describe("throwing a block", () => {
+  it("is a throw only when the pointer is still moving fast as it lets go", () => {
+    const fast = [0, 16, 33, 50, 66].map((t, i) => ({ x: i * 40, y: 0, t: 1000 + t }));
+    expect(throwSpeed(fast, 1070)).toBeGreaterThan(1.4);
+    // the same quick drag, then a half-second pause before letting go: a drop
+    expect(throwSpeed(fast, 1570)).toBe(0);
+    // a slow drag
+    const slow = [0, 50, 100].map((t, i) => ({ x: i * 10, y: 0, t: 1000 + t }));
+    expect(throwSpeed(slow, 1105)).toBeLessThan(1.4);
   });
 });

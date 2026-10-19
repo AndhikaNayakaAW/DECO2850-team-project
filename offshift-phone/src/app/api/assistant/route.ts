@@ -2,34 +2,35 @@ import Anthropic from "@anthropic-ai/sdk";
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
-import { ANNOUNCE, BRIEF, assistantContext, scriptedTurn, type AssistantAction } from "@/lib/assistant";
-import { DAYS } from "@/lib/logic";
-import type { DataSlice } from "@/lib/store";
-import type { Day, Decision } from "@/lib/types";
+import { ANNOUNCE, ANSWER, BRIEF, assistantContext, scriptedTurn, type AssistantAction } from "@/lib/assistant";
+import { emptyData } from "@/lib/session";
+import { isClock, isDateKey, nowIn } from "@/lib/time";
+import type { DataSlice, Decision } from "@/lib/types";
+import { cleanData } from "@/lib/validate";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MODEL = "claude-sonnet-5";
 
-const SYSTEM = `You are the voice of Offshift, a care-centred app for Dinda (she/her), a university student in Brisbane who works casual shifts at Pandora and McDonald's. Everything you say is read aloud, so write for the ear: two to four short sentences, plain words, no lists, no markdown, no headings, no emoji. Warm, calm, lightly dry, like a good butler. Never salesy, never pushy.
+const SYSTEM = `You are the voice of Offshift, a care-centred calendar for someone who juggles casual shifts with study and the rest of life. Everything you say is read aloud, so write for the ear: two to four short sentences, plain words, no lists, no markdown, no headings, no emoji. Warm, calm, lightly dry, like a good butler. Never salesy, never pushy. Speak to the worker as "you".
 
-Greet her by the time of day from the clock in the context (Good morning, Good afternoon, Good evening) and address her as Dinda.
+Greet by the time of day from the clock in the context (Good morning, Good afternoon, Good evening). If the context gives the worker's name, use it; if it doesn't, never invent one.
 
-Care rules: the decision is always hers. Either answer to an ask is fine, and you never lean on her to take a shift or to rest. Nothing about her body, mood or money ever goes to an employer. Do not invent events, names or numbers; use only the context.
+Care rules: the decision is always theirs. Either answer to an ask is fine, and you never lean on them to take a shift or to rest. Nothing about their body or mood ever goes to an employer. Do not invent events, names or numbers; use only the context.
 
-Body readings come from her own Garmin watch, as words only (energy, sleep, stress, resting heart rate, breathing, pulse ox, recovery), and only while she shares them. Say what the watch reads, plainly, as a fact. Never diagnose, never guess how she feels, and never say what a reading means she should do.
+Body readings come from their own Garmin watch, as words only (energy, sleep, stress, resting heart rate, breathing, pulse ox, recovery), and only while they share them. Say what the watch reads, plainly, as a fact. Never diagnose, never guess how they feel, and never say what a reading means they should do.
 
-When she asks for the briefing, say: the greeting, what is on today in order, any waiting ask with who is asking and when, the one or two trade-offs Offshift flagged (Body, Week, Money), roughly what it pays, and then ask what she would like to do with it.
+When asked for the briefing, say: the greeting, what is on today in order, any waiting ask with who is asking, where and when, the one or two trade-offs Offshift flagged (Body, Week), and then ask what they would like to do with it.
 
-When a new ask is announced, say who is asking and when, the main trade-off, and ask what she would like to do.
+When a new ask is announced, say who is asking, where and when, the main trade-off, and ask what they would like to do.
 
-When she decides on an ask (take it, another time, a swap, not tonight, later), call respond_to_ask with the matching decision, then confirm in one or two short sentences what happens next. When she asks to add a plan, call add_plan. When she asks about a day, call show_day and describe that day in a sentence. If she asks something outside Offshift, answer in one sentence and come back to the week.`;
+When they decide on an ask (take it, another time, a swap, not this time, later), call respond_to_ask with the matching decision. Nothing is sent by you: the calendar opens the drafted reply for them to check and send, so say the draft is ready to look over and send. For later, say you'll remind them in half an hour and nothing was sent. If they sound unsure, don't pick for them: say there's no rush and ask which they'd like. When asked to add a plan, call add_plan. When asked about a day, call show_day and describe that day in a sentence. Days are real dates: use the dates in the context's week. If asked something outside Offshift, answer in one sentence and come back to the week.`;
 
 const tools: Anthropic.Tool[] = [
   {
     name: "respond_to_ask",
-    description: "Answer a pending shift ask on Dinda's behalf. Offshift sends the message to the manager through the employer app.",
+    description: "Open the drafted reply to a pending shift ask on the worker's calendar, for them to check and send. Nothing is sent until they press Send. 'later' sets a reminder and sends nothing.",
     strict: true,
     input_schema: {
       type: "object",
@@ -47,28 +48,28 @@ const tools: Anthropic.Tool[] = [
   },
   {
     name: "add_plan",
-    description: "Add a personal plan to Dinda's calendar.",
+    description: "Add a personal plan to the worker's calendar on a date.",
     strict: true,
     input_schema: {
       type: "object",
       properties: {
         title: { type: "string" },
-        day: { type: "string", enum: [...DAYS] },
+        date: { type: "string", description: "The date, YYYY-MM-DD, from the context's week." },
         start: { type: "string", description: "24-hour time, HH:MM" },
         end: { type: "string", description: "24-hour time, HH:MM" },
       },
-      required: ["title", "day", "start", "end"],
+      required: ["title", "date", "start", "end"],
       additionalProperties: false,
     },
   },
   {
     name: "show_day",
-    description: "Bring a day of the week into view on the calendar.",
+    description: "Bring a date into view on the calendar.",
     strict: true,
     input_schema: {
       type: "object",
-      properties: { day: { type: "string", enum: [...DAYS] } },
-      required: ["day"],
+      properties: { date: { type: "string", description: "The date, YYYY-MM-DD." } },
+      required: ["date"],
       additionalProperties: false,
     },
   },
@@ -83,16 +84,37 @@ function hasCredentials(): boolean {
   }
 }
 
+const DECISIONS: Decision[] = ["accept", "negotiate", "swap", "decline", "later"];
+
+/** Only well-formed actions reach the calendar: real dates and times, a known decision, a short title. */
 function toAction(name: string, input: unknown): AssistantAction | null {
-  const i = input as Record<string, string>;
-  if (name === "respond_to_ask") return { type: "respond", offerId: i.offer_id, decision: i.decision as Decision };
-  if (name === "add_plan") return { type: "add_plan", title: i.title, day: i.day as Day, start: i.start, end: i.end };
-  if (name === "show_day") return { type: "show_day", day: i.day as Day };
+  const i = (input ?? {}) as Record<string, unknown>;
+  if (name === "respond_to_ask" && typeof i.offer_id === "string" && DECISIONS.includes(i.decision as Decision)) return { type: "respond", offerId: i.offer_id, decision: i.decision as Decision };
+  if (name === "add_plan" && typeof i.title === "string" && i.title.trim() && i.title.length <= 80 && isDateKey(i.date) && isClock(i.start) && isClock(i.end)) {
+    return { type: "add_plan", title: i.title.trim(), date: i.date, start: i.start, end: i.end };
+  }
+  if (name === "show_day" && isDateKey(i.date)) return { type: "show_day", date: i.date };
   return null;
+}
+
+/** The conversation so far, as the browser sent it back: only real turns, recent ones, and never a cut pair of tool call and result. */
+function priorTurns(history: unknown): Anthropic.MessageParam[] {
+  if (!Array.isArray(history)) return [];
+  const turns = history.filter((m): m is Anthropic.MessageParam => !!m && typeof m === "object" && ((m as { role?: unknown }).role === "user" || (m as { role?: unknown }).role === "assistant"));
+  let start = Math.max(0, turns.length - 20);
+  while (start < turns.length && !(turns[start].role === "user" && typeof turns[start].content === "string")) start++;
+  const recent = turns.slice(start);
+  return JSON.stringify(recent).length > 60_000 ? [] : recent;
 }
 
 function userText(input: string, state: DataSlice): string {
   if (input === BRIEF) return "Brief me on my day.";
+  if (input.startsWith(ANSWER)) {
+    const [id, decision] = input.slice(ANSWER.length).split(":");
+    const o = state.offers.find((x) => x.id === id);
+    const words: Record<string, string> = { accept: "take it", decline: "say no", negotiate: "offer another time", swap: "ask for a swap", later: "decide later" };
+    return o ? `For ${o.from}'s ask (id ${o.id}), I'd like to ${words[decision] ?? decision}.` : "Never mind.";
+  }
   if (input.startsWith(ANNOUNCE)) {
     const o = state.offers.find((x) => x.id === input.slice(ANNOUNCE.length));
     return o ? `A new ask just arrived from ${o.from} (id ${o.id}). Announce it to me.` : "Anything new?";
@@ -101,17 +123,24 @@ function userText(input: string, state: DataSlice): string {
 }
 
 export async function POST(req: Request) {
-  const body = (await req.json()) as { input: string; history?: Anthropic.MessageParam[]; state: DataSlice };
-  const { input, state } = body;
-  const history = Array.isArray(body.history) ? body.history : [];
+  let body: { input?: unknown; history?: unknown; state?: unknown };
+  try {
+    body = (await req.json()) ?? {};
+  } catch {
+    return Response.json({ error: "Expected JSON" }, { status: 400 });
+  }
+  const input = String(body.input ?? "").slice(0, 1000);
+  const state: DataSlice = cleanData(body.state) ?? emptyData();
+  const now = nowIn(state.settings.timeZone);
+  const history = priorTurns(body.history);
 
   if (!hasCredentials()) {
-    const r = scriptedTurn(input, state);
+    const r = scriptedTurn(input, state, now);
     return Response.json({ ...r, history, scripted: true });
   }
 
   const client = new Anthropic();
-  const context = assistantContext(state);
+  const context = assistantContext(state, now);
   const messages: Anthropic.MessageParam[] = [...history, { role: "user", content: userText(input, state) }];
   const actions: AssistantAction[] = [];
   const spoken: string[] = [];
@@ -144,7 +173,7 @@ export async function POST(req: Request) {
     return Response.json({ text: spoken.join(" "), actions, history: messages, scripted: false, model: MODEL });
   } catch (error) {
     const message = error instanceof Anthropic.APIError ? `${error.status}: ${error.message}` : String(error);
-    const r = scriptedTurn(input, state);
+    const r = scriptedTurn(input, state, now);
     return Response.json({ ...r, history, scripted: true, error: message });
   }
 }

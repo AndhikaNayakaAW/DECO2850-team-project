@@ -1,80 +1,50 @@
 import { create } from "zustand";
 import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
-import { applyResponse } from "./actions";
-import { altSlots, offerChecks, replyDraft, draftFor } from "./checks";
+import { applyResponse, resolveAsk, sendAsk, type AskInput, type ResponseExtras } from "./actions";
 import { uid } from "./ids";
-import { DAY_NAMES, addMinutesToClock, range12, range24 } from "./logic";
-import { EMPLOYERS, SCENARIO, seedData } from "./scenario";
-import type {
-  AltSlot,
-  AppId,
-  BodyRating,
-  DataSlice,
-  Day,
-  Decision,
-  EmployerId,
-  Message,
-  Notification,
-  Offer,
-  PersonalEvent,
-  Settings,
-  Shift,
-  SyncEntry,
-  UniEvent,
-} from "./types";
-
-export type OffshiftScreen = "week" | "offer" | "reply" | "checkin" | "money" | "me";
+import { clock12 } from "./logic";
+import { emptyData, exampleWeek } from "./session";
+import { nowIn, whenWord } from "./time";
+import type { BodyRating, DataSlice, Decision, PersonalEvent, Settings, Shift, UniEvent } from "./types";
+import { LOG_LIMIT, MESSAGE_LIMIT, cleanData } from "./validate";
 
 export type { DataSlice } from "./types";
 
 export interface UISlice {
-  locked: boolean;
-  page: number;
-  app: AppId | null;
-  offshiftScreen: OffshiftScreen;
-  offerId: string | null;
-  decision: Decision | null;
-  alt: AltSlot | null;
-  colleague: string | null;
-  banner: Notification | null;
   toast: string | null;
   toastKey: number;
-  sheet: { kind: "plan"; day?: Day } | null;
+  /** How long the toast stays: longer for a reminder the worker mustn't miss. */
+  toastMs: number;
 }
 
+type Patch<T> = Partial<Omit<T, "id">>;
+
 export interface Actions {
-  openSheet: (sheet: UISlice["sheet"]) => void;
-  closeSheet: () => void;
+  addShift: (input: Omit<Shift, "id">) => string;
+  updateShift: (id: string, patch: Patch<Shift>) => void;
+  removeShift: (id: string) => void;
+  addUni: (input: Omit<UniEvent, "id">) => string;
+  updateUni: (id: string, patch: Patch<UniEvent>) => void;
+  removeUni: (id: string) => void;
+  addPersonal: (input: Omit<PersonalEvent, "id">) => string;
+  updatePersonal: (id: string, patch: Patch<PersonalEvent>) => void;
+  removePersonal: (id: string) => void;
+  restore: (kind: "shift" | "uni" | "personal", item: Shift | UniEvent | PersonalEvent) => void;
+  setProtected: (id: string, on: boolean) => void;
+  rateShift: (id: string, rating: BodyRating | null) => void;
+  respondToOffer: (offerId: string, decision: Decision, text: string, extras?: ResponseExtras) => void;
+  sendAsk: (input: AskInput) => string;
+  resolveAsk: (offerId: string, action: "confirm-alt" | "approve-swap") => void;
+  /** A note from the worker to the team, such as a request to move a rostered shift. */
+  sendMessage: (text: string, offerId?: string) => void;
+  /** A private note, such as the immersive view's check-in. Logged for the worker only; the team page never shows it. */
+  notePrivate: (text: string) => void;
+  updateSettings: (patch: Partial<Settings>) => void;
+  newSession: () => void;
+  loadExample: () => void;
   fireReminders: () => void;
-  unlock: () => void;
-  lock: () => void;
-  goHome: () => void;
-  openApp: (app: AppId, params?: { screen?: OffshiftScreen; offerId?: string }) => void;
-  setPage: (page: number) => void;
-  setOffshiftScreen: (screen: OffshiftScreen, offerId?: string | null) => void;
-  chooseDecision: (decision: Decision, extras?: { alt?: AltSlot; colleague?: string }) => void;
-  dismissBanner: () => void;
   showToast: (text: string) => void;
   clearToast: () => void;
-  sendOffer: (employer: EmployerId, offer: { day: Day; start: string; end: string; note: string }) => void;
-  publishShift: (employer: EmployerId, shift: { day: Day; start: string; end: string; note?: string }) => void;
-  respondToOffer: (offerId: string, decision: Decision, text: string, extras?: { alt?: AltSlot; colleague?: string; reminderMinutes?: number }) => void;
-  managerResolve: (offerId: string, action: "confirm-alt" | "approve-swap") => void;
-  sendMessage: (employer: EmployerId, from: Message["from"], text: string) => void;
-  rateShift: (shiftId: string, body: BodyRating, kit: string[]) => void;
-  addPersonal: (event: { day: Day; start: string; end: string; title: string; note?: string; category?: PersonalEvent["category"]; importance?: PersonalEvent["importance"] }) => string;
-  updatePersonal: (id: string, patch: Partial<Pick<PersonalEvent, "day" | "start" | "end" | "title" | "importance" | "category">>) => void;
-  setProtected: (id: string, on: boolean) => void;
-  notePrivate: (text: string) => void;
-  removePersonal: (id: string) => void;
-  movePersonal: (id: string, day: Day) => void;
-  removeShift: (id: string) => void;
-  removeUni: (id: string) => void;
-  restore: (kind: "shift" | "uni" | "personal", item: Shift | UniEvent | PersonalEvent) => void;
-  updateSettings: (patch: Partial<Settings>) => void;
-  dismissNotification: (id: string) => void;
-  clearNotifications: () => void;
-  resetDemo: () => void;
 }
 
 export type Store = DataSlice & UISlice & Actions;
@@ -97,327 +67,127 @@ function safeStorage(): StateStorage {
   };
 }
 
-function initialData(): DataSlice {
-  return seedData();
-}
-
-const initialUI: UISlice = {
-  locked: true,
-  page: 0,
-  app: null,
-  offshiftScreen: "week",
-  offerId: null,
-  decision: null,
-  alt: null,
-  colleague: null,
-  banner: null,
-  toast: null,
-  toastKey: 0,
-  sheet: null,
-};
-
-export const DATA_KEYS: (keyof DataSlice)[] = ["clock", "shifts", "uni", "personal", "offers", "messages", "notifications", "sync", "settings", "checkins", "wearable"];
+export const DATA_KEYS: (keyof DataSlice)[] = ["schema", "sessionStartedAt", "shifts", "uni", "personal", "offers", "messages", "sync", "settings", "wearable"];
 
 export function pickData(s: DataSlice): DataSlice {
   return Object.fromEntries(DATA_KEYS.map((k) => [k, s[k]])) as unknown as DataSlice;
 }
 
+/**
+ * The session a store has before any week is loaded, from this device's storage or from the server.
+ * It is never a real session: sync never sends a week that still carries it.
+ */
+export const UNLOADED = new Date(0).toISOString();
+
+
 export const useStore = create<Store>()(
   persist(
-    (set, get) => {
-      const stamp = (s: Store, minutesLater = 1) => addMinutesToClock(s.clock, minutesLater);
-      const log = (s: Store, at: string, from: string, to: string, text: string): SyncEntry[] => [...s.sync, { id: uid("y"), at, from, to, text }];
-
+    (rawSet, get) => {
+      const toast = (s: Store, text: string, ms = 4500) => ({ toast: text, toastKey: s.toastKey + 1, toastMs: ms });
+      /**
+       * Every change goes through here: one that would leave the week malformed (an over-long name, a cleared time)
+       * is refused with a toast, so the store never holds a week the server would reject and sync never stalls.
+       */
+      const set = (partial: Partial<Store> | ((s: Store) => Partial<Store>)) =>
+        rawSet((s) => {
+          const next = typeof partial === "function" ? partial(s) : partial;
+          if (!next || !DATA_KEYS.some((k) => k in next)) return next;
+          const merged = { ...s, ...next } as Store;
+          const trimmed = {
+            sync: merged.sync.length > LOG_LIMIT ? merged.sync.slice(-LOG_LIMIT) : merged.sync,
+            messages: merged.messages.length > MESSAGE_LIMIT ? merged.messages.slice(-MESSAGE_LIMIT) : merged.messages,
+          };
+          if (!cleanData({ ...pickData(merged), ...trimmed })) return toast(s, "That couldn't be saved. Check the date and times, and keep names short.");
+          return trimmed.sync === merged.sync && trimmed.messages === merged.messages ? next : { ...next, ...trimmed };
+        });
       return {
-        ...initialData(),
-        ...initialUI,
+        ...emptyData(new Date(0)),
+        toast: null,
+        toastKey: 0,
+        toastMs: 4500,
 
-        openSheet: (sheet) => set({ sheet }),
-        closeSheet: () => set({ sheet: null }),
-        fireReminders: () =>
-          set((s) => {
-            const now = Date.now();
-            const due = s.offers.filter((o) => o.status === "deferred" && o.reminderDue && o.reminderDue <= now && !o.reminded);
-            if (!due.length || s.locked) return {};
-            const o = due[0];
-            const emp = EMPLOYERS[o.employer];
-            const note: Notification = {
-              id: uid("n"),
-              app: "offshift",
-              title: "Offshift",
-              body: `Still deciding? ${o.from}'s ask for ${o.day === SCENARIO.today ? "tonight" : DAY_NAMES[o.day]}, ${range12(o.start, o.end)}.`,
-              at: o.reminderAt || s.clock,
-              offerId: o.id,
-            };
-            return {
-              offers: s.offers.map((x) => (x.id === o.id ? { ...x, reminded: true } : x)),
-              notifications: [note, ...s.notifications],
-              banner: note,
-            };
-          }),
-        unlock: () => set({ locked: false }),
-        lock: () => set({ locked: true, app: null, banner: null }),
-        goHome: () => set({ app: null, decision: null }),
-        openApp: (app, params) =>
-          set((s) => ({
-            app,
-            locked: false,
-            banner: null,
-            page: s.page,
-            offshiftScreen: app === "offshift" ? params?.screen || (s.app === "offshift" ? s.offshiftScreen : "week") : s.offshiftScreen,
-            offerId: params?.offerId ?? (app === "offshift" ? s.offerId : s.offerId),
-            decision: app === "offshift" ? s.decision : null,
-          })),
-        setPage: (page) => set({ page: Math.max(0, Math.min(1, page)) }),
-        setOffshiftScreen: (screen, offerId) => set((s) => ({ offshiftScreen: screen, offerId: offerId === undefined ? s.offerId : offerId })),
-        chooseDecision: (decision, extras) =>
-          set((s) => {
-            const offer = s.offers.find((o) => o.id === s.offerId);
-            const alt = extras?.alt || (offer && decision === "negotiate" ? altSlots(offer, s)[0] : null);
-            const colleague = extras?.colleague || (offer && decision === "swap" ? EMPLOYERS[offer.employer].colleagues[1] : null);
-            return { decision, alt, colleague, offshiftScreen: "reply" };
-          }),
-        dismissBanner: () => set({ banner: null }),
-        showToast: (text) => set((s) => ({ toast: text, toastKey: s.toastKey + 1 })),
-        clearToast: () => set({ toast: null }),
-
-        sendOffer: (employer, input) =>
-          set((s) => {
-            const emp = EMPLOYERS[employer];
-            const at = stamp(s);
-            const id = uid("o");
-            const offer: Offer = { id, employer, day: input.day, start: input.start, end: input.end, note: input.note, from: emp.manager.name, sentAt: at, status: "pending" };
-            const draftState = { ...s, offers: [...s.offers, offer] };
-            const firstFlag = offerChecks(offer, draftState).find((c) => c.state !== "ok");
-            const dayWord = offer.day === SCENARIO.today ? "tonight" : DAY_NAMES[offer.day];
-            const workerNote: Notification = { id: uid("n"), app: employer, title: emp.workerApp, body: `${emp.manager.name}: ${input.note}`, at, offerId: id };
-            const offshiftNote: Notification = {
-              id: uid("n"),
-              app: "offshift",
-              title: "Offshift",
-              body: `${emp.manager.name} is asking about ${dayWord}, ${range12(offer.start, offer.end)}. ${firstFlag ? firstFlag.text.split(". ")[0] + "." : "Nothing in the way so far."} Think it through when you're ready.`,
-              at,
-              offerId: id,
-            };
-            return {
-              clock: at,
-              offers: [...s.offers, offer],
-              messages: [...s.messages, { id: uid("m"), employer, from: "manager", text: input.note, at, offerId: id }],
-              notifications: [offshiftNote, workerNote, ...s.notifications],
-              sync: log(s, at, emp.managerApp, `${emp.workerApp} · Offshift`, `Shift offer from ${emp.manager.name}: ${offer.day} ${range24(offer.start, offer.end)}.`),
-              banner: workerNote,
-              toast: `Sent to Dinda.`,
-              toastKey: s.toastKey + 1,
-            };
-          }),
-
-        publishShift: (employer, input) =>
-          set((s) => {
-            const emp = EMPLOYERS[employer];
-            const at = stamp(s);
-            const shift: Shift = { id: uid("s"), employer, day: input.day, start: input.start, end: input.end, note: input.note };
-            const note: Notification = { id: uid("n"), app: employer, title: emp.workerApp, body: `Roster updated: ${DAY_NAMES[input.day]} ${range12(input.start, input.end)} added.`, at };
-            return {
-              clock: at,
-              shifts: [...s.shifts, shift],
-              notifications: [note, ...s.notifications],
-              messages: [...s.messages, { id: uid("m"), employer, from: "system", text: `Roster updated: ${DAY_NAMES[input.day]} ${range24(input.start, input.end)}.`, at }],
-              sync: [
-                ...log(s, at, emp.managerApp, `${emp.workerApp} · Offshift`, `Roster change: ${input.day} ${range24(input.start, input.end)} added.`),
-                { id: uid("y"), at, from: "Offshift", to: "Calendar", text: `${input.day} ${range24(input.start, input.end)} added with travel time around it.` },
-              ],
-              banner: note,
-              toast: "Roster published.",
-              toastKey: s.toastKey + 1,
-            };
-          }),
-
-        respondToOffer: (offerId, decision, text, extras) =>
-          set((s) => {
-            const r = applyResponse(pickData(s), offerId, decision, text, extras);
-            if (!r) return {};
-            return { ...r.data, decision: null, offshiftScreen: "week", offerId: null, toast: r.toast, toastKey: s.toastKey + 1 };
-          }),
-
-        managerResolve: (offerId, action) =>
-          set((s) => {
-            const offer = s.offers.find((o) => o.id === offerId);
-            if (!offer) return {};
-            const emp = EMPLOYERS[offer.employer];
-            const at = stamp(s, 2);
-            if (action === "confirm-alt" && offer.alt) {
-              const alt = offer.alt;
-              const shifts = alt.nextWeek ? s.shifts : [...s.shifts, { id: uid("s"), employer: offer.employer, day: alt.day, start: alt.start, end: alt.end, viaOffer: offerId }];
-              const text = `Great, ${alt.label} works. Thanks Dinda!`;
-              const note: Notification = { id: uid("n"), app: offer.employer, title: emp.workerApp, body: `${emp.manager.name}: ${text}`, at, offerId };
-              return {
-                clock: at,
-                shifts,
-                offers: s.offers.map((o) => (o.id === offerId ? { ...o, status: "alt-confirmed" as const } : o)),
-                messages: [...s.messages, { id: uid("m"), employer: offer.employer, from: "manager", text, at, offerId }],
-                notifications: [note, ...s.notifications],
-                sync: [
-                  ...log(s, at, emp.managerApp, `${emp.workerApp} · Offshift`, `${alt.label} confirmed${alt.nextWeek ? " for next week" : ""}.`),
-                  ...(alt.nextWeek ? [] : [{ id: uid("y"), at, from: "Offshift", to: "Calendar", text: `${alt.day} ${range24(alt.start, alt.end)} added with travel time around it.` }]),
-                ],
-                banner: note,
-                toast: `Confirmed ${alt.label}.`,
-                toastKey: s.toastKey + 1,
-              };
-            }
-            if (action === "approve-swap") {
-              const who = offer.colleague || emp.colleagues[1];
-              const text = `Sorted, ${who}'s got it. Thanks for sorting it out.`;
-              const note: Notification = { id: uid("n"), app: offer.employer, title: emp.workerApp, body: `${emp.manager.name}: ${text}`, at, offerId };
-              return {
-                clock: at,
-                offers: s.offers.map((o) => (o.id === offerId ? { ...o, status: "swapped" as const } : o)),
-                messages: [...s.messages, { id: uid("m"), employer: offer.employer, from: "manager", text, at, offerId }],
-                notifications: [note, ...s.notifications],
-                sync: log(s, at, emp.managerApp, `${emp.workerApp} · Offshift`, `Shift ${offer.day} ${range24(offer.start, offer.end)} reassigned to ${who}.`),
-                banner: note,
-                toast: `Swap approved.`,
-                toastKey: s.toastKey + 1,
-              };
-            }
-            return {};
-          }),
-
-        sendMessage: (employer, from, text) =>
-          set((s) => {
-            const at = stamp(s);
-            const emp = EMPLOYERS[employer];
-            const note: Notification | null = from === "manager" ? { id: uid("n"), app: employer, title: emp.workerApp, body: `${emp.manager.name}: ${text}`, at } : null;
-            return {
-              clock: at,
-              messages: [...s.messages, { id: uid("m"), employer, from, text, at }],
-              notifications: note ? [note, ...s.notifications] : s.notifications,
-              banner: note,
-            };
-          }),
-
-        rateShift: (shiftId, body, kit) =>
-          set((s) => {
-            const at = stamp(s);
-            return {
-              clock: at,
-              shifts: s.shifts.map((sh) => (sh.id === shiftId ? { ...sh, rated: body } : sh)),
-              checkins: [...s.checkins, { id: uid("c"), shiftId, body, kit, at }],
-              sync: log(s, at, "Offshift", "Only you", `Check-in saved: ${body}. Nothing shared with any employer.`),
-            };
-          }),
-
-        addPersonal: (event) => {
-          const id = uid("p");
-          set((s) => {
-            const at = stamp(s);
-            const ev: PersonalEvent = { id, ...event };
-            return {
-              clock: at,
-              personal: [...s.personal, ev],
-              sync: log(s, at, "Calendar", "Offshift", `${ev.day} ${range24(ev.start, ev.end)} “${ev.title}” added to the week.`),
-              toast: `Added ${ev.title}.`,
-              toastKey: s.toastKey + 1,
-            };
-          });
+        addShift: (input) => {
+          const id = uid("s");
+          set((s) => ({ shifts: [...s.shifts, { ...input, workplace: input.workplace.trim(), id }] }));
           return id;
         },
-        updatePersonal: (id, patch) =>
+        updateShift: (id, patch) => set((s) => ({ shifts: s.shifts.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
+        removeShift: (id) => set((s) => ({ shifts: s.shifts.filter((x) => x.id !== id) })),
+        addUni: (input) => {
+          const id = uid("u");
+          set((s) => ({ uni: [...s.uni, { ...input, id }] }));
+          return id;
+        },
+        updateUni: (id, patch) => set((s) => ({ uni: s.uni.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
+        removeUni: (id) => set((s) => ({ uni: s.uni.filter((x) => x.id !== id) })),
+        addPersonal: (input) => {
+          const id = uid("p");
+          set((s) => ({ personal: [...s.personal, { category: "personal", importance: "flexible", ...input, id }] }));
+          return id;
+        },
+        updatePersonal: (id, patch) => set((s) => ({ personal: s.personal.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
+        removePersonal: (id) => set((s) => ({ personal: s.personal.filter((x) => x.id !== id) })),
+        restore: (kind, item) =>
           set((s) => {
-            const p = s.personal.find((x) => x.id === id);
-            if (!p) return {};
-            const at = stamp(s);
-            const next = { ...p, ...patch };
-            return {
-              clock: at,
-              personal: s.personal.map((x) => (x.id === id ? next : x)),
-              sync: log(s, at, "Calendar", "Offshift", `“${next.title}” now ${next.day} ${range24(next.start, next.end)}.`),
-            };
-          }),
-        notePrivate: (text) =>
-          set((s) => {
-            const at = stamp(s);
-            return { clock: at, sync: log(s, at, "Offshift", "Only you", text) };
+            if (kind === "shift" && !s.shifts.some((x) => x.id === item.id)) return { shifts: [...s.shifts, item as Shift] };
+            if (kind === "uni" && !s.uni.some((x) => x.id === item.id)) return { uni: [...s.uni, item as UniEvent] };
+            if (kind === "personal" && !s.personal.some((x) => x.id === item.id)) return { personal: [...s.personal, item as PersonalEvent] };
+            return {};
           }),
         setProtected: (id, on) =>
           set((s) => {
-            const cur = s.settings.protectedIds || [];
-            if (on === cur.includes(id)) return {};
-            const at = stamp(s);
-            return {
-              clock: at,
-              settings: { ...s.settings, protectedIds: on ? [...cur, id] : cur.filter((x) => x !== id) },
-              sync: log(s, at, "Offshift", "Only you", on ? "Time protected by you." : "Protection removed."),
-            };
+            const ids = new Set(s.settings.protectedIds);
+            if (on) ids.add(id);
+            else ids.delete(id);
+            return { settings: { ...s.settings, protectedIds: [...ids] }, personal: on ? s.personal : s.personal.map((p) => (p.id === id && p.importance === "protected" ? { ...p, importance: "important" } : p)) };
           }),
-        removePersonal: (id) =>
+        rateShift: (id, rating) => set((s) => ({ shifts: s.shifts.map((x) => (x.id === id ? { ...x, rated: rating ?? undefined } : x)) })),
+        respondToOffer: (offerId, decision, text, extras) =>
           set((s) => {
-            const p = s.personal.find((x) => x.id === id);
-            if (!p) return {};
-            const at = stamp(s);
-            return { clock: at, personal: s.personal.filter((x) => x.id !== id), sync: log(s, at, "Calendar", "Offshift", `“${p.title}” removed from ${DAY_NAMES[p.day]}.`) };
+            const r = applyResponse(pickData(s), offerId, decision, text, extras);
+            return r ? { ...r.data, ...toast(s, r.toast) } : {};
           }),
-        movePersonal: (id, day) =>
-          set((s) => {
-            const p = s.personal.find((x) => x.id === id);
-            if (!p || p.day === day) return {};
-            const at = stamp(s);
-            return { clock: at, personal: s.personal.map((x) => (x.id === id ? { ...x, day } : x)), sync: log(s, at, "Calendar", "Offshift", `“${p.title}” moved to ${DAY_NAMES[day]}.`) };
-          }),
-        removeShift: (id) =>
-          set((s) => {
-            const sh = s.shifts.find((x) => x.id === id);
-            if (!sh) return {};
-            const at = stamp(s);
-            const emp = EMPLOYERS[sh.employer];
-            return {
-              clock: at,
-              shifts: s.shifts.filter((x) => x.id !== id),
-              sync: log(s, at, "Offshift", `${emp.workerApp} · Calendar`, `${DAY_NAMES[sh.day]} ${range24(sh.start, sh.end)} dropped from the week.`),
-            };
-          }),
-        removeUni: (id) =>
-          set((s) => {
-            const u = s.uni.find((x) => x.id === id);
-            if (!u) return {};
-            const at = stamp(s);
-            return { clock: at, uni: s.uni.filter((x) => x.id !== id), sync: log(s, at, "Offshift", "Calendar", `${u.course} ${u.title.toLowerCase()} dropped from ${DAY_NAMES[u.day]}.`) };
-          }),
-        restore: (kind, item) =>
-          set((s) => {
-            if (kind === "shift") return s.shifts.some((x) => x.id === item.id) ? {} : { shifts: [...s.shifts, item as Shift] };
-            if (kind === "uni") return s.uni.some((x) => x.id === item.id) ? {} : { uni: [...s.uni, item as UniEvent] };
-            return s.personal.some((x) => x.id === item.id) ? {} : { personal: [...s.personal, item as PersonalEvent] };
-          }),
-        updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
-        dismissNotification: (id) => set((s) => ({ notifications: s.notifications.filter((n) => n.id !== id) })),
-        clearNotifications: () => set({ notifications: [] }),
-        resetDemo: () => {
-          set({ ...initialData(), ...initialUI });
-          void get;
+        sendAsk: (input) => {
+          const r = sendAsk(pickData(get()), input);
+          set({ ...r.data });
+          return r.id;
         },
+        resolveAsk: (offerId, action) => set((s) => ({ ...resolveAsk(pickData(s), offerId, action) })),
+        sendMessage: (text, offerId) => set((s) => ({ messages: [...s.messages, { id: uid("m"), offerId, from: "worker", text, at: new Date().toISOString() }] })),
+        notePrivate: (text) => set((s) => ({ sync: [...s.sync, { id: uid("y"), at: new Date().toISOString(), from: "Offshift", to: "Only you", text }] })),
+        updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
+        newSession: () => set((s) => ({ ...emptyData(), ...toast(s, "New session. The calendar is empty.") })),
+        loadExample: () => set((s) => ({ ...exampleWeek(), ...toast(s, "Example week loaded.") })),
+        fireReminders: () => {
+          const nowMs = Date.now();
+          const isDue = (o: DataSlice["offers"][number]) => o.status === "deferred" && !o.reminded && !!o.reminderAt && Date.parse(o.reminderAt) <= nowMs;
+          // Nothing due: no state change at all, so nothing re-renders or rewrites storage.
+          if (!get().offers.some(isDue)) return;
+          set((s) => {
+            const due = s.offers.filter(isDue);
+            if (!due.length) return {};
+            const o = due[0];
+            const now = nowIn(s.settings.timeZone);
+            return {
+              offers: s.offers.map((x) => (due.some((d) => d.id === x.id) ? { ...x, reminded: true } : x)),
+              ...toast(s, `Reminder: ${o.from} asked about ${whenWord(o.date, o.start, now)}, ${clock12(o.start)}.`, 15000),
+            };
+          });
+        },
+        showToast: (text) => set((s) => toast(s, text)),
+        clearToast: () => set({ toast: null }),
       };
     },
     {
-      name: "offshift-phone-v2",
-      version: 2,
+      name: "offshift-calendar-v2",
       storage: createJSONStorage(safeStorage),
       skipHydration: true,
-      partialize: (s) => Object.fromEntries(DATA_KEYS.map((k) => [k, s[k]])) as Partial<Store>,
-      migrate: () => ({ ...initialData() }) as unknown as Store,
+      partialize: (s) => pickData(s),
+      // Only a well-formed week in this version's shape is read back, and only its data: never anything else.
+      merge: (persisted, current) => {
+        const saved = cleanData(persisted);
+        return saved ? { ...current, ...saved } : current;
+      },
     },
   ),
 );
-
-/* ---------- selectors ---------- */
-
-export const selectPendingOffers = (s: Store) => s.offers.filter((o) => o.status === "pending" || o.status === "deferred");
-export const selectEmployerMessages = (employer: EmployerId) => (s: Store) => s.messages.filter((m) => m.employer === employer);
-export const selectEmployerShifts = (employer: EmployerId) => (s: Store) => s.shifts.filter((m) => m.employer === employer);
-export const selectUnread = (app: AppId) => (s: Store) => s.notifications.filter((n) => n.app === app).length;
-
-export function currentDraftText(s: Store): string {
-  const offer = s.offers.find((o) => o.id === s.offerId);
-  if (!offer || !s.decision || s.decision === "later") return "";
-  return draftFor(replyDraft(offer, s.decision, s, { alt: s.alt || undefined, colleague: s.colleague || undefined }), s.settings.tone);
-}

@@ -19,8 +19,8 @@ export function useWatchHydrated() {
 }
 export function ReflectionNav({ active }: { active: "watch" | "calendar" }) {
   return <header className="reflect-nav">
-    <Link href="/" className="reflect-brand"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><g fill="var(--ground)"><rect x="7" y="15" width="4" height="11" rx="1"/><rect x="14" y="8" width="4" height="18" rx="1"/><rect x="21" y="12" width="4" height="14" rx="1"/></g></svg>Offshift<span className="reflect-prototype">PROTOTYPE</span></Link>
-    <nav aria-label="Prototype views"><Link href="/watch" aria-current={active === "watch" ? "page" : undefined}>Watch</Link><Link href="/calendar" aria-current={active === "calendar" ? "page" : undefined}>Daily reflection</Link><Link href="/calendar?view=3d">3D week ↗</Link><Link href="/">Phone ↗</Link></nav>
+    <Link href="/" className="reflect-brand"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><g fill="var(--ground)"><rect x="7" y="15" width="4" height="11" rx="1"/><rect x="14" y="8" width="4" height="18" rx="1"/><rect x="21" y="12" width="4" height="14" rx="1"/></g></svg>Offshift</Link>
+    <nav aria-label="Views"><Link href="/watch" aria-current={active === "watch" ? "page" : undefined}>Watch</Link><Link href="/calendar?view=day" aria-current={active === "calendar" ? "page" : undefined}>Daily reflection</Link><Link href="/calendar">Week ↗</Link></nav>
   </header>;
 }
 export function Sparkline({ readings }: { readings: WatchReading[] }) {

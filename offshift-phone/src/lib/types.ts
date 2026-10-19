@@ -1,14 +1,7 @@
+/** A weekday, used for the columns of the week and for rest days. */
 export type Day = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
-export type EmployerId = "pandora" | "mcd";
-export type AppId =
-  | "offshift"
-  | "pandora"
-  | "mcd"
-  | "myuq"
-  | "calendar"
-  | "settings"
-  | "pandora-manager"
-  | "mcd-manager";
+/** A calendar date in the worker's zone, "2026-10-19". */
+export type DateKey = string;
 
 export type Decision = "accept" | "negotiate" | "swap" | "decline" | "later";
 export type OfferStatus =
@@ -21,44 +14,29 @@ export type OfferStatus =
   | "swap-requested"
   | "swapped";
 export type Tone = "warm" | "plain";
-export type Priority = "health" | "uni" | "money";
 export type BodyRating = "fine" | "tired" | "wiped";
 export type CheckState = "ok" | "warn" | "bad";
 
-export interface Employer {
-  id: EmployerId;
-  name: string;
-  site: string;
-  workerApp: string;
-  managerApp: string;
-  manager: { name: string; initial: string };
-  rate: number;
-  satRate: number;
-  colleagues: string[];
-  closeHour: number;
-}
-
+/** A rostered shift at a workplace the worker named themselves. */
 export interface Shift {
   id: string;
-  employer: EmployerId;
-  day: Day;
+  date: DateKey;
   start: string;
   end: string;
-  break?: number;
+  workplace: string;
   rated?: BodyRating;
   viaOffer?: string;
   note?: string;
 }
 
+/** A class, or something due. */
 export interface UniEvent {
   id: string;
-  day: Day;
+  date: DateKey;
   start: string;
   end: string;
   title: string;
-  course: string;
-  type: "tute" | "lecture" | "due";
-  room?: string;
+  type: "class" | "due";
 }
 
 export type PlanCategory = "study" | "personal" | "rest" | "appointment" | "custom";
@@ -66,7 +44,7 @@ export type Importance = "flexible" | "important" | "protected";
 
 export interface PersonalEvent {
   id: string;
-  day: Day;
+  date: DateKey;
   start: string;
   end: string;
   title: string;
@@ -76,47 +54,37 @@ export interface PersonalEvent {
 }
 
 export interface AltSlot {
-  day: Day;
+  date: DateKey;
   start: string;
   end: string;
   label: string;
-  nextWeek?: boolean;
 }
 
+/** A shift ask, sent by the research team on behalf of a manager. */
 export interface Offer {
   id: string;
-  employer: EmployerId;
-  day: Day;
+  from: string;
+  workplace: string;
+  date: DateKey;
   start: string;
   end: string;
   note: string;
-  from: string;
   sentAt: string;
   status: OfferStatus;
   alt?: AltSlot;
   colleague?: string;
   reminderAt?: string;
-  reminderDue?: number;
   reminded?: boolean;
   repliedAt?: string;
 }
 
+/** A line in the conversation about an ask: the manager's side is played by the team. */
 export interface Message {
   id: string;
-  employer: EmployerId;
-  from: "manager" | "dinda" | "system";
+  offerId?: string;
+  from: "team" | "worker";
   text: string;
   at: string;
-  offerId?: string;
-}
-
-export interface Notification {
-  id: string;
-  app: AppId;
-  title: string;
-  body: string;
-  at: string;
-  offerId?: string;
 }
 
 export interface SyncEntry {
@@ -125,43 +93,27 @@ export interface SyncEntry {
   from: string;
   to: string;
   text: string;
-}
-
-export interface Checkin {
-  id: string;
-  shiftId: string;
-  body: BodyRating;
-  kit: string[];
-  at: string;
+  /** The ask this line is about, when it is about one. */
+  offerId?: string;
 }
 
 export interface Settings {
-  priority: Priority;
-  essentials: number;
-  rent: number;
-  other: number;
-  travelFromUniMin: number;
-  travelRoute: string;
-  protectedDay: Day;
-  closesBeforeFlag: number;
+  /** The worker's first name, or empty. */
+  name: string;
   tone: Tone;
-  lastWeekEarned: number;
-  quietWeeksReminder: boolean;
-  protectedIds?: string[];
+  /** Weekdays the worker keeps clear, booked like a shift. */
+  restDays: Day[];
+  protectedIds: string[];
+  /** A shift ending at or after this clock (or past midnight) counts as a late finish. */
+  lateFinish: string;
+  lateFinishesBeforeFlag: number;
+  timeZone: string;
 }
 
 export interface Check {
-  key: "body" | "week" | "money";
+  key: "body" | "week";
   state: CheckState;
   text: string;
-}
-
-export interface ImpactTile {
-  key: "study" | "travel" | "income" | "rest" | "personal";
-  title: string;
-  value: string;
-  detail: string;
-  state: CheckState;
 }
 
 export type ItemKind = "uni" | "shift" | "offer" | "personal" | "rest" | "due" | "travel" | "boundary";
@@ -174,7 +126,9 @@ export interface DayItem {
   label: string;
   sub?: string;
   source: string;
-  employer?: EmployerId;
+  workplace?: string;
+  /** Which of the worker's workplaces, for its colour: 0 for the first one named, 1 for the next. */
+  workplaceIndex?: number;
   offerId?: string;
   warn?: string;
   category?: PlanCategory;
@@ -185,7 +139,8 @@ export interface DayItem {
 
 export interface DayView {
   day: Day;
-  date: number;
+  date: DateKey;
+  dayNum: number;
   today: boolean;
   rest: boolean;
   items: DayItem[];
@@ -205,20 +160,24 @@ export interface Wearable {
   word: string;
   at: string;
   source: string;
+  /** When the server got it (ISO). An old reading stops counting. */
+  receivedAt?: string;
   signals?: BodySignals;
 }
 
-/** Everything that syncs between the phone, the calendar, the watch and the server. */
+/** Bumped whenever the shape changes, so old saved weeks are never read as new ones. */
+export const SCHEMA = 2;
+
+/** Everything that syncs between the calendar, the team page, the watch and the server. */
 export interface DataSlice {
-  clock: string;
+  schema: number;
+  sessionStartedAt: string;
   shifts: Shift[];
   uni: UniEvent[];
   personal: PersonalEvent[];
   offers: Offer[];
   messages: Message[];
-  notifications: Notification[];
   sync: SyncEntry[];
   settings: Settings;
-  checkins: Checkin[];
   wearable?: Wearable | null;
 }

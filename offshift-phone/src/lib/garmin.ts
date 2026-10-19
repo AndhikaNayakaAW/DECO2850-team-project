@@ -1,10 +1,10 @@
 /** What the Garmin watch app receives and sends through /api/watch: the waiting ask, answers and body readings. */
 import { applyResponse } from "./actions";
 import { BODY_SIGNALS, OVERALL_WORDS, overallLevel } from "./body";
-import { altSlots, buildDays, draftFor, eventsFor, offerImpact, offerWhen, replyDraft } from "./checks";
+import { altSlots, dayItems, draftFor, eventsFor, isRestDay, offerImpact, replyDraft, waitingAsks } from "./checks";
 import { uid } from "./ids";
-import { clock12, dayIndex, minutes, nextDay, range12 } from "./logic";
-import { EMPLOYERS } from "./scenario";
+import { clock12, minutes, range12 } from "./logic";
+import { addDays, nowIn, weekdayOf, whenWord } from "./time";
 import type { BodyLevel, BodySignals, DataSlice, Decision, Offer, OfferStatus, Wearable } from "./types";
 
 export const WATCH_DECISIONS: Decision[] = ["accept", "negotiate", "swap", "decline", "later"];
@@ -25,6 +25,7 @@ const STATUS_WORDS: Record<OfferStatus, string> = {
 export interface WatchAsk {
   id: string;
   from: string;
+  /** The workplace. Named employer so builds already on watches keep working. */
   employer: string;
   day: string;
   when: string;
@@ -45,7 +46,10 @@ export interface WatchSummary {
   replied: { from: string; time: string; status: string } | null;
 }
 
-/** Watch fonts only cover plain ASCII, so dashes, dots and curly quotes are flattened. */
+/** Letters that don't split into a plain letter and an accent. */
+const PLAIN: Record<string, string> = { ł: "l", Ł: "L", ø: "o", Ø: "O", ß: "ss", æ: "ae", Æ: "AE", œ: "oe", Œ: "OE", đ: "d", Đ: "D", ı: "i" };
+
+/** Watch fonts only cover plain ASCII, so accents come off ("Zoë" reads "Zoe") and dashes, dots and quotes are flattened. */
 export function ascii(s: string): string {
   return s
     .replace(/[–—]/g, "-")
@@ -53,7 +57,12 @@ export function ascii(s: string): string {
     .replace(/[‘’]/g, "'")
     .replace(/[“”]/g, '"')
     .replace(/…/g, "...")
-    .replace(/[^\x20-\x7E]/g, "");
+    .replace(/[łŁøØßæÆœŒđĐı]/g, (c) => PLAIN[c])
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\x20-\x7E]/g, "")
+    .replace(/ {2,}/g, " ")
+    .trim();
 }
 
 /** A shift's time for the watch: "4-9 pm", or "10:30 am - 12:45 pm" with room to break between the two ends. */
@@ -66,58 +75,55 @@ function at(t: string): string {
 }
 
 /**
- * Up to three short lines for the Week check: clashes, the trip there, and tomorrow's start.
+ * Up to three short lines for the Week check: clashes, the gap before, and the next day's start.
  * The key fact comes first, so a line that wraps on the round screen breaks in a sensible place.
  */
 function weekLines(offer: Offer, data: DataSlice): string[] {
   const x = offerImpact(offer, data);
   const lines: string[] = [];
-  if (offer.day === data.settings.protectedDay) lines.push("Your protected rest day");
+  if (isRestDay(offer.date, data.settings)) lines.push("Your rest day");
   for (const c of x.conflicts) lines.push(`${at(c.start)} clash: ${c.title}`);
   if (x.previous) {
-    const spare = x.travelBuffer ?? 0;
-    if (x.travel.minutes === 0) lines.push(`Straight after your ${x.previous.title}`);
-    else lines.push(spare <= 0 ? `Arrive late from ${x.previous.title} ${at(x.previous.end)}` : `${spare} min spare after ${x.previous.title} ${at(x.previous.end)}`);
+    const gap = x.gapBefore ?? 0;
+    const sameShop = x.previous.kind === "work" && x.previous.workplace?.toLowerCase() === offer.workplace.toLowerCase();
+    if (sameShop && gap <= 30) lines.push(`Straight after your ${x.previous.title}`);
+    else lines.push(`${gap} min after ${x.previous.title} ${at(x.previous.end)}`);
   }
-  const nd = nextDay(offer.day);
-  if (dayIndex(nd) > dayIndex(offer.day)) {
-    const first = eventsFor(data)
-      .filter((e) => e.kind !== "rest" && e.day === nd)
-      .sort((a, b) => minutes(a.start) - minutes(b.start))[0];
-    if (first) lines.push(`${nd} starts ${at(first.start)}`);
-  }
+  const nd = addDays(offer.date, 1);
+  const first = eventsFor(data)
+    .filter((e) => e.date === nd && e.viaOffer !== offer.id)
+    .sort((a, b) => minutes(a.start) - minutes(b.start))[0];
+  if (first) lines.push(`${weekdayOf(nd)} starts ${at(first.start)}`);
   return lines.slice(0, 3).map(ascii);
 }
 
 /** Today's plans for the watch's week page: start time and title, in order, without asks or rest. */
-function todayLines(data: DataSlice): string[] {
-  const today = buildDays(data).find((d) => d.today);
-  if (!today) return [];
-  return today.items
+function todayLines(data: DataSlice, today: string): string[] {
+  return dayItems(data, today)
     .filter((it) => it.kind !== "offer" && it.kind !== "rest")
-    .sort((a, b) => minutes(a.start) - minutes(b.start))
     .slice(0, 4)
     .map((it) => ascii(`${at(it.start)} ${it.label}`));
 }
 
-/** Everything the watch shows, in plain text and without money. */
-export function watchSummary(data: DataSlice): WatchSummary {
-  const open = data.offers.filter((o) => o.status === "pending" || o.status === "deferred");
+/** Everything the watch shows, in plain text. */
+export function watchSummary(data: DataSlice, atTime: Date = new Date()): WatchSummary {
+  const now = nowIn(data.settings.timeZone, atTime);
+  const open = waitingAsks(data.offers);
   const o = open[0];
   const ask: WatchAsk | null = o
     ? {
         id: o.id,
-        from: ascii(o.from),
-        employer: ascii(EMPLOYERS[o.employer].name),
-        day: o.day,
-        when: ascii(offerWhen(o)),
+        from: ascii(o.from) || "Your manager",
+        employer: ascii(o.workplace) || "Work",
+        day: weekdayOf(o.date),
+        when: ascii(whenWord(o.date, o.start, now)),
         time: watchRange(o.start, o.end),
         note: ascii(o.note),
         week: weekLines(o, data),
-        alt: ascii(altSlots(o, data)[0]?.label ?? ""),
-        swap: ascii(EMPLOYERS[o.employer].colleagues[1] ?? ""),
+        alt: ascii(altSlots(o, data, now)[0]?.label ?? "Another day"),
+        swap: "Someone else",
         status: o.status as "pending" | "deferred",
-        reminder: o.reminderAt ?? null,
+        reminder: o.reminderAt ? ascii(clock12(nowIn(data.settings.timeZone, new Date(o.reminderAt)).time)) : null,
       }
     : null;
   const last = data.offers
@@ -125,32 +131,35 @@ export function watchSummary(data: DataSlice): WatchSummary {
     .sort((a, b) => (a.repliedAt ?? "").localeCompare(b.repliedAt ?? ""))
     .at(-1);
   return {
-    clock: data.clock,
+    clock: now.time,
     ask,
-    today: todayLines(data),
+    today: todayLines(data, now.date),
     waiting: open.length,
-    replied: last ? { from: ascii(last.from), time: ascii(range12(last.start, last.end)), status: STATUS_WORDS[last.status] } : null,
+    replied: last ? { from: ascii(last.from) || "Your manager", time: ascii(range12(last.start, last.end)), status: STATUS_WORDS[last.status] } : null,
   };
 }
 
-/** An answer chosen on the wrist goes out with the same drafted reply the phone would send. */
-export function applyWatchAnswer(data: DataSlice, offerId: string, decision: Decision): { data: DataSlice; toast: string } | null {
+/** An answer chosen on the wrist goes out with the same drafted reply the calendar would send. */
+export function applyWatchAnswer(data: DataSlice, offerId: string, decision: Decision, atTime: Date = new Date()): { data: DataSlice; toast: string } | null {
   const offer = data.offers.find((o) => o.id === offerId);
   if (!offer || (offer.status !== "pending" && offer.status !== "deferred")) return null;
-  const text = decision === "later" ? "" : draftFor(replyDraft(offer, decision, data), data.settings.tone);
-  return applyResponse(data, offerId, decision, text, { reminderMinutes: 30 });
+  const now = nowIn(data.settings.timeZone, atTime);
+  const text = decision === "later" ? "" : draftFor(replyDraft(offer, decision, data, now), data.settings.tone);
+  return applyResponse(data, offerId, decision, text, { reminderMinutes: 30 }, atTime);
 }
 
-/** Keeps the watch's reading as a word, and logs it only when it changes. */
-export function applyWatchBody(data: DataSlice, level: number): DataSlice {
+/** Keeps an older watch build's single reading as a word, and logs it only when it changes. */
+export function applyWatchBody(data: DataSlice, level: number, atTime: Date = new Date()): DataSlice {
   if (!Number.isInteger(level) || level < 0 || level > 3) return data;
   const lv = level as Wearable["level"];
-  if (data.wearable && data.wearable.level === lv) return data;
+  if (data.wearable && data.wearable.level === lv && !stale(data.wearable, atTime)) return data;
   const word = WEARABLE_WORDS[lv];
+  const now = nowIn(data.settings.timeZone, atTime);
+  if (data.wearable && data.wearable.level === lv) return { ...data, wearable: { ...data.wearable, at: now.time, receivedAt: atTime.toISOString() } };
   return {
     ...data,
-    wearable: { level: lv, word, at: data.clock, source: "Garmin" },
-    sync: [...data.sync, { id: uid("y"), at: data.clock, from: "Watch", to: "Only you", text: `Body reading: ${word.toLowerCase()}. Kept private.` }],
+    wearable: { level: lv, word, at: now.time, source: "Garmin", receivedAt: atTime.toISOString() },
+    sync: [...data.sync, { id: uid("y"), at: atTime.toISOString(), from: "Watch", to: "Only you", text: `Body reading: ${word.toLowerCase()}. Kept private.` }],
   };
 }
 
@@ -172,25 +181,32 @@ export function parseHealth(input: unknown): HealthInput | null {
 }
 
 /** Stores the watch's levels and overall word. Logs only when the overall word changes. */
-export function applyWatchHealth(data: DataSlice, signals: BodySignals, at: string | null): DataSlice {
+export function applyWatchHealth(data: DataSlice, signals: BodySignals, at: string | null, atTime: Date = new Date()): DataSlice {
   const level = overallLevel(signals);
   if (level === null) return data;
   const ordered: BodySignals = {};
   for (const k of BODY_SIGNALS) if (signals[k] !== undefined) ordered[k] = signals[k];
   const prev = data.wearable;
-  if (prev && prev.level === level && JSON.stringify(prev.signals ?? {}) === JSON.stringify(ordered)) return data;
+  const unchanged = !!prev && prev.level === level && JSON.stringify(prev.signals ?? {}) === JSON.stringify(ordered);
+  // The same reading again only needs storing now and then, to show it's still current.
+  if (unchanged && !stale(prev, atTime)) return data;
   const word = OVERALL_WORDS[level];
-  const wearable: Wearable = { level, word, at: at ?? data.clock, source: "Garmin", signals: ordered };
-  const sync = prev?.word === word ? data.sync : [...data.sync, { id: uid("y"), at: data.clock, from: "Watch", to: "Only you", text: `Body reading: ${word.toLowerCase()}. Kept private.` }];
+  const wearable: Wearable = { level, word, at: at ?? nowIn(data.settings.timeZone, atTime).time, source: "Garmin", receivedAt: atTime.toISOString(), signals: ordered };
+  const sync = prev?.word === word ? data.sync : [...data.sync, { id: uid("y"), at: atTime.toISOString(), from: "Watch", to: "Only you", text: `Body reading: ${word.toLowerCase()}. Kept private.` }];
   return { ...data, wearable, sync };
 }
 
-/** Sharing turned off on the watch: the calendar forgets the last reading. */
-export function stopWatchHealth(data: DataSlice): DataSlice {
+/** Sharing turned off on the watch: the calendar forgets the last reading, and the log forgets the readings too. */
+export function stopWatchHealth(data: DataSlice, atTime: Date = new Date()): DataSlice {
   if (!data.wearable) return data;
   return {
     ...data,
     wearable: null,
-    sync: [...data.sync, { id: uid("y"), at: data.clock, from: "Watch", to: "Only you", text: "Body sharing turned off on the watch. The calendar forgot the last reading." }],
+    sync: [...data.sync.filter((e) => !(e.from === "Watch" && e.text.startsWith("Body reading"))), { id: uid("y"), at: atTime.toISOString(), from: "Watch", to: "Only you", text: "Body sharing turned off on the watch. The calendar forgot the readings." }],
   };
+}
+
+/** A stored reading older than half an hour is refreshed even when the watch reads the same. */
+function stale(w: Wearable, atTime: Date): boolean {
+  return !w.receivedAt || atTime.getTime() - Date.parse(w.receivedAt) > 30 * 60_000;
 }

@@ -1,29 +1,69 @@
-import { describe, expect, it } from "vitest";
-import { buildDays } from "@/lib/checks";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { dayItems } from "@/lib/checks";
 import { pickData, useStore } from "@/lib/store";
+import { AT, week } from "./fixture";
 
-describe("the shared scenario", () => {
-  it("turns an accepted ask into a shift and hides the amber block", () => {
-    const s = useStore.getState();
-    s.resetDemo();
-    const before = buildDays(pickData(useStore.getState()));
-    expect(before.find((d) => d.day === "Thu")!.items.some((it) => it.kind === "offer")).toBe(true);
-    s.respondToOffer("o-jess-thu", "accept", "Yes, I can do tonight.");
-    const after = pickData(useStore.getState());
-    expect(after.offers[0].status).toBe("accepted");
-    expect(after.shifts).toHaveLength(6);
-    expect(buildDays(after).find((d) => d.day === "Thu")!.items.some((it) => it.kind === "offer")).toBe(false);
+const data = () => pickData(useStore.getState());
+
+describe("the shared calendar", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(AT);
+    useStore.setState({ ...week(), toast: null });
   });
-  it("reset brings Jess's ask back and clears every change", () => {
-    const s = useStore.getState();
-    s.respondToOffer("o-jess-thu", "decline", "Not tonight.");
-    s.addPersonal({ day: "Mon", start: "18:00", end: "19:00", title: "Gym" });
-    s.resetDemo();
-    const d = pickData(useStore.getState());
-    expect(d.offers[0].status).toBe("pending");
-    expect(d.shifts).toHaveLength(5);
-    expect(d.personal.some((p) => p.title === "Gym")).toBe(false);
-    expect(d.clock).toBe("13:02");
-    expect(buildDays(d).find((x) => x.day === "Thu")!.items.some((it) => it.kind === "offer")).toBe(true);
+  afterEach(() => vi.useRealTimers());
+
+  it("turns an accepted ask into a shift and takes the amber block off the day", () => {
+    expect(dayItems(data(), "2026-10-22").some((it) => it.kind === "offer")).toBe(true);
+    useStore.getState().respondToOffer("o-thu", "accept", "Yes, I can do tonight.");
+    expect(data().offers[0].status).toBe("accepted");
+    const thu = dayItems(data(), "2026-10-22");
+    expect(thu.some((it) => it.kind === "offer")).toBe(false);
+    expect(thu.find((it) => it.kind === "shift")).toMatchObject({ start: "16:00", end: "21:00", workplace: "Café" });
+    expect(useStore.getState().toast).toBe("Sent to Alex. Added to your week.");
+  });
+  it("reminds the worker once when a deferred ask comes due", () => {
+    useStore.getState().respondToOffer("o-thu", "later", "");
+    useStore.getState().fireReminders();
+    expect(useStore.getState().toast).toBe("Reminder set for 1:32 pm. Nothing sent.");
+    vi.setSystemTime(new Date("2026-10-22T03:33:00Z"));
+    useStore.getState().fireReminders();
+    expect(useStore.getState().toast).toBe("Reminder: Alex asked about tonight, 4 pm.");
+    expect(data().offers[0].reminded).toBe(true);
+    const key = useStore.getState().toastKey;
+    useStore.getState().fireReminders();
+    expect(useStore.getState().toastKey).toBe(key);
+  });
+  it("puts a removed item back where undo expects it", () => {
+    const tutorial = data().uni[0];
+    useStore.getState().removeUni(tutorial.id);
+    expect(data().uni.some((u) => u.id === tutorial.id)).toBe(false);
+    useStore.getState().restore("uni", tutorial);
+    useStore.getState().restore("uni", tutorial);
+    expect(data().uni.filter((u) => u.id === tutorial.id)).toHaveLength(1);
+  });
+  it("keeps a protected plan's importance honest when protection is lifted", () => {
+    useStore.getState().updatePersonal("p-tue", { importance: "protected" });
+    useStore.getState().setProtected("p-tue", true);
+    expect(data().settings.protectedIds).toContain("p-tue");
+    useStore.getState().setProtected("p-tue", false);
+    expect(data().settings.protectedIds).not.toContain("p-tue");
+    expect(data().personal.find((p) => p.id === "p-tue")?.importance).toBe("important");
+  });
+  it("starts a new session empty, with nothing from the last participant", () => {
+    useStore.getState().addPersonal({ date: "2026-10-19", start: "18:00", end: "19:00", title: "Gym", category: "personal", importance: "flexible" });
+    useStore.getState().newSession();
+    const d = data();
+    expect([d.shifts, d.uni, d.personal, d.offers, d.messages, d.sync].every((xs) => xs.length === 0)).toBe(true);
+    expect(d.settings.name).toBe("");
+    useStore.getState().loadExample();
+    expect(data().shifts.length).toBeGreaterThan(0);
+    expect(data().offers).toHaveLength(0);
+  });
+  it("never loads a week saved by an older version", () => {
+    const merge = useStore.persist.getOptions().merge!;
+    const current = useStore.getState();
+    expect(merge({ clock: "13:02", shifts: [{ id: "s1", employer: "pandora", day: "Thu" }] }, current)).toBe(current);
+    expect((merge(week(), current) as typeof current).settings.name).toBe("Sam");
   });
 });

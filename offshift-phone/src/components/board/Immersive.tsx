@@ -1,17 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Week3D, { type SceneHandle, type SlotTarget } from "@/components/apps/offshift/Week3D";
-import { buildDays, dayListWithTravel, type DataState } from "@/lib/checks";
+import Week3D, { type SceneHandle, type SlotTarget } from "@/components/board/Week3D";
+import { buildWeek, type DataState } from "@/lib/checks";
 import { GestureEngine, type FaceBox, type GestureEvent, type HandFrame } from "@/lib/gestures";
 import { openingLines } from "@/lib/assistant";
 import BodyCard from "./BodyCard";
 import { startHandTracking, type HandTracker } from "@/lib/hands";
 import { DAYS, DAY_NAMES, clock12, dayIndex, minutes, range12 } from "@/lib/logic";
-import { EMPLOYERS, SCENARIO } from "@/lib/scenario";
 import { createSpeaker, type Speaker } from "@/lib/speech";
 import { useStore } from "@/lib/store";
-import type { Day, DayItem, DayView, Importance, PlanCategory } from "@/lib/types";
+import { isClock, weekDates, weekLabel, weekdayOf, type Now } from "@/lib/time";
+import type { DateKey, Day, DayItem, DayView, Importance, PlanCategory } from "@/lib/types";
 
 const LINE_EXPLODE = "I have separated your schedule into work, study, personal time, travel and rest.";
 const LINE_COMBINE = "Your schedule is back in the weekly view.";
@@ -25,7 +25,7 @@ const CATEGORIES: { key: PlanCategory; label: string; title: string }[] = [
 
 type Pending =
   | { kind: "move"; itemId: string; title: string; from: SlotTarget; to: SlotTarget; warnings: string[] }
-  | { kind: "negotiate"; itemId: string; title: string; employer: "pandora" | "mcd"; to: SlotTarget; draft: string }
+  | { kind: "negotiate"; itemId: string; title: string; workplace: string; to: SlotTarget; draft: string }
   | { kind: "create"; slot: SlotTarget; step: "ask" | "form"; category: PlanCategory; title: string; start: string; end: string; importance: Importance }
   | { kind: "protect"; itemId: string; title: string };
 
@@ -51,7 +51,7 @@ function recognitionCtor(): (new () => SR) | null {
 }
 
 /** Items a proposed slot would touch, in plain words. Facts only, no advice. */
-function slotWarnings(state: DataState, itemId: string, slot: SlotTarget, days: DayView[]): string[] {
+function slotWarnings(itemId: string, slot: SlotTarget, days: DayView[]): string[] {
   const out: string[] = [];
   const view = days.find((d) => d.day === slot.day);
   if (!view) return out;
@@ -65,10 +65,9 @@ function slotWarnings(state: DataState, itemId: string, slot: SlotTarget, days: 
   const before = view.items.filter((it) => it.id !== itemId && it.kind !== "travel" && it.kind !== "boundary" && it.kind !== "rest" && it.kind !== "due" && minutes(it.end) <= s).sort((a, b) => minutes(b.end) - minutes(a.end))[0];
   if (before) {
     const gap = s - minutes(before.end);
-    const need = before.kind === "uni" ? state.settings.travelFromUniMin : 20;
-    if (gap < need) out.push(`Only ${gap} minutes after ${before.label} ends at ${clock12(before.end)}; travel takes about ${need}.`);
+    if (gap < 30) out.push(`Only ${gap} minutes after ${before.label} ends at ${clock12(before.end)}.`);
   }
-  if (slot.day === state.settings.protectedDay) out.push(`Sits on ${DAY_NAMES[slot.day]}, your protected rest day.`);
+  if (view.rest) out.push(`Sits on ${DAY_NAMES[slot.day]}, a rest day you keep clear.`);
   if (e > 22 * 60) out.push("Runs into quiet hours after 10 pm.");
   const nd = DAYS[dayIndex(slot.day) + 1];
   const next = nd && days.find((d) => d.day === nd)?.items.filter((it) => it.kind === "shift" || it.kind === "uni").sort((a, b) => minutes(a.start) - minutes(b.start))[0];
@@ -89,16 +88,15 @@ function describe(item: DayItem, day: Day, days: DayView[]): string {
   return text;
 }
 
-export default function Immersive({ onExit }: { onExit: () => void }) {
+/** The week, big and wide, driven by hands, voice or touch. Shows the same week as the board. */
+export default function Immersive({ onExit, weekAnchor, now, onOpenAsk }: { onExit: () => void; weekAnchor: DateKey; now: Pick<Now, "date" | "time">; onOpenAsk: (offerId: string) => void }) {
   const state = useStore();
   const updatePersonal = useStore((s) => s.updatePersonal);
   const addPersonal = useStore((s) => s.addPersonal);
   const removePersonal = useStore((s) => s.removePersonal);
   const setProtected = useStore((s) => s.setProtected);
   const sendMessage = useStore((s) => s.sendMessage);
-  const openApp = useStore((s) => s.openApp);
   const notePrivate = useStore((s) => s.notePrivate);
-  const resetDemo = useStore((s) => s.resetDemo);
 
   const handle = useRef<SceneHandle | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -137,17 +135,20 @@ export default function Immersive({ onExit }: { onExit: () => void }) {
   if (!speaker.current) speaker.current = createSpeaker(setCaption);
   const say = useCallback((text: string, force = false) => speaker.current?.say(text, { force }), []);
 
-  /* ---------- data: week + travel + boundaries, straight from the shared store ---------- */
-  const base = useMemo(() => buildDays(state), [state.shifts, state.uni, state.personal, state.offers, state.settings]); // eslint-disable-line react-hooks/exhaustive-deps
+  /* ---------- data: the board's week and quiet-hour boundaries, straight from the shared store ---------- */
+  const nowRef = useRef(now);
+  nowRef.current = now;
+  const dates = useMemo(() => weekDates(weekAnchor), [weekAnchor]);
+  const dateOf = useCallback((day: Day) => dates[dayIndex(day)], [dates]);
+  const base = useMemo(() => buildWeek(state, weekAnchor, now), [state.shifts, state.uni, state.personal, state.offers, state.settings, weekAnchor, now.date]); // eslint-disable-line react-hooks/exhaustive-deps
   const days = useMemo<DayView[]>(
     () =>
       base.map((d) => {
-        const withTravel = dayListWithTravel(d, state).map((it) => (it.travelFor ? { ...it, kind: "travel" as const, status: "Estimated", source: "Offshift" } : it));
-        const items: DayItem[] = withTravel.filter((it) => it.kind !== "due");
+        const items: DayItem[] = d.items.filter((it) => it.kind !== "due");
         if (!d.rest) items.push({ id: `bound-${d.day}`, kind: "boundary", start: "22:00", end: "24:00", label: "Quiet hours", source: "Offshift", status: "Boundary · after 10 pm" });
         return { ...d, items };
       }),
-    [base, state], // eslint-disable-line react-hooks/exhaustive-deps
+    [base],
   );
   const selected = useMemo(() => {
     for (const d of days) for (const it of d.items) if (it.id === selectedId) return { item: it, day: d.day };
@@ -177,11 +178,10 @@ export default function Immersive({ onExit }: { onExit: () => void }) {
       if (!found) return;
       const { item, day } = found;
       const title = item.label.replace(/ · .*$/, "");
-      if (item.kind === "shift" && item.employer) {
-        const emp = EMPLOYERS[item.employer];
-        const draft = `Hi ${emp.manager.name}, would it be possible to move my ${DAY_NAMES[day]} ${range12(item.start, item.end)} shift to ${DAY_NAMES[to.day]} ${range12(to.start, to.end)}? Happy to talk it through.`;
-        setPending({ kind: "negotiate", itemId, title, employer: item.employer, to, draft });
-        say(`${title} is a rostered shift, so it stays where it is. Thumbs up to send ${emp.manager.name} a request, thumbs down to leave it.`);
+      if (item.kind === "shift" && item.workplace) {
+        const draft = `Hi, would it be possible to move my ${DAY_NAMES[day]} ${range12(item.start, item.end)} shift at ${item.workplace} to ${DAY_NAMES[to.day]} ${range12(to.start, to.end)}? Happy to talk it through.`;
+        setPending({ kind: "negotiate", itemId, title, workplace: item.workplace, to, draft });
+        say(`${title} is a rostered shift, so it stays where it is. Thumbs up to send your manager a request, thumbs down to leave it.`);
         return;
       }
       if (item.kind !== "personal") {
@@ -189,33 +189,47 @@ export default function Immersive({ onExit }: { onExit: () => void }) {
         say(`${title} comes from ${item.source}. It can be moved there.`);
         return;
       }
-      const warnings = slotWarnings(state, itemId, to, days);
+      const warnings = slotWarnings(itemId, to, days);
       setPending({ kind: "move", itemId, title, from: { day, start: item.start, end: item.end }, to, warnings });
       say(`Preview. ${title} would move to ${DAY_NAMES[to.day]}, ${range12(to.start, to.end)}. ${warnings[0] || "Nothing overlaps."} Thumbs up to confirm, thumbs down to keep the original.`);
     },
-    [days, state, say],
+    [days, say],
   );
 
   function confirmPending() {
     const p = pending;
     if (!p) return;
     if (p.kind === "move") {
-      updatePersonal(p.itemId, { day: p.to.day, start: p.to.start, end: p.to.end });
-      pushUndo({ label: `Move ${p.title}`, undo: () => updatePersonal(p.itemId, { day: p.from.day, start: p.from.start, end: p.from.end }) });
+      if (!isClock(p.to.start) || !isClock(p.to.end) || p.to.start === p.to.end) {
+        say("Pick a start and a finish time.");
+        return;
+      }
+      const toDate = dateOf(p.to.day);
+      const fromDate = dateOf(p.from.day);
+      updatePersonal(p.itemId, { date: toDate, start: p.to.start, end: p.to.end });
+      pushUndo({ label: `Move ${p.title}`, undo: () => updatePersonal(p.itemId, { date: fromDate, start: p.from.start, end: p.from.end }) });
       handle.current?.clearPreview();
       say(`Moved to ${DAY_NAMES[p.to.day]}, ${range12(p.to.start, p.to.end)}. You can undo this.`);
     } else if (p.kind === "negotiate") {
-      sendMessage(p.employer, "dinda", p.draft);
+      if (!p.draft.trim()) {
+        say("Write the request first.");
+        return;
+      }
+      sendMessage(p.draft.trim().slice(0, 1500));
       handle.current?.clearPreview();
-      say(`Request sent to ${EMPLOYERS[p.employer].manager.name}. The shift is unchanged until they reply.`);
+      say("Request sent to your manager. The shift is unchanged until they reply.");
     } else if (p.kind === "create") {
       if (p.step === "ask") return;
-      const title = p.title.trim() || CATEGORIES.find((c) => c.key === p.category)?.title || "New plan";
+      const title = (p.title.trim() || CATEGORIES.find((c) => c.key === p.category)?.title || "New plan").slice(0, 60);
+      if (!isClock(p.start) || !isClock(p.end)) {
+        say("Pick a start and a finish time.");
+        return;
+      }
       if (minutes(p.end) <= minutes(p.start)) {
         say("The finish time needs to be after the start.");
         return;
       }
-      const id = addPersonal({ day: p.slot.day, start: p.start, end: p.end, title, category: p.category, importance: p.importance });
+      const id = addPersonal({ date: dateOf(p.slot.day), start: p.start, end: p.end, title, category: p.category, importance: p.importance });
       pushUndo({ label: `Add ${title}`, undo: () => removePersonal(id) });
       handle.current?.clearCreateGhost();
       say(`Added ${title}, ${DAY_NAMES[p.slot.day]} ${range12(p.start, p.end)}.`);
@@ -266,7 +280,7 @@ export default function Immersive({ onExit }: { onExit: () => void }) {
   }
 
   function defaultSlot(): SlotTarget {
-    const day = selected?.day || SCENARIO.today;
+    const day = selected?.day || weekdayOf(now.date);
     return { day, start: "18:00", end: "19:00" };
   }
 
@@ -290,7 +304,7 @@ export default function Immersive({ onExit }: { onExit: () => void }) {
     if (!sp || greeted.current) return;
     greeted.current = true;
     lastGreetAt.current = Date.now();
-    const lines = openingLines(useStore.getState());
+    const lines = openingLines(useStore.getState(), nowRef.current);
     for (const l of lines) await sp.sayAsync(l);
     setQuestion("plan");
     await sp.sayAsync("Do you wish to change your plan? Thumbs up for yes, thumbs down for no.");
@@ -588,7 +602,7 @@ export default function Immersive({ onExit }: { onExit: () => void }) {
     <div className="imm" role="dialog" aria-label="Immersive calendar">
       <div className={`imm-frame${touch ? " touch" : ""}`}>
         <div className="imm-top">
-          <div className="eyebrow">Immersive week · {SCENARIO.weekLabel}</div>
+          <div className="eyebrow">Immersive week · {weekLabel(weekAnchor)}</div>
           <div className="imm-status">
             <span className={`dot ${cameraOn ? "on" : ""}`} /> {cameraStatus}
             {cameraOn ? ` · ${handsCount} hand${handsCount === 1 ? "" : "s"}` : ""}
@@ -608,21 +622,6 @@ export default function Immersive({ onExit }: { onExit: () => void }) {
           </button>
           <button className={`btn small ${muted ? "" : "neutral"}`} aria-pressed={muted} onClick={() => toggleMute()}>
             {muted ? "Unmute" : "Mute"}
-          </button>
-          <button
-            className="btn small ghost"
-            onClick={() => {
-              if (confirm("Reset the scenario? Jess's ask comes back and every change is cleared on all devices.")) {
-                resetDemo();
-                setPending(null);
-                setSelectedId(null);
-                handle.current?.setSelectedItem(null);
-                setUndo([]);
-                say("Scenario reset. Jess's ask is waiting again.");
-              }
-            }}
-          >
-            Reset scenario
           </button>
           <button className="btn small" onClick={onExit}>
             Exit
@@ -774,8 +773,8 @@ export default function Immersive({ onExit }: { onExit: () => void }) {
                   </button>
                 )}
                 {selected.item.kind === "offer" && selected.item.offerId && (
-                  <button className="btn small" onClick={() => openApp("offshift", { screen: "offer", offerId: selected.item.offerId })}>
-                    Open in Offshift
+                  <button className="btn small" onClick={() => onOpenAsk(selected.item.offerId!)}>
+                    Open the ask
                   </button>
                 )}
                 <button className="btn small ghost" onClick={() => selectItem(null)}>
@@ -870,17 +869,15 @@ function selectedInfo(item: DayItem, day: Day, days: DayView[], state: DataState
   if (item.kind === "shift" || item.kind === "offer") {
     const before = view.items.filter((o) => o.id !== item.id && (o.kind === "uni" || o.kind === "personal" || o.kind === "shift") && minutes(o.end) <= minutes(item.start)).sort((a, b) => minutes(b.end) - minutes(a.end))[0];
     if (before) {
-      const need = before.kind === "uni" ? state.settings.travelFromUniMin : 20;
       const gap = minutes(item.start) - minutes(before.end);
-      facts.push({ text: `${gap} min after ${before.label.replace(/ · .*$/, "")}; travel about ${need} min`, tone: gap - need < 15 ? "warn" : "ok" });
+      facts.push({ text: `${gap} min after ${before.label.replace(/ · .*$/, "")}`, tone: gap < 30 ? "warn" : "ok" });
     }
     const nd = DAYS[dayIndex(day) + 1];
     const next = nd && days.find((d) => d.day === nd)?.items.filter((o) => o.kind === "shift" || o.kind === "uni").sort((a, b) => minutes(a.start) - minutes(b.start))[0];
     if (next) facts.push({ text: `${Math.round((24 * 60 - minutes(item.end) + minutes(next.start)) / 60)} h before ${DAY_NAMES[nd]}'s ${clock12(next.start)} start`, tone: "" });
-    if (item.employer) facts.push({ text: `About $${Math.round(((minutes(item.end) - minutes(item.start)) / 60) * (day === "Sat" ? EMPLOYERS[item.employer].satRate : EMPLOYERS[item.employer].rate))}`, tone: "" });
   }
   if (minutes(item.end) > 22 * 60 && item.kind !== "boundary" && item.kind !== "rest") facts.push({ text: "Runs into quiet hours after 10 pm", tone: "warn" });
-  if (day === state.settings.protectedDay && item.kind !== "rest") facts.push({ text: `${DAY_NAMES[day]} is your protected rest day`, tone: "warn" });
+  if (view.rest && item.kind !== "rest") facts.push({ text: `${DAY_NAMES[day]} is a rest day you keep clear`, tone: "warn" });
   if (item.protected) facts.push({ text: "Protected by you", tone: "ok" });
   return { title: item.label.replace(/ · .*$/, ""), category: cat, facts };
 }
@@ -942,8 +939,8 @@ function PendingPanel({ pending, setPending, onConfirm, onCancel }: { pending: P
       <div className="pend">
         <div className="eyebrow">Rostered shift</div>
         <h2>{pending.title}</h2>
-        <p className="when">Employer shifts don't move here. You can ask {EMPLOYERS[pending.employer].manager.name} instead.</p>
-        <textarea className="draft" value={pending.draft} onChange={(e) => setPending({ ...pending, draft: e.target.value })} aria-label="Request" />
+        <p className="when">Rostered shifts don't move here. You can ask your manager at {pending.workplace} instead.</p>
+        <textarea className="draft" value={pending.draft} maxLength={1500} onChange={(e) => setPending({ ...pending, draft: e.target.value })} aria-label="Request" />
         <div className="btn-col">
           <button className="btn" onClick={onConfirm}>
             Send request
@@ -972,7 +969,7 @@ function PendingPanel({ pending, setPending, onConfirm, onCancel }: { pending: P
           <div className="form-grid">
             <div className="field full">
               <label htmlFor="cr-title">Title</label>
-              <input id="cr-title" value={pending.title} onChange={(e) => setPending({ ...pending, title: e.target.value })} placeholder="What is it?" autoFocus />
+              <input id="cr-title" value={pending.title} maxLength={60} onChange={(e) => setPending({ ...pending, title: e.target.value })} placeholder="What is it?" autoFocus />
             </div>
             <div className="field">
               <label htmlFor="cr-start">Start</label>

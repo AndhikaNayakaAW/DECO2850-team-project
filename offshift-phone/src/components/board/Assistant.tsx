@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ANNOUNCE, BRIEF, replyTextFor, type AssistantAction } from "@/lib/assistant";
-import { offerWhen } from "@/lib/checks";
+import { ANNOUNCE, ANSWER, BRIEF, type AssistantAction } from "@/lib/assistant";
+import { offerWhen, waitingAsks } from "@/lib/checks";
 import { pickData, useStore } from "@/lib/store";
-import type { Day } from "@/lib/types";
+import { nowIn } from "@/lib/time";
+import type { DateKey, Decision } from "@/lib/types";
 
 type Status = "idle" | "thinking" | "speaking" | "listening";
 interface Line {
@@ -43,7 +44,8 @@ function pickVoice(): SpeechSynthesisVoice | null {
   return voices.find((v) => /^en-(AU|GB)/.test(v.lang)) || voices.find((v) => v.lang.startsWith("en")) || null;
 }
 
-export default function Assistant({ onShowDay, onShowOffer }: { onShowDay: (day: Day) => void; onShowOffer: (id: string | null) => void }) {
+/** `onOpenAsk` opens an ask with a drafted reply ready; the worker checks it and presses Send. The assistant never sends. */
+export default function Assistant({ onShowDay, onShowOffer, onOpenAsk }: { onShowDay: (date: DateKey) => void; onShowOffer: (id: string | null) => void; onOpenAsk: (id: string, decision: Exclude<Decision, "later">) => void }) {
   const respond = useStore((s) => s.respondToOffer);
   const addPersonal = useStore((s) => s.addPersonal);
   const pendingIds = useStore((s) => s.offers.filter((o) => o.status === "pending" || o.status === "deferred").map((o) => o.id).join(","));
@@ -58,6 +60,7 @@ export default function Assistant({ onShowDay, onShowOffer }: { onShowDay: (day:
   const history = useRef<unknown[]>([]);
   const armed = useRef(false);
   const rec = useRef<SR | null>(null);
+  const askRef = useRef<(input: string, display?: string) => Promise<void>>(async () => {});
   const seenIds = useRef<string | null>(null);
   const busy = useRef(false);
   const linesRef = useRef<HTMLDivElement>(null);
@@ -117,19 +120,20 @@ export default function Assistant({ onShowDay, onShowOffer }: { onShowDay: (day:
       for (const a of actions) {
         if (a.type === "respond") {
           const o = s.offers.find((x) => x.id === a.offerId);
-          if (!o) continue;
-          respond(a.offerId, a.decision, replyTextFor(s, a.offerId, a.decision), { reminderMinutes: 30 });
-          onShowOffer(null);
+          if (!o || (o.status !== "pending" && o.status !== "deferred")) continue;
+          // Deciding later sends nothing, so it can happen now. Every other answer opens its draft for the worker to send.
+          if (a.decision === "later") respond(a.offerId, "later", "", { reminderMinutes: 30 });
+          else onOpenAsk(a.offerId, a.decision);
         } else if (a.type === "add_plan") {
-          addPersonal({ title: a.title, day: a.day, start: a.start, end: a.end });
-          onShowDay(a.day);
+          addPersonal({ title: a.title, date: a.date, start: a.start, end: a.end, category: "personal" });
+          onShowDay(a.date);
         } else if (a.type === "show_day") {
-          onShowDay(a.day);
+          onShowDay(a.date);
           onShowOffer(null);
         }
       }
     },
-    [respond, addPersonal, onShowDay, onShowOffer],
+    [respond, addPersonal, onShowDay, onShowOffer, onOpenAsk],
   );
 
   const listen = useCallback(() => {
@@ -154,7 +158,8 @@ export default function Assistant({ onShowDay, onShowOffer }: { onShowDay: (day:
       setInterim("");
       setStatus("idle");
       rec.current = null;
-      if (finalText) void ask(finalText, finalText); // eslint-disable-line @typescript-eslint/no-use-before-define
+      // Through the ref: the latest ask, not the one from the first render.
+      if (finalText) void askRef.current(finalText, finalText);
     };
     r.onerror = () => {
       setInterim("");
@@ -207,6 +212,8 @@ export default function Assistant({ onShowDay, onShowOffer }: { onShowDay: (day:
     [apply, speak, listen, canListen],
   );
 
+  askRef.current = ask;
+
   // proactive: a new ask arrived while the assistant is armed
   useEffect(() => {
     if (seenIds.current === null) {
@@ -240,14 +247,14 @@ export default function Assistant({ onShowDay, onShowOffer }: { onShowDay: (day:
     else setOpen((v) => !v);
   }
 
-  const pending = useStore((s) => s.offers.find((o) => o.status === "pending" || o.status === "deferred"));
+  const pending = useStore((s) => waitingAsks(s.offers)[0]);
   const chips: [string, string, string][] = pending
     ? [
-        ["Take it", "I'll take it.", "take"],
-        [`Not ${offerWhen(pending)}`, `Not ${offerWhen(pending)}.`, "no"],
-        ["Another time", "Offer another time instead.", "alt"],
-        ["Swap", "Ask for a swap.", "swap"],
-        ["Later", "Remind me later.", "later"],
+        ["Take it", `${ANSWER}${pending.id}:accept`, "take"],
+        [`Not ${offerWhen(pending, nowIn(useStore.getState().settings.timeZone))}`, `${ANSWER}${pending.id}:decline`, "no"],
+        ["Another time", `${ANSWER}${pending.id}:negotiate`, "alt"],
+        ["Swap", `${ANSWER}${pending.id}:swap`, "swap"],
+        ["Later", `${ANSWER}${pending.id}:later`, "later"],
       ]
     : [["Brief me", BRIEF, ""]];
 

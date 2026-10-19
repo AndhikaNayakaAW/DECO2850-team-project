@@ -2,11 +2,14 @@
 
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import { DAYS, fromMinutes, minutes } from "@/lib/logic";
+import { throwSpeed } from "@/lib/gestures";
+import { DAYS, elapsedMinutes, fromMinutes, minutes } from "@/lib/logic";
 import type { Day, DayItem, DayView } from "@/lib/types";
 
 const H0 = 6;
 const H1 = 24;
+/** How long a block must be held before it lifts, so a swipe to turn the view never moves or removes anything. */
+const HOLD_MS = 350;
 const UNIT = 0.25;
 const SPACING = 1.36;
 const LIFT = 0.55;
@@ -62,11 +65,15 @@ interface Block {
   home: THREE.Vector3;
   layer: THREE.Vector3;
   tag?: HTMLElement;
+  /** The label's measured size at each level of detail, read once. */
+  sizes?: Partial<Record<"full" | "mid" | "compact", { w: number; h: number }>>;
   kind: DayItem["kind"];
 }
 
 interface Grab {
   block: Block;
+  /** The finger or mouse that picked it up; other pointers can't steer it. */
+  pointerId: number;
   plane: THREE.Plane;
   offset: THREE.Vector3;
   moved: boolean;
@@ -89,6 +96,24 @@ interface Fx {
 function hours(t: string): number {
   const [h, m] = t.split(":").map(Number);
   return h + (m || 0) / 60;
+}
+/**
+ * Where an item sits on the 06:00–24:00 axis. Something that runs past midnight is drawn to the top of its day,
+ * something before 06:00 as a sliver at the bottom, and a due time as a thin marker. Labels keep the real times.
+ */
+function spanOf(it: Pick<DayItem, "kind" | "start" | "end">): { s: number; e: number } {
+  if (it.kind === "due") {
+    const t = Math.min(H1, Math.max(H0 + 0.25, hours(it.start)));
+    return { s: t - 0.25, e: t };
+  }
+  const start = hours(it.start);
+  const end = hours(it.end) <= start ? 24 : hours(it.end);
+  const s = Math.min(Math.max(H0, start), H1 - 0.25);
+  return { s, e: Math.max(Math.min(H1, end), s + 0.25) };
+}
+/** "22:00–02:00", "Due 23:59". */
+function timeText(it: Pick<DayItem, "kind" | "start" | "end">): string {
+  return it.kind === "due" ? `Due ${it.start}` : `${it.start}–${it.end}`;
 }
 function fmt(h: number): string {
   const hh = Math.floor(h);
@@ -131,7 +156,7 @@ class WeekScene {
   grab: Grab | null = null;
   returning: { block: Block; from: THREE.Vector3; t0: number }[] = [];
   dayLabels: { el: HTMLElement; pos: THREE.Vector3 }[] = [];
-  hourLabels: { el: HTMLElement; pos: THREE.Vector3 }[] = [];
+  hourLabels: { el: HTMLElement; pos: THREE.Vector3; hour?: number }[] = [];
   ray = new THREE.Raycaster();
   ndc = new THREE.Vector2(-2, -2);
   pointer = { x: 0, y: 0 };
@@ -169,6 +194,11 @@ class WeekScene {
   onSelect: ((id: string | null) => void) | null = null;
   onPreviewEnd: ((t: SlotTarget, itemId: string) => void) | null = null;
   mouseDrag: { block: Block; moved: boolean } | null = null;
+  /** Label styles from before the last rebuild, by item id. */
+  labelStyles = new Map<string, string>();
+  /** A block is only picked up after it's held still for a moment; a quick swipe across it turns the view instead. */
+  pendingGrab: { block: Block; timer: number } | null = null;
+  downAt = { x: 0, y: 0 };
 
   constructor(
     public stage: HTMLElement,
@@ -261,11 +291,14 @@ class WeekScene {
   }
 
   setDays(days: DayView[]) {
+    this.cancelPendingGrab();
     this.endGrab(false);
     this.returning = [];
     // blocks that already stood keep standing; only new ones grow in
     const prev = new Set(this.blocks.map((b) => b.item?.id || (b.rest ? `rest-${b.day.day}` : "")));
     const known = (id: string) => prev.size > 0 && prev.has(id);
+    // Each label keeps its place and visibility across a rebuild, so an edit doesn't flash every label up at once.
+    this.labelStyles = new Map(this.blocks.filter((b) => b.tag && b.item).map((b) => [b.item!.id, b.tag!.style.cssText]));
     this.group.children.slice().forEach((child) => {
       this.group.remove(child);
       child.traverse((o) => {
@@ -309,12 +342,10 @@ class WeekScene {
       }
       let ii = 0;
       day.items.forEach((it) => {
-        if (it.kind === "rest" || it.kind === "due") return;
-        const s = Math.max(H0, hours(it.start));
-        const e = Math.min(H1, hours(it.end));
-        if (e <= s) return;
+        if (it.kind === "rest") return;
+        const { s, e } = spanOf(it);
         const key: MatKey =
-          it.kind === "shift" ? (it.employer === "mcd" ? "mcd" : "shift") : it.kind === "offer" ? "offer" : it.kind === "personal" ? (it.category === "study" ? "uni" : it.category === "rest" ? "rest" : "personal") : it.kind === "travel" ? "travel" : it.kind === "boundary" ? "boundary" : "uni";
+          it.kind === "shift" ? ((it.workplaceIndex ?? 0) % 2 === 1 ? "mcd" : "shift") : it.kind === "offer" ? "offer" : it.kind === "personal" ? (it.category === "study" ? "uni" : it.category === "rest" ? "rest" : "personal") : it.kind === "travel" ? "travel" : it.kind === "boundary" ? "boundary" : "uni";
         const h = (e - s) * UNIT;
         const slim = it.kind === "personal" || it.kind === "travel";
         const w = it.kind === "boundary" ? 1.06 : slim ? 0.72 : 0.92;
@@ -325,7 +356,7 @@ class WeekScene {
         mesh.userData.key = key;
         mesh.position.set(x + (slim ? 0.12 : 0), this.yOf(s), slim ? 0.14 : 0);
         this.group.add(mesh);
-        const entry: Block = { mesh, day, s, e, label: `${it.label}${it.source ? ` · ${it.source}` : ""}`, offerId: it.offerId, item: it, delay: known(it.id) ? -10 : di * 0.09 + ii * 0.07, home: mesh.position.clone(), layer: this.layerFor(it.kind), kind: it.kind };
+        const entry: Block = { mesh, day, s, e, label: `${it.label}${it.source && !it.label.includes(it.source) ? ` · ${it.source}` : ""}`, offerId: it.offerId, item: it, delay: known(it.id) ? -10 : di * 0.09 + ii * 0.07, home: mesh.position.clone(), layer: this.layerFor(it.kind), kind: it.kind };
         if (it.kind === "offer") {
           const edges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.0, h + 0.06, 1.0)), this.edge);
           edges.position.set(0, h / 2, 0);
@@ -339,7 +370,9 @@ class WeekScene {
       });
       const lab = document.createElement("div");
       lab.className = `dlab${day.today ? " today" : ""}`;
-      lab.innerHTML = `<b>${day.day}</b>${day.date}`;
+      const dn = document.createElement("b");
+      dn.textContent = day.day;
+      lab.append(dn, String(day.dayNum));
       this.labels.appendChild(lab);
       this.dayLabels.push({ el: lab, pos: new THREE.Vector3(x, -0.42, 0.6) });
     });
@@ -355,13 +388,13 @@ class WeekScene {
       hl.className = "hlab";
       hl.textContent = fmt(h);
       this.labels.appendChild(hl);
-      this.hourLabels.push({ el: hl, pos: new THREE.Vector3(-SPACING * 3.5 - 0.2, this.yOf(h), -0.64) });
+      this.hourLabels.push({ el: hl, pos: new THREE.Vector3(-SPACING * 3.5 - 0.2, this.yOf(h), -0.64), hour: h });
     });
     const hl0 = document.createElement("div");
     hl0.className = "hlab";
     hl0.textContent = fmt(H0);
     this.labels.appendChild(hl0);
-    this.hourLabels.push({ el: hl0, pos: new THREE.Vector3(-SPACING * 3.5 - 0.2, 0, -0.64) });
+    this.hourLabels.push({ el: hl0, pos: new THREE.Vector3(-SPACING * 3.5 - 0.2, 0, -0.64), hour: H0 });
     this.started = this.now();
     if (this.selectedId) this.setSelectedItem(this.selectedId);
     this.applyExploded(true);
@@ -439,50 +472,85 @@ class WeekScene {
     if (!it) return;
     const el = document.createElement("div");
     el.className = `blab ${it.kind}${b.rest ? " rest" : ""}`;
-    const cat = it.kind === "shift" ? "Work" : it.kind === "uni" ? "Uni" : it.kind === "offer" ? "Ask" : it.kind === "travel" ? "Travel" : it.kind === "boundary" ? "Boundary" : it.kind === "rest" ? "Rest" : it.category === "study" ? "Study" : it.category === "rest" ? "Rest" : it.category === "appointment" ? "Appointment" : "Personal";
-    const time = b.rest ? "All day" : `${fmt(b.s)}–${fmt(b.e)}`;
-    el.innerHTML = `<b>${it.label.replace(/ · (Pandora Team|McDonald's Crew|myUQ|Calendar|Offshift)$/, "")}</b><span>${time} · ${cat}</span>${it.status ? `<i>${it.status}</i>` : ""}`;
+    const cat = it.kind === "shift" ? "Work" : it.kind === "uni" ? "Class" : it.kind === "due" ? "Due" : it.kind === "offer" ? "Ask" : it.kind === "travel" ? "Travel" : it.kind === "boundary" ? "Boundary" : it.kind === "rest" ? "Rest" : it.category === "study" ? "Study" : it.category === "rest" ? "Rest" : it.category === "appointment" ? "Appointment" : "Plan";
+    const time = b.rest ? "All day" : it.kind === "due" ? it.start : `${it.start}–${it.end}`;
+    // Names come from people (the worker, the team), so they go in as text, never as HTML.
+    const title = document.createElement("b");
+    title.textContent = it.label;
+    const meta = document.createElement("span");
+    meta.textContent = `${time} · ${cat}`;
+    el.append(title, meta);
+    if (it.status) {
+      const st = document.createElement("i");
+      st.textContent = it.status;
+      el.append(st);
+    }
+    el.style.cssText = this.labelStyles.get(it.id) ?? "opacity:0";
     this.labels.appendChild(el);
     b.tag = el;
   }
 
   /** Labels tier with zoom and never pile up: selected and offers win, then work, study and plans, then travel and boundaries. */
   placeBlockLabels() {
-    const placed: { x: number; y: number; w: number; h: number }[] = [];
+    const placed: { x: number; y: number; w: number; h: number; hour?: HTMLElement }[] = this.hourLabels
+      .filter((l) => l.el.style.opacity !== "0")
+      .map((l) => ({ x: (parseFloat(l.el.style.left) || 0) - 48, y: (parseFloat(l.el.style.top) || 0) - 9, w: 48, h: 18, hour: l.el }));
     const rank = (b: Block) => (b.item?.id === this.selectedId ? 0 : b === this.hovered ? 1 : b.kind === "offer" ? 2 : b.kind === "travel" || b.kind === "boundary" ? 5 : b.rest ? 4 : 3);
     const z = this.zoom;
-    const order = this.blocks.filter((b) => b.tag).sort((a, b) => rank(a) - rank(b));
-    for (const b of order) {
-      const el = b.tag!;
-      const top = b.mesh.position.clone();
-      top.y += (b.e - b.s) * UNIT * b.mesh.scale.y + 0.08;
-      this.tmp.copy(top).project(this.camera);
-      const x = ((this.tmp.x + 1) / 2) * this.w;
-      const y = ((1 - this.tmp.y) / 2) * this.h;
-      el.style.left = `${x.toFixed(1)}px`;
-      el.style.top = `${y.toFixed(1)}px`;
-      const sel = b.item?.id === this.selectedId || b === this.hovered;
-      let level: "full" | "mid" | "compact" | "hidden";
-      if (this.tmp.z >= 1 || !b.mesh.visible) level = "hidden";
-      else if (sel) level = "full";
-      else if (b.kind === "travel" || b.kind === "boundary") level = z < 0.7 ? "compact" : "hidden";
-      else if (z < 0.75) level = "full";
-      else if (z < 1.35) level = "mid";
-      else level = b.kind === "offer" ? "compact" : "hidden";
-      if (level !== "hidden" && !sel) {
-        const title = b.item?.label.length || 8;
-        const w = (level === "compact" ? 6.6 * Math.min(title, 22) : 6.6 * Math.min(title, 26) + 24) + 14;
-        const h = level === "full" ? 44 : level === "mid" ? 32 : 20;
-        const r = { x: x - w / 2, y: y - h, w, h };
-        if (placed.some((q) => r.x < q.x + q.w && q.x < r.x + r.w && r.y < q.y + q.h && q.y < r.y + r.h)) level = "hidden";
-        else placed.push(r);
-      } else if (level !== "hidden") {
-        placed.push({ x: x - 70, y: y - 44, w: 140, h: 44 });
+    // Where each label wants to go and how much it shows, without touching the page yet.
+    const plan = this.blocks
+      .filter((b) => b.tag)
+      .sort((a, b) => rank(a) - rank(b))
+      .map((b) => {
+        const top = b.mesh.position.clone();
+        top.y += (b.e - b.s) * UNIT * b.mesh.scale.y + 0.08;
+        this.tmp.copy(top).project(this.camera);
+        const sel = b.item?.id === this.selectedId || b === this.hovered;
+        let level: "full" | "mid" | "compact" | "hidden";
+        if (this.tmp.z >= 1 || !b.mesh.visible) level = "hidden";
+        else if (sel) level = "full";
+        else if (b.kind === "travel" || b.kind === "boundary") level = z < 0.7 ? "compact" : "hidden";
+        else if (z < 0.75) level = "full";
+        else if (z < 1.35) level = "mid";
+        else level = b.kind === "offer" ? "compact" : "hidden";
+        return { b, el: b.tag!, sel, level, px: ((this.tmp.x + 1) / 2) * this.w, py: ((1 - this.tmp.y) / 2) * this.h };
+      });
+    // Classes first, then sizes read in one go (measured once per level and kept), then placement.
+    for (const p of plan) {
+      p.el.classList.toggle("compact", p.level === "compact");
+      p.el.classList.toggle("mid", p.level === "mid");
+    }
+    for (const p of plan) {
+      const key = p.level === "hidden" ? "full" : p.level;
+      p.b.sizes ??= {};
+      if (!p.b.sizes[key]) {
+        const w = p.el.offsetWidth;
+        if (w > 0) p.b.sizes[key] = { w, h: p.el.offsetHeight };
       }
-      el.style.opacity = level === "hidden" ? "0" : "1";
-      el.classList.toggle("compact", level === "compact");
-      el.classList.toggle("mid", level === "mid");
-      el.classList.toggle("selected", b.item?.id === this.selectedId);
+    }
+    for (const p of plan) {
+      let level = p.level;
+      const size = p.b.sizes?.[level === "hidden" ? "full" : level] ?? { w: 120, h: 34 };
+      const { w, h } = size;
+      // A label whose block top is off the stage only stays for the block being looked at.
+      if (!p.sel && (p.py < 0 || p.py > this.h)) level = "hidden";
+      // Kept on the stage, never cut off at its edges.
+      const x = Math.min(Math.max(p.px, w / 2 + 4), this.w - w / 2 - 4);
+      const y = Math.min(Math.max(p.py, h + 4), this.h - 4);
+      p.el.style.left = `${x.toFixed(1)}px`;
+      p.el.style.top = `${y.toFixed(1)}px`;
+      if (level !== "hidden") {
+        const r = { x: x - w / 2, y: y - h, w, h };
+        const hit = (q: { x: number; y: number; w: number; h: number }) => r.x < q.x + q.w && q.x < r.x + r.w && r.y < q.y + q.h && q.y < r.y + r.h;
+        if (p.sel) {
+          // The label being looked at always shows; hour labels under it step aside.
+          for (const q of placed) if (q.hour && hit(q)) q.hour.style.opacity = "0";
+          placed.push(r);
+        } else if (placed.some(hit)) level = "hidden";
+        else placed.push(r);
+      }
+      p.el.style.opacity = level === "hidden" ? "0" : "1";
+      p.el.classList.toggle("selected", p.b.item?.id === this.selectedId);
     }
   }
 
@@ -555,7 +623,7 @@ class WeekScene {
     ghost.position.copy(b.mesh.position);
     ghost.add(new THREE.LineSegments(new THREE.EdgesGeometry(b.mesh.geometry), this.holoEdge));
     this.scene.add(ghost);
-    this.preview = { block: b, ghost, target: null, durationMin: Math.round((b.e - b.s) * 60) };
+    this.preview = { block: b, ghost, target: null, durationMin: b.item && b.item.kind !== "due" ? elapsedMinutes(b.item.start, b.item.end) || 60 : Math.round((b.e - b.s) * 60) };
     this.start();
     return true;
   }
@@ -678,6 +746,8 @@ class WeekScene {
       this.target.z + r * s * Math.cos(this.orbit.theta),
     );
     this.camera.lookAt(this.target);
+    // Labels are placed from this camera before the next render, so its matrices must already match.
+    this.camera.updateMatrixWorld();
   }
 
   setZoom(z: number) {
@@ -725,7 +795,9 @@ class WeekScene {
 
   showTip(b: Block) {
     this.tip.className = `tip${b.offer ? " offer" : ""}`;
-    this.tip.innerHTML = `<b>${b.day.day} ${b.day.date} · ${fmt(b.s)}–${fmt(b.e)}</b>${b.label}`;
+    const head = document.createElement("b");
+    head.textContent = `${b.day.day} ${b.day.dayNum} · ${b.rest || !b.item ? `${fmt(b.s)}–${fmt(b.e)}` : timeText(b.item)}`;
+    this.tip.replaceChildren(head, b.label);
     this.tip.style.left = `${this.pointer.x}px`;
     this.tip.style.top = `${this.pointer.y}px`;
     this.tip.hidden = false;
@@ -751,7 +823,7 @@ class WeekScene {
 
   /* ---------- grab, move, flick ---------- */
 
-  startGrab(block: Block) {
+  startGrab(block: Block, pointerId: number) {
     this.ray.setFromCamera(this.ndc, this.camera);
     const normal = this.camera.getWorldDirection(new THREE.Vector3()).negate();
     const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, block.mesh.position);
@@ -764,6 +836,7 @@ class WeekScene {
       block,
       plane,
       offset: point.clone().sub(block.mesh.position),
+      pointerId,
       moved: false,
       targetDay: this.dayIndexOf(block.day),
       remove: false,
@@ -810,8 +883,8 @@ class WeekScene {
       g.block.mesh.position.set(p.x, Math.max(0.1, p.y + LIFT), 0);
       g.moved = g.moved || g.block.mesh.position.distanceTo(g.block.home) > 0.25;
     }
-    g.samples.push({ x: e.clientX, y: e.clientY, t: performance.now() });
-    if (g.samples.length > 6) g.samples.shift();
+    g.samples.push({ x: this.pointer.x, y: this.pointer.y, t: performance.now() });
+    if (g.samples.length > 16) g.samples.shift();
     const di = Math.max(0, Math.min(6, Math.round(g.block.mesh.position.x / SPACING + 3)));
     g.targetDay = di;
     let overBin = false;
@@ -829,13 +902,9 @@ class WeekScene {
     this.lastInteract = this.now();
   }
 
-  flickSpeed(g: Grab): number {
-    const s = g.samples;
-    if (s.length < 2) return 0;
-    const a = s[0];
-    const b = s[s.length - 1];
-    const dt = Math.max(1, b.t - a.t);
-    return Math.hypot(b.x - a.x, b.y - a.y) / dt;
+  /** How fast the pointer was moving as it let go (see `throwSpeed`). */
+  flickSpeed(g: Grab, at: number = performance.now()): number {
+    return throwSpeed(g.samples, at);
   }
 
   endGrab(commit: boolean) {
@@ -867,7 +936,10 @@ class WeekScene {
     if (commit && item) {
       const flick = this.flickSpeed(g) > 1.4;
       if (g.remove || flick) {
-        this.shatter(g.block);
+        if (item.kind === "offer") {
+          this.returning.push({ block: g.block, from: g.block.mesh.position.clone(), t0: this.now() });
+          this.start();
+        } else this.shatter(g.block);
         this.onRemove({ item, from: g.block.day.day });
         return;
       }
@@ -909,6 +981,12 @@ class WeekScene {
 
   /* ---------- events ---------- */
 
+  cancelPendingGrab() {
+    if (!this.pendingGrab) return;
+    clearTimeout(this.pendingGrab.timer);
+    this.pendingGrab = null;
+  }
+
   onWheel = (e: WheelEvent) => {
     e.preventDefault();
     this.setZoom(this.zoom * (1 + e.deltaY * 0.0015));
@@ -929,7 +1007,7 @@ class WeekScene {
       return;
     }
     if (this.grab) {
-      this.moveGrab(e);
+      if (e.pointerId === this.grab.pointerId) this.moveGrab(e);
       this.start();
       return;
     }
@@ -942,16 +1020,24 @@ class WeekScene {
       return;
     }
     if (this.dragging) {
+      if (!this.moved) {
+        // Still a tap, or a hold that may pick a block up: a few pixels of wobble don't turn the view.
+        if (Math.hypot(e.clientX - this.downAt.x, e.clientY - this.downAt.y) <= 8) return;
+        this.moved = true;
+        this.cancelPendingGrab();
+        this.last = { x: e.clientX, y: e.clientY };
+        return;
+      }
       const dx = e.clientX - this.last.x;
       const dy = e.clientY - this.last.y;
       this.last = { x: e.clientX, y: e.clientY };
-      if (Math.abs(dx) + Math.abs(dy) > 2) this.moved = true;
       this.baseTheta -= dx * 0.006;
       this.orbit.theta = this.baseTheta;
       this.orbit.phi = Math.min(1.5, Math.max(0.55, this.orbit.phi - dy * 0.004));
       this.lastInteract = this.now();
       this.start();
     } else {
+      this.lastInteract = this.now();
       this.start();
     }
   };
@@ -975,11 +1061,22 @@ class WeekScene {
     if (this.pointers.size === 1 && this.editable) {
       const hit = this.hitBlock();
       if (hit && !hit.rest && hit.item) {
-        this.startGrab(hit);
-        return;
+        const pointerId = e.pointerId;
+        this.pendingGrab = {
+          block: hit,
+          timer: window.setTimeout(() => {
+            const p = this.pendingGrab;
+            this.pendingGrab = null;
+            if (!p || this.moved || this.grab || this.pointers.size !== 1 || !this.blocks.includes(p.block)) return;
+            this.dragging = false;
+            this.stage.classList.remove("dragging");
+            this.startGrab(p.block, pointerId);
+          }, HOLD_MS),
+        };
       }
     }
     if (this.pointers.size === 2) {
+      this.cancelPendingGrab();
       const [a, b] = [...this.pointers.values()];
       this.pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
       this.pinchZoom = this.zoom;
@@ -988,6 +1085,7 @@ class WeekScene {
     this.dragging = true;
     this.moved = this.pointers.size > 1;
     this.last = { x: e.clientX, y: e.clientY };
+    this.downAt = { x: e.clientX, y: e.clientY };
     this.stage.classList.add("dragging");
     this.start();
   };
@@ -1006,6 +1104,10 @@ class WeekScene {
       }
       return;
     }
+    if (this.grab && e.pointerId !== this.grab.pointerId) {
+      this.pointers.delete(e.pointerId);
+      return;
+    }
     if (this.grab) {
       const g = this.grab;
       const tap = !g.moved && this.flickSpeed(g) < 0.3;
@@ -1017,6 +1119,7 @@ class WeekScene {
       }
       return;
     }
+    this.cancelPendingGrab();
     this.pointers.delete(e.pointerId);
     if (this.pointers.size < 2) this.pinchDist = 0;
     if (this.pointers.size > 0) {
@@ -1048,6 +1151,24 @@ class WeekScene {
       }
     }
   };
+  onCancel = (e: PointerEvent) => {
+    this.cancelPendingGrab();
+    if (this.mouseDrag) {
+      this.mouseDrag = null;
+      this.clearPreview();
+    }
+    if (this.grab) this.endGrab(false);
+    this.pointers.delete(e.pointerId);
+    if (this.pointers.size < 2) this.pinchDist = 0;
+    if (this.pointers.size === 0) {
+      this.dragging = false;
+      this.stage.classList.remove("dragging");
+    }
+  };
+  /** While a block is held, a finger moving it must not scroll the page instead. */
+  onTouchMove = (e: TouchEvent) => {
+    if (this.grab) e.preventDefault();
+  };
   onLeave = () => {
     this.ndc.set(-2, -2);
     if (!this.dragging && !this.grab) this.setHover(null);
@@ -1057,7 +1178,8 @@ class WeekScene {
     this.canvas.addEventListener("pointermove", this.onMove);
     this.canvas.addEventListener("pointerdown", this.onDown);
     this.canvas.addEventListener("pointerup", this.onUp);
-    this.canvas.addEventListener("pointercancel", this.onUp);
+    this.canvas.addEventListener("pointercancel", this.onCancel);
+    this.canvas.addEventListener("touchmove", this.onTouchMove, { passive: false });
     this.canvas.addEventListener("pointerleave", this.onLeave);
     this.canvas.addEventListener("wheel", this.onWheel, { passive: false });
     this.canvas.addEventListener("dblclick", this.onDbl);
@@ -1107,7 +1229,10 @@ class WeekScene {
         this.phiTarget = this.orbit.phi;
       }
       this.zoom += (this.zoomTarget - this.zoom) * k;
-    } else if (!this.reduced && !this.dragging && !busy && t - this.lastInteract > 3) this.orbit.theta = this.baseTheta + Math.sin(t * 0.22) * 0.15;
+    } else if (!this.reduced && !this.dragging && !busy && t - this.lastInteract > 3) {
+      const sway = this.baseTheta + Math.sin((t - this.lastInteract - 3) * 0.22) * 0.15;
+      this.orbit.theta += (sway - this.orbit.theta) * 0.05;
+    }
     this.placeCamera();
     // exploded layers ease into place
     const ek = this.reduced ? 1 : 0.12;
@@ -1172,7 +1297,12 @@ class WeekScene {
     if (this.preview && !this.reduced) this.preview.ghost.material.emissiveIntensity = 0.35 + 0.25 * (0.5 + 0.5 * Math.sin(t * 5));
     if (this.createGhost && !this.reduced) this.createGhost.mesh.material.emissiveIntensity = 0.35 + 0.25 * (0.5 + 0.5 * Math.sin(t * 5));
     this.dayLabels.forEach((l) => this.placeLabel(l));
-    this.hourLabels.forEach((l) => this.placeLabel(l));
+    // A short stage keeps only the quarter-day hours, so the axis never piles up.
+    const sparse = this.h < 520;
+    this.hourLabels.forEach((l) => {
+      this.placeLabel(l);
+      if (sparse && l.hour !== undefined && l.hour % 6 !== 0) l.el.style.opacity = "0";
+    });
     if (this.detail) this.placeBlockLabels();
     const t1 = performance.now();
     this.renderer.render(this.scene, this.camera);
@@ -1185,7 +1315,8 @@ class WeekScene {
       }
     } else this.slowFrames = Math.max(0, this.slowFrames - 1);
     const cameraMoving = this.mode === "immersive" && (Math.abs(this.thetaTarget - this.orbit.theta) > 1e-3 || Math.abs(this.phiTarget - this.orbit.phi) > 1e-3 || Math.abs(this.zoomTarget - this.zoom) > 1e-3);
-    const settled = (this.reduced || this.mode === "immersive") && !this.dragging && !busy && !settling && !cameraMoving && t - this.lastInteract > 0.5 && t - this.started > 1;
+    const quiet = !this.dragging && !busy && !settling && !cameraMoving && !this.grab && !this.fx.length && !this.returning.length;
+    const settled = quiet && ((this.reduced || this.mode === "immersive") ? t - this.lastInteract > 0.5 && t - this.started > 1 : t - this.lastInteract > 30 && t - this.started > 3);
     if (!settled) this.raf = requestAnimationFrame(this.frame);
     else this.running = false;
   };
@@ -1209,7 +1340,8 @@ class WeekScene {
     this.canvas.removeEventListener("pointermove", this.onMove);
     this.canvas.removeEventListener("pointerdown", this.onDown);
     this.canvas.removeEventListener("pointerup", this.onUp);
-    this.canvas.removeEventListener("pointercancel", this.onUp);
+    this.canvas.removeEventListener("pointercancel", this.onCancel);
+    this.canvas.removeEventListener("touchmove", this.onTouchMove);
     this.canvas.removeEventListener("pointerleave", this.onLeave);
     this.canvas.removeEventListener("wheel", this.onWheel);
     this.canvas.removeEventListener("dblclick", this.onDbl);
@@ -1242,6 +1374,10 @@ class WeekScene {
   }
 }
 
+function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+}
+
 function fallbackHtml(days: DayView[]): string {
   let html = "";
   [12, 18, 24].forEach((h) => {
@@ -1250,15 +1386,14 @@ function fallbackHtml(days: DayView[]): string {
   days.forEach((day) => {
     html += `<div class="fb-col${day.rest ? " rest" : ""}">`;
     day.items.forEach((it) => {
-      if (it.kind === "rest" || it.kind === "due") return;
-      const s = Math.max(H0, hours(it.start));
-      const e = Math.min(H1, hours(it.end));
+      if (it.kind === "rest") return;
+      const { s, e } = spanOf(it);
       const top = (((s - H0) / (H1 - H0)) * 100).toFixed(2);
       const hgt = (((e - s) / (H1 - H0)) * 100).toFixed(2);
-      const cls = it.kind === "shift" && it.employer === "mcd" ? "mcd" : it.kind;
-      html += `<div class="fb-blk ${cls}" style="top:${top}%;height:${hgt}%" title="${day.day} ${it.start}–${it.end} ${it.label}"></div>`;
+      const cls = it.kind === "shift" && (it.workplaceIndex ?? 0) % 2 === 1 ? "mcd" : it.kind;
+      html += `<div class="fb-blk ${cls}" style="top:${top}%;height:${hgt}%" title="${escapeHtml(`${day.day} ${timeText(it)} ${it.label}`)}"></div>`;
     });
-    html += `<div class="fb-lab">${day.day} ${day.date}</div></div>`;
+    html += `<div class="fb-lab">${day.day} ${day.dayNum}</div></div>`;
   });
   return html;
 }
@@ -1326,7 +1461,7 @@ export default function Week3D({
   readyRef.current = onReady;
   const daysRef = useRef(days);
   daysRef.current = days;
-  const key = JSON.stringify(days.map((d) => [d.day, d.rest, d.today, d.items.map((i) => [i.kind, i.start, i.end, i.label, i.offerId, i.employer])]));
+  const key = JSON.stringify(days.map((d) => [d.date, d.rest, d.today, d.items.map((i) => [i.id, i.kind, i.start, i.end, i.label, i.offerId, i.workplaceIndex, i.protected, i.status])]));
 
   useEffect(() => {
     const stage = stageRef.current;

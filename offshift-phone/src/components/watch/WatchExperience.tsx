@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePrivateWatchStore } from "@/lib/watch-store";
 import { readingDate, watchTime } from "@/lib/watch";
+import { DEFAULT_TIME_ZONE, nowIn } from "@/lib/time";
 import { DataBadge, ReflectionNav, Sparkline, useWatchHydrated } from "./shared";
 
 export default function WatchExperience() {
@@ -13,8 +14,23 @@ export default function WatchExperience() {
   const [json, setJson] = useState("");
   const [message, setMessage] = useState("");
   const [clear, setClear] = useState(false);
+  useEffect(() => {
+    // A new session clears this browser's private readings, even if the calendar was never opened here.
+    let gone = false;
+    fetch("/api/state?session=1", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then(async (j: { session?: string | null } | null) => {
+        if (gone || !j?.session) return;
+        await usePrivateWatchStore.persist.rehydrate();
+        usePrivateWatchStore.getState().forSession(j.session);
+      })
+      .catch(() => {});
+    return () => {
+      gone = true;
+    };
+  }, []);
   const latest = ready ? state.readings.at(-1) : undefined;
-  const date = latest ? readingDate(latest.recordedAt) : "2026-09-16";
+  const date = latest ? readingDate(latest.recordedAt) : nowIn(DEFAULT_TIME_ZONE).date;
   const imported = latest?.origin === "imported";
   const time = latest ? watchTime(latest.recordedAt) : "—";
   const day = new Date(`${date}T12:00:00+10:00`).toLocaleDateString("en-AU", { timeZone: "Australia/Brisbane", weekday: "short", day: "numeric", month: "short" });
@@ -32,22 +48,22 @@ export default function WatchExperience() {
         <p className="reflect-kicker">A MOMENT TO NOTICE</p>
         <h1>Work is part<br/>of your day.<br/><em>How did it feel?</em></h1>
         <p className="watch-lead">A reading can start a question.<br/>Your experience gives it context.</p>
-        <div className="watch-intro-links"><Link className="reflect-primary" href={`/calendar?date=${date}`}>Reflect on my day <span aria-hidden="true">↗</span></Link><p>Watch → activity → your words → your choice</p></div>
+        <div className="watch-intro-links"><Link className="reflect-primary" href={`/calendar?view=day&date=${date}`}>Reflect on my day <span aria-hidden="true">↗</span></Link><p>Watch → activity → your words → your choice</p></div>
         <div className="watch-purpose"><span>01 / THE PROPOSED FOCUS</span><p>Helping casual workers reflect on how work fits with their energy, rest and other commitments.</p></div>
       </section>
       <section className="watch-showcase" aria-label="Circular watch preview">
         <div className="watch-orbit-label">OFFSHIFT / WATCH PREVIEW</div>
         <div className="watch-hardware"><div className="watch-strap top"/><div className="watch-strap bottom"/><span className="watch-crown"/><div className="watch-bezel"><div className="watch-dial">
           <div className="watch-face-top"><span>OFFSHIFT</span><span>{time}</span></div>
-          {screen === "reading" ? <div className="watch-face-body"><p className="watch-face-date">{day}</p><span className="watch-heart" aria-hidden="true">♡</span><div className="watch-bpm">{state.showReadings && latest ? latest.bpm : "—"}<small>bpm</small></div><p className="watch-face-caption">{state.showReadings ? "Last recorded heart rate" : "Readings hidden by you"}</p>{state.showReadings && ready && <Sparkline readings={state.readings.slice(-6)}/>}<DataBadge imported={!!imported} empty={ready && !latest}/></div> : <div className="watch-face-body watch-face-reflect"><span className="watch-heart" aria-hidden="true">✧</span><h2>How did<br/>your day feel?</h2><p>You know the context.<br/>There is no right answer.</p><Link href={`/calendar?date=${date}`}>Add my words ↗</Link></div>}
+          {screen === "reading" ? <div className="watch-face-body"><p className="watch-face-date">{day}</p><span className="watch-heart" aria-hidden="true">♡</span><div className="watch-bpm">{state.showReadings && latest ? latest.bpm : "—"}<small>bpm</small></div><p className="watch-face-caption">{state.showReadings ? "Last recorded heart rate" : "Readings hidden by you"}</p>{state.showReadings && ready && <Sparkline readings={state.readings.slice(-6)}/>}<DataBadge imported={!!imported} empty={!ready || !latest}/></div> : <div className="watch-face-body watch-face-reflect"><span className="watch-heart" aria-hidden="true">✧</span><h2>How did<br/>your day feel?</h2><p>You know the context.<br/>There is no right answer.</p><Link href={`/calendar?view=day&date=${date}`}>Add my words ↗</Link></div>}
           <div className="watch-face-tabs" role="group" aria-label="Watch screen"><button aria-pressed={screen === "reading"} onClick={() => setScreen("reading")}>Reading</button><button aria-pressed={screen === "reflect"} onClick={() => setScreen("reflect")}>Reflect</button></div>
         </div></div></div>
         <p className="watch-hardware-caption">A browser preview of the interaction.<br/>Device connection is not available yet.</p>
       </section>
       <aside className="watch-data-panel">
-        <div className="watch-panel-head"><span className="reflect-kicker">YOUR DATA, IN CONTEXT</span><DataBadge imported={!!imported} empty={ready && !latest}/></div>
+        <div className="watch-panel-head"><span className="reflect-kicker">YOUR DATA, IN CONTEXT</span><DataBadge imported={!!imported} empty={!ready || !latest}/></div>
         <h2>{imported ? "A file, not a live feed." : "A transparent starting point."}</h2>
-        <p>{imported ? "The file's device label is self-reported. This preview cannot verify that it came from a watch." : "These are example readings for the exhibition scenario. No watch is connected to this preview."}</p>
+        <p>{imported ? "The file's device label is self-reported. This preview cannot verify that it came from a watch." : (latest ? "These are example readings. No watch is connected to this preview." : "No readings yet. Import a watch export below, or load the demo readings to look around.")}</p>
         <dl className="watch-provenance"><div><dt>Reading source</dt><dd>{latest?.source ?? "No readings"}</dd></div><div><dt>Recorded</dt><dd>{latest ? `${readingDate(latest.recordedAt)} · ${time} AEST` : "Not available"}</dd></div><div><dt>{imported ? "Last file import" : "Demo sync"}</dt><dd>{latest ? `${readingDate(latest.receivedAt)} · ${watchTime(latest.receivedAt)} AEST` : "Not synced"}</dd></div><div><dt>Live device connection</dt><dd>Not connected</dd></div></dl>
         <p className="watch-no-inference">Heart rate alone does not tell us that someone is stressed, or that work caused a change.</p>
         <label className="reflect-toggle"><input type="checkbox" checked={state.showReadings} onChange={(e) => state.setShowReadings(e.target.checked)}/> Show heart-rate readings</label>

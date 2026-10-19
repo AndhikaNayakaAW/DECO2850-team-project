@@ -36,6 +36,7 @@ describe("private watch reflection state", () => {
   });
   it("hides readings without deleting them and can erase all private data", () => {
     const store = createPrivateWatchStore();
+    store.getState().loadDemo();
     store.getState().setShowReadings(false);
     expect(store.getState().readings.length).toBeGreaterThan(0);
     expect(store.getState().showReadings).toBe(false);
@@ -56,5 +57,20 @@ describe("private watch reflection state", () => {
     expect(second.getState().notes["s-wed"]).toBe("Only in this browser");
     expect(pickData(useStore.getState())).not.toHaveProperty("notes");
     expect(pickData(useStore.getState())).not.toHaveProperty("readings");
+  });
+});
+
+describe("private reflections and sessions", () => {
+  it("start with no readings, and are cleared when a new session starts", () => {
+    const store = createPrivateWatchStore();
+    expect(store.getState().readings).toEqual([]);
+    store.getState().forSession("2026-10-19T00:00:00.000Z");
+    store.getState().saveReflection("s-wed", "Felt rushed");
+    store.getState().confirmRecovery("s-wed", recoveryPreview(activity));
+    store.getState().forSession("2026-10-19T00:00:00.000Z");
+    expect(store.getState().notes["s-wed"]).toBe("Felt rushed");
+    store.getState().forSession("2026-10-20T09:00:00.000Z");
+    expect(store.getState().notes).toEqual({});
+    expect(store.getState().recoveries).toEqual({});
   });
 });
