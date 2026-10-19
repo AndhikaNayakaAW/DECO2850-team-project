@@ -17,7 +17,7 @@ function file(): string {
 export async function loadState(): Promise<Saved> {
   if (!g.__offshiftState) {
     try {
-      g.__offshiftState = JSON.parse(await fs.readFile(file(), "utf8")) as Saved;
+      g.__offshiftState = JSON.parse(await fs.readFile(/*turbopackIgnore: true*/ file(), "utf8")) as Saved;
     } catch {
       g.__offshiftState = { version: 0, client: null, data: null };
     }
@@ -30,6 +30,6 @@ export function saveState(s: Saved, data: unknown | null, client: string | null)
   s.version += 1;
   s.client = client;
   s.data = data;
-  fs.writeFile(file(), JSON.stringify(s)).catch(() => {});
+  fs.writeFile(/*turbopackIgnore: true*/ file(), JSON.stringify(s)).catch(() => {});
   return s.version;
 }
