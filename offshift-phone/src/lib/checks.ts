@@ -30,6 +30,7 @@ import type {
   Shift,
   Tone,
   UniEvent,
+  Wearable,
 } from "./types";
 
 export interface DataState {
@@ -38,7 +39,10 @@ export interface DataState {
   personal: PersonalEvent[];
   offers: Offer[];
   settings: Settings;
+  wearable?: Wearable | null;
 }
+
+const WEARABLE_STATE: Record<Wearable["level"], CheckState> = { 0: "bad", 1: "warn", 2: "ok", 3: "ok" };
 
 interface Ev {
   id: string;
@@ -240,6 +244,11 @@ export function bodyTile(state: DataState): { state: CheckState; label: string; 
     .filter((e) => e.kind !== "rest" && dayIndex(e.day) > todayIdx && minutes(e.start) <= 10 * 60)
     .reduce((set, e) => set.add(e.day), new Set<Day>()).size;
   const earlyLine = early ? ` ${cap(NUM[early] || String(early))} early start${early === 1 ? "" : "s"} ahead.` : "";
+  const w = state.wearable;
+  if (w) {
+    const rated = last ? ` ${DAY_NAMES[last.day]}'s ${isClose(last) ? "close" : "shift"} rated ${RATED_WORD[last.rated!]}.` : "";
+    return { state: WEARABLE_STATE[w.level], label: w.word, detail: `From your watch at ${w.at}.${rated}${earlyLine}` };
+  }
   if (!last) return { state: "ok", label: "No check-ins yet", detail: `Rate a shift after you clock off.${earlyLine}` };
   const what = isClose(last) ? "close" : "shift";
   const detail = `${DAY_NAMES[last.day]}'s ${what} rated ${RATED_WORD[last.rated!]}.${earlyLine}`;
@@ -273,6 +282,15 @@ function nextDayLine(offer: Offer, state: DataState): string {
 }
 
 export function bodyCheck(offer: Offer, state: DataState): Check {
+  const base = bodyCheckFromWeek(offer, state);
+  const w = state.wearable;
+  if (!w || offer.day === state.settings.protectedDay) return base;
+  const rank: Record<CheckState, number> = { ok: 0, warn: 1, bad: 2 };
+  const fromWatch = WEARABLE_STATE[w.level];
+  return { ...base, state: rank[fromWatch] > rank[base.state] ? fromWatch : base.state, text: `Your watch reads ${w.word.toLowerCase()}. ${base.text}` };
+}
+
+function bodyCheckFromWeek(offer: Offer, state: DataState): Check {
   const s = state.settings;
   if (offer.day === s.protectedDay) {
     return {
