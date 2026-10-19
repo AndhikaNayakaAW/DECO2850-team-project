@@ -58,7 +58,7 @@ export default function WatchExperience() {
           {screen === "reading" ? <div className="watch-face-body"><p className="watch-face-date">{day}</p><span className="watch-heart" aria-hidden="true">♡</span><div className="watch-bpm">{state.showReadings && latest ? latest.bpm : "—"}<small>bpm</small></div><p className="watch-face-caption">{state.showReadings ? "Last recorded heart rate" : "Readings hidden by you"}</p>{state.showReadings && ready && <Sparkline readings={state.readings.slice(-6)}/>}<DataBadge imported={!!imported} empty={!ready || !latest}/></div> : <div className="watch-face-body watch-face-reflect"><span className="watch-heart" aria-hidden="true">✧</span><h2>How did<br/>your day feel?</h2><p>You know the context.<br/>There is no right answer.</p><Link href={`/calendar?view=day&date=${date}`}>Add my words ↗</Link></div>}
           <div className="watch-face-tabs" role="group" aria-label="Watch screen"><button aria-pressed={screen === "reading"} onClick={() => setScreen("reading")}>Reading</button><button aria-pressed={screen === "reflect"} onClick={() => setScreen("reflect")}>Reflect</button></div>
         </div></div></div>
-        <p className="watch-hardware-caption">A browser preview of the interaction.<br/>Device connection is not available yet.</p>
+        <p className="watch-hardware-caption">A browser preview with file import.<br/>Use the calendar for Garmin sync.</p>
       </section>
       <aside className="watch-data-panel">
         <div className="watch-panel-head"><span className="reflect-kicker">YOUR DATA, IN CONTEXT</span><DataBadge imported={!!imported} empty={!ready || !latest}/></div>

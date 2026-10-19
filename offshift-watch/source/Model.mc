@@ -49,7 +49,7 @@ class OffshiftModel {
     //! Asked once: may the calendar hear the body readings?
     function askConsent() as Void {
         _consentTimer = null;
-        WatchUi.pushView(new WatchUi.Confirmation("Share body readings with your calendar? Words only, never numbers."), new ConsentDelegate(self), WatchUi.SLIDE_UP);
+        WatchUi.pushView(new WatchUi.Confirmation("Share body words with calendar?"), new ConsentDelegate(self), WatchUi.SLIDE_UP);
     }
 
     function setSharing(on as Boolean) as Void {

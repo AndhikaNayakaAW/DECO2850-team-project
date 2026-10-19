@@ -1,4 +1,5 @@
 //! Calendar tokens: pale colours are surfaces; dark colours carry readable text.
+(:glance)
 module Palette {
     const MUSTARD = 0xDAAB56;
     const SAGE = 0xD1DAC7;

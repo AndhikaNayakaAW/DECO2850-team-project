@@ -19,9 +19,16 @@ class OffshiftGlance extends WatchUi.GlanceView {
             text = "Body: " + body.toLower();
         }
         var h = dc.getHeight();
-        dc.setColor(0xDAAB56, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(0, h / 4, Graphics.FONT_XTINY, "OFFSHIFT", Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
-        dc.setColor(0xF5F2ED, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(0, h * 3 / 4, Graphics.FONT_XTINY, text, Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
+        var font = Graphics.FONT_XTINY;
+        var lineHeight = dc.getFontHeight(font);
+        var width = dc.getWidth() - 24;
+        var fitted = Graphics.fitTextToArea(text, font, width, lineHeight * 1.5, true);
+        dc.setColor(Palette.INK, Palette.CREAM);
+        dc.clear();
+        dc.drawText(12, h / 4, font, "OFFSHIFT", Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
+        dc.setColor(Palette.STRONG, Graphics.COLOR_TRANSPARENT);
+        if (fitted != null) {
+            dc.drawText(12, h * 3 / 4, font, fitted, Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
+        }
     }
 }
