@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { bodyCheck, bodyTile } from "@/lib/checks";
 import { seedData } from "@/lib/scenario";
-import { applyWatchAnswer, applyWatchBody, applyWatchHealth, parseHealth, stopWatchHealth, watchSummary } from "@/lib/garmin";
+import { applyWatchAnswer, applyWatchBody, applyWatchHealth, parseHealth, stopWatchHealth, watchSummary, watchRange } from "@/lib/garmin";
 
 const ascii = /^[\x20-\x7E]*$/;
 function allStrings(v: unknown): string[] {
@@ -15,12 +15,18 @@ describe("what the watch receives", () => {
   it("summarises Jess's ask in short plain-text lines", () => {
     const s = watchSummary(seedData());
     expect(s.ask).toMatchObject({ id: "o-jess-thu", from: "Jess", employer: "Pandora", when: "tonight", time: "4-9 pm", alt: "Fri 8-10 am", swap: "Priya", status: "pending" });
-    expect(s.ask!.week.join(" | ")).toContain("Dinner with Ayu");
-    expect(s.ask!.week.join(" | ")).toContain("25 min spare");
+    expect(s.ask!.week).toEqual(["7:30pm clash: Dinner with Ayu", "25 min spare after Tute 3pm", "Fri starts 10am"]);
     expect(s.ask!.week.length).toBeLessThanOrEqual(3);
+  });
+  it("spaces the dash in a long time so the watch can break it cleanly, and leaves short ones alone", () => {
+    expect(watchRange("10:30", "12:45")).toBe("10:30 am - 12:45 pm");
+    expect(watchRange("16:00", "21:00")).toBe("4-9 pm");
   });
   it("only ever sends characters a watch font can draw", () => {
     for (const str of allStrings(watchSummary(seedData()))) expect(str).toMatch(ascii);
+  });
+  it("lists today's plans for the week page, in the order they happen", () => {
+    expect(watchSummary(seedData()).today).toEqual(["1pm Tute - INFS2200", "7:30pm Dinner with Ayu"]);
   });
   it("leaves money out entirely", () => {
     expect(JSON.stringify(watchSummary(seedData()))).not.toMatch(/\$|rent|essentials/i);

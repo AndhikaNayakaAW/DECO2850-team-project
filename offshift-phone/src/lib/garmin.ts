@@ -1,7 +1,7 @@
 /** What the Garmin watch app receives and sends through /api/watch: the waiting ask, answers and body readings. */
 import { applyResponse } from "./actions";
 import { BODY_SIGNALS, OVERALL_WORDS, overallLevel } from "./body";
-import { altSlots, draftFor, eventsFor, offerImpact, offerWhen, replyDraft } from "./checks";
+import { altSlots, buildDays, draftFor, eventsFor, offerImpact, offerWhen, replyDraft } from "./checks";
 import { uid } from "./ids";
 import { clock12, dayIndex, minutes, nextDay, range12 } from "./logic";
 import { EMPLOYERS } from "./scenario";
@@ -40,6 +40,7 @@ export interface WatchAsk {
 export interface WatchSummary {
   clock: string;
   ask: WatchAsk | null;
+  today: string[];
   waiting: number;
   replied: { from: string; time: string; status: string } | null;
 }
@@ -55,20 +56,28 @@ export function ascii(s: string): string {
     .replace(/[^\x20-\x7E]/g, "");
 }
 
+/** A shift's time for the watch: "4-9 pm", or "10:30 am - 12:45 pm" with room to break between the two ends. */
+export function watchRange(start: string, end: string): string {
+  return ascii(range12(start, end)).replace(/(am|pm)-/, "$1 - ");
+}
+
 function at(t: string): string {
   return ascii(clock12(t)).replace(" ", "");
 }
 
-/** Up to three short lines for the Week check: clashes, the trip there, and tomorrow's start. */
+/**
+ * Up to three short lines for the Week check: clashes, the trip there, and tomorrow's start.
+ * The key fact comes first, so a line that wraps on the round screen breaks in a sensible place.
+ */
 function weekLines(offer: Offer, data: DataSlice): string[] {
   const x = offerImpact(offer, data);
   const lines: string[] = [];
   if (offer.day === data.settings.protectedDay) lines.push("Your protected rest day");
-  for (const c of x.conflicts) lines.push(`Clash: ${c.title} ${at(c.start)}`);
+  for (const c of x.conflicts) lines.push(`${at(c.start)} clash: ${c.title}`);
   if (x.previous) {
     const spare = x.travelBuffer ?? 0;
     if (x.travel.minutes === 0) lines.push(`Straight after your ${x.previous.title}`);
-    else lines.push(spare <= 0 ? `After ${x.previous.title} ${at(x.previous.end)}: arrive late` : `After ${x.previous.title} ${at(x.previous.end)}: ${spare} min spare`);
+    else lines.push(spare <= 0 ? `Arrive late from ${x.previous.title} ${at(x.previous.end)}` : `${spare} min spare after ${x.previous.title} ${at(x.previous.end)}`);
   }
   const nd = nextDay(offer.day);
   if (dayIndex(nd) > dayIndex(offer.day)) {
@@ -78,6 +87,17 @@ function weekLines(offer: Offer, data: DataSlice): string[] {
     if (first) lines.push(`${nd} starts ${at(first.start)}`);
   }
   return lines.slice(0, 3).map(ascii);
+}
+
+/** Today's plans for the watch's week page: start time and title, in order, without asks or rest. */
+function todayLines(data: DataSlice): string[] {
+  const today = buildDays(data).find((d) => d.today);
+  if (!today) return [];
+  return today.items
+    .filter((it) => it.kind !== "offer" && it.kind !== "rest")
+    .sort((a, b) => minutes(a.start) - minutes(b.start))
+    .slice(0, 4)
+    .map((it) => ascii(`${at(it.start)} ${it.label}`));
 }
 
 /** Everything the watch shows, in plain text and without money. */
@@ -91,7 +111,7 @@ export function watchSummary(data: DataSlice): WatchSummary {
         employer: ascii(EMPLOYERS[o.employer].name),
         day: o.day,
         when: ascii(offerWhen(o)),
-        time: ascii(range12(o.start, o.end)),
+        time: watchRange(o.start, o.end),
         note: ascii(o.note),
         week: weekLines(o, data),
         alt: ascii(altSlots(o, data)[0]?.label ?? ""),
@@ -107,6 +127,7 @@ export function watchSummary(data: DataSlice): WatchSummary {
   return {
     clock: data.clock,
     ask,
+    today: todayLines(data),
     waiting: open.length,
     replied: last ? { from: ascii(last.from), time: ascii(range12(last.start, last.end)), status: STATUS_WORDS[last.status] } : null,
   };
