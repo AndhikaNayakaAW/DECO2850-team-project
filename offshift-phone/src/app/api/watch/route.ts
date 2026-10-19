@@ -1,7 +1,7 @@
 import { seedData } from "@/lib/scenario";
 import { loadState, saveState, type Saved } from "@/lib/server-state";
 import type { DataSlice, Decision } from "@/lib/types";
-import { WATCH_DECISIONS, applyWatchAnswer, applyWatchBody, watchSummary } from "@/lib/garmin";
+import { WATCH_DECISIONS, applyWatchAnswer, applyWatchBody, applyWatchHealth, parseHealth, stopWatchHealth, watchSummary } from "@/lib/garmin";
 
 export const dynamic = "force-dynamic";
 
@@ -17,10 +17,10 @@ export async function GET() {
   return Response.json({ v: s.version, ...watchSummary(current(s)) }, { headers });
 }
 
-/** An answer from the wrist, or a body reading as a level from 0 to 3. */
+/** An answer from the wrist, a health reading as levels from 0 to 3, or sharing turned off. */
 export async function POST(req: Request) {
   const s = await loadState();
-  let input: { answer?: { offerId?: unknown; decision?: unknown }; body?: { level?: unknown } };
+  let input: { answer?: { offerId?: unknown; decision?: unknown }; health?: unknown; body?: { level?: unknown } };
   try {
     input = await req.json();
   } catch {
@@ -40,6 +40,14 @@ export async function POST(req: Request) {
     data = r.data;
     toast = r.toast;
     saveState(s, data, "watch");
+  } else if (input.health !== undefined) {
+    const h = parseHealth(input.health);
+    if (!h) return Response.json({ error: "No reading the calendar can use" }, { status: 400, headers });
+    const next = "share" in h ? stopWatchHealth(data) : applyWatchHealth(data, h.signals, h.at);
+    if (next !== data) {
+      data = next;
+      saveState(s, data, "watch");
+    }
   } else if (input.body) {
     const next = applyWatchBody(data, Number(input.body.level));
     if (next !== data) {
@@ -47,7 +55,7 @@ export async function POST(req: Request) {
       saveState(s, data, "watch");
     }
   } else {
-    return Response.json({ error: "Send an answer or a body reading" }, { status: 400, headers });
+    return Response.json({ error: "Send an answer or a health reading" }, { status: 400, headers });
   }
   return Response.json({ v: s.version, toast, ...watchSummary(data) }, { headers });
 }

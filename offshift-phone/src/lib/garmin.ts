@@ -1,19 +1,15 @@
 /** What the Garmin watch app receives and sends through /api/watch: the waiting ask, answers and body readings. */
 import { applyResponse } from "./actions";
+import { BODY_SIGNALS, OVERALL_WORDS, overallLevel } from "./body";
 import { altSlots, draftFor, eventsFor, offerImpact, offerWhen, replyDraft } from "./checks";
 import { uid } from "./ids";
 import { clock12, dayIndex, minutes, nextDay, range12 } from "./logic";
 import { EMPLOYERS } from "./scenario";
-import type { DataSlice, Decision, Offer, OfferStatus, Wearable } from "./types";
+import type { BodyLevel, BodySignals, DataSlice, Decision, Offer, OfferStatus, Wearable } from "./types";
 
 export const WATCH_DECISIONS: Decision[] = ["accept", "negotiate", "swap", "decline", "later"];
 
-export const WEARABLE_WORDS: Record<Wearable["level"], string> = {
-  0: "Very low",
-  1: "Running low",
-  2: "Steady",
-  3: "Plenty of energy",
-};
+export const WEARABLE_WORDS: Record<Wearable["level"], string> = OVERALL_WORDS;
 
 const STATUS_WORDS: Record<OfferStatus, string> = {
   pending: "Waiting",
@@ -134,5 +130,46 @@ export function applyWatchBody(data: DataSlice, level: number): DataSlice {
     ...data,
     wearable: { level: lv, word, at: data.clock, source: "Garmin" },
     sync: [...data.sync, { id: uid("y"), at: data.clock, from: "Watch", to: "Only you", text: `Body reading: ${word.toLowerCase()}. Kept private.` }],
+  };
+}
+
+export type HealthInput = { signals: BodySignals; at: string | null } | { share: false };
+
+/** Keeps only what the watch is allowed to send: known signals as whole levels from 0 to 3, and a clock time. */
+export function parseHealth(input: unknown): HealthInput | null {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+  const o = input as Record<string, unknown>;
+  if (o.share === false) return { share: false };
+  const signals: BodySignals = {};
+  for (const k of BODY_SIGNALS) {
+    const v = o[k];
+    if (typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 3) signals[k] = v as BodyLevel;
+  }
+  if (!Object.keys(signals).length) return null;
+  const at = typeof o.at === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(o.at) ? o.at : null;
+  return { signals, at };
+}
+
+/** Stores the watch's levels and overall word. Logs only when the overall word changes. */
+export function applyWatchHealth(data: DataSlice, signals: BodySignals, at: string | null): DataSlice {
+  const level = overallLevel(signals);
+  if (level === null) return data;
+  const ordered: BodySignals = {};
+  for (const k of BODY_SIGNALS) if (signals[k] !== undefined) ordered[k] = signals[k];
+  const prev = data.wearable;
+  if (prev && prev.level === level && JSON.stringify(prev.signals ?? {}) === JSON.stringify(ordered)) return data;
+  const word = OVERALL_WORDS[level];
+  const wearable: Wearable = { level, word, at: at ?? data.clock, source: "Garmin", signals: ordered };
+  const sync = prev?.word === word ? data.sync : [...data.sync, { id: uid("y"), at: data.clock, from: "Watch", to: "Only you", text: `Body reading: ${word.toLowerCase()}. Kept private.` }];
+  return { ...data, wearable, sync };
+}
+
+/** Sharing turned off on the watch: the calendar forgets the last reading. */
+export function stopWatchHealth(data: DataSlice): DataSlice {
+  if (!data.wearable) return data;
+  return {
+    ...data,
+    wearable: null,
+    sync: [...data.sync, { id: uid("y"), at: data.clock, from: "Watch", to: "Only you", text: "Body sharing turned off on the watch. The calendar forgot the last reading." }],
   };
 }

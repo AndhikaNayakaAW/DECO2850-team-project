@@ -34,4 +34,20 @@ describe("/api/watch", () => {
     const state = (globalThis as { __offshiftState?: { data: { wearable: { word: string } } } }).__offshiftState!;
     expect(state.data.wearable.word).toBe("Plenty of energy");
   });
+  it("records a full health reading as words", async () => {
+    const res = await post({ health: { energy: 1, sleep: 1, stress: 2, heart: null, at: "21:02" } });
+    expect(res.status).toBe(200);
+    expect((await res.json()).ask.from).toBe("Jess");
+    const state = (globalThis as { __offshiftState?: { data: { wearable: unknown } } }).__offshiftState!;
+    expect(state.data.wearable).toMatchObject({ word: "Running low", at: "21:02", signals: { energy: 1, sleep: 1, stress: 2 } });
+  });
+  it("clears the reading when the watch stops sharing", async () => {
+    await post({ health: { energy: 1 } });
+    expect((await post({ health: { share: false } })).status).toBe(200);
+    const state = (globalThis as { __offshiftState?: { data: { wearable: unknown } } }).__offshiftState!;
+    expect(state.data.wearable).toBeNull();
+  });
+  it("rejects a health reading it can't use", async () => {
+    expect((await post({ health: { mood: 3 } })).status).toBe(400);
+  });
 });
