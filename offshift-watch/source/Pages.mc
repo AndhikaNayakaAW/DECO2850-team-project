@@ -67,8 +67,12 @@ class Page extends WatchUi.View {
         return false;
     }
 
+    function background() as Number {
+        return Graphics.COLOR_BLACK;
+    }
+
     function onUpdate(dc as Dc) as Void {
-        dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
+        dc.setColor(background(), background());
         dc.clear();
         Layout.draw(dc, layout(dc));
     }
