@@ -191,12 +191,21 @@ export interface DayView {
   items: DayItem[];
 }
 
-/** A body reading from the worker's own watch, kept as a word so no raw number travels. */
+/** 0 reads low, 3 reads well. */
+export type BodyLevel = 0 | 1 | 2 | 3;
+
+/** What the watch reads: Body Battery, sleep, stress, resting heart rate, breathing, pulse ox and recovery time. */
+export type BodySignal = "energy" | "sleep" | "stress" | "heart" | "breathing" | "pulseOx" | "recovery";
+
+export type BodySignals = Partial<Record<BodySignal, BodyLevel>>;
+
+/** A body reading from the worker's own watch, kept as levels and words so no raw number travels. */
 export interface Wearable {
-  level: 0 | 1 | 2 | 3;
+  level: BodyLevel;
   word: string;
   at: string;
   source: string;
+  signals?: BodySignals;
 }
 
 /** Everything that syncs between the phone, the calendar, the watch and the server. */
