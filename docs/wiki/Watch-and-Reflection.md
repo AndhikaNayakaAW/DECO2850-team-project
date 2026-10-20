@@ -43,6 +43,4 @@ The main `/calendar` is now the dated 3D week, following the teammate's update. 
 
 On 20 October the paired phone enabled a verified physical round trip: a synthetic ask appeared on the watch, a confirmed Take it action produced one reply and one calendar shift, and available Garmin bands arrived. Synthetic artifacts were removed without clearing the wearable record. All 26 native tests, 200 web tests and nine build checks pass. A sensor-unavailable upload bug was reproduced and fixed; the corrected transfer matches the compiled readback hash.
 
-The [testing PDF](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/testing/garmin-2026-10-20/Offshift-Garmin-Testing-2026-10-20.pdf) shows all four pages, details, sharing, response menus, confirmations and error states. Every watch image is from the native simulator with synthetic data. Physical evidence, owner observations and the post-transfer connection check are recorded separately in the [contribution record](Weekly-Contribution).
-
 For evaluation, ask workers what they want to understand, which view is easier, whether it supports a useful action and what feels uncomfortable. Technical tests do not establish reduced stress, medical meaning or improved reflection. A saved glance or an older Synced display alone does not prove a current connection.

@@ -5,8 +5,6 @@
 **Recorded:** 19 October 2026
 **Starting point:** teammate release `bcfbc85`
 
-> Follow-up: [20 October physical testing and regression fix](2026-10-20-garmin-physical-testing.md). Status below records the 19 October session.
-
 ## Contribution narrative
 
 I pulled the latest team implementation and extended the existing native Garmin application for the confirmed fēnix 8 47mm. My teammate had already implemented the native app, sensor mapping, dated calendar, team session controls, access-code support and Redis-compatible server. My contribution focused on making the watch UI consistent with the calendar, preparing a reliable private cloud build, configuring the deployment and documenting evidence. I preserved the teammate's authorship and the existing unrelated lockfile edit. Implementation, test execution and documentation were assisted by Codex.

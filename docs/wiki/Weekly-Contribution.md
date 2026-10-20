@@ -14,8 +14,6 @@ I found a missing-data edge case during testing: with sharing enabled and no sen
 
 I compiled the protected production release and transferred it through MTP. The 37,452-byte file downloaded back from the watch exactly matched the compiled SHA-256. The owner reports the updated app opens and shows Synced; fresh post-transfer server contact is recorded separately in the installation evidence. No existing files were deleted, and an earlier verified release remains privately backed up. Because a running Offshift installation was not exposed as a PRG in the MTP Apps folder, I corrected the earlier claim that an empty PRG listing proved a fresh installation.
 
-I created a [screen-by-screen testing PDF](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/testing/garmin-2026-10-20/Offshift-Garmin-Testing-2026-10-20.pdf) covering the four pages, body details, sharing, answer menus, confirmations, reply states and connection failures. Every watch image is explicitly identified as a native simulator capture using synthetic data. Physical validation is supported separately by server observations and owner reports. The PDF generator, screenshots, raw native test logs and sanitized evidence are checked into the repository so the document can be reviewed and regenerated.
-
 The web suite passed 200 tests across 20 files, the production build and TypeScript check passed, and all nine Node build checks passed. GitHub validation and automatic Vercel deployment of `9465c22` succeeded. Native changes must still be compiled and installed on the watch; a Git push deploys the website, not the watch binary. Implementation, test execution and documentation were assisted by Codex.
 
 | Commit | Evidence |
@@ -23,7 +21,7 @@ The web suite passed 200 tests across 20 files, the production build and TypeScr
 | [`6e81a03`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/6e81a03) | Red: 25 native tests pass; the new missing-reading assertion errors. The zero-band guard passes. |
 | [`9465c22`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/9465c22) | Green: skip empty health uploads in foreground/background; all 26 native tests pass. |
 
-[Physical evidence and test procedure](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/testing/garmin-2026-10-20/README.md) · [GitHub validation](https://github.com/AndhikaNayakaAW/DECO2850-team-project/actions/runs/39378758379) · [Vercel deployment](https://vercel.com/andhikanayakaaws-projects/offshift/9B4dDGrQ3dPpRY7dqbU9G3fcCW1C)
+[GitHub validation](https://github.com/AndhikaNayakaAW/DECO2850-team-project/actions/runs/39378758379) · [Vercel deployment](https://vercel.com/andhikanayakaaws-projects/offshift/9B4dDGrQ3dPpRY7dqbU9G3fcCW1C)
 
 Long-term stability, exact background scheduling, battery use, all sensor types, all physical answer variants and worker outcomes still require evaluation. The shared access code remains a prototype boundary rather than separate employer and worker accounts.
 

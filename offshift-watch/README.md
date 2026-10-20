@@ -38,7 +38,7 @@ After unplugging, open Offshift with the paired phone online and Garmin Connect 
 
 **Installation status, 19 October 2026:** installed on the actual fēnix 8 47mm. No existing PRG was exposed in the visible Apps listing; existing files were preserved. That listing does not establish whether Offshift was already installed. The 37,420-byte program downloaded back from the watch has exactly the same SHA-256 as the release. The owner confirms Offshift opens, currently reporting “Phone not connected.” The paired-phone communication bridge is being checked; real sensor delivery is not yet verified.
 
-**Follow-up, 20 October 2026:** an available paired phone enabled a verified physical request/reply round trip and delivery of available Garmin bands. The missing-reading fix passes 26 native tests and its updated transfer matches the compiled hash. The owner reports Synced after the update; a fresh post-transfer server contact is recorded separately. See the [testing PDF and evidence](../docs/testing/garmin-2026-10-20/README.md).
+**Follow-up, 20 October 2026:** an available paired phone enabled a verified physical request/reply round trip and delivery of available Garmin bands. The missing-reading fix passes 26 native tests and its updated transfer matches the compiled hash. The owner reports Synced after the update; a fresh post-transfer server contact is recorded separately.
 
 ## Simulator and tests
 

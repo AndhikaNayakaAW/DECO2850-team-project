@@ -52,6 +52,6 @@ These checks do not prove physical watch installation, real sensor delivery, acc
 
 [Build contract and artifact test output](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/contributions/assets/garmin-build-tests-2026-10-19.txt).
 
-## Physical test and screenshot report · 20 October
+## Physical test · 20 October
 
-The physical watch completed a verified request/reply round trip and delivered available Garmin bands. See the [PDF and sanitized evidence](https://github.com/AndhikaNayakaAW/DECO2850-team-project/tree/main/docs/testing/garmin-2026-10-20). All watch images in the PDF are native simulator captures; physical results are recorded separately. The corrected release was transferred and read back exactly; post-transfer connection evidence is tracked independently.
+The physical watch completed a verified request/reply round trip and delivered available Garmin bands. The corrected release was transferred and read back exactly; post-transfer connection evidence is tracked independently.

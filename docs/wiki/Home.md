@@ -13,7 +13,7 @@ Offshift explores how casual workers can reflect on work alongside their energy,
 
 ## Current release · 20 October 2026
 
-The fēnix 8 47mm has completed a physical request/reply round trip through the paired phone to Vercel and Redis, and available Garmin bands arrived. A missing-reading upload bug was reproduced and fixed with TDD; all 26 native, 200 web and nine build tests pass. The corrected watch transfer matches its readback hash. [Open the screen-by-screen testing PDF](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/testing/garmin-2026-10-20/Offshift-Garmin-Testing-2026-10-20.pdf) for simulator images, physical evidence and remaining limits.
+The fēnix 8 47mm has completed a physical request/reply round trip through the paired phone to Vercel and Redis, and available Garmin bands arrived. A missing-reading upload bug was reproduced and fixed with TDD; all 26 native, 200 web and nine build tests pass. The corrected watch transfer matches its readback hash.
 
 | Explore | What you will find |
 | :--- | :--- |
