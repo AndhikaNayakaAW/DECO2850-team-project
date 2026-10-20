@@ -51,14 +51,17 @@ module Health {
         } as Dictionary<String, Number or Null>;
     }
 
-    //! What the calendar receives: the levels that exist and the time on the watch. Never a raw number.
-    function payload(levels as Dictionary<String, Number or Null>) as Dictionary<String, Number or String> {
+    //! No upload without a reading: a clock alone is not a health measurement.
+    function payload(levels as Dictionary<String, Number or Null>) as Dictionary<String, Number or String>? {
         var out = {} as Dictionary<String, Number or String>;
         for (var i = 0; i < SIGNALS.size(); i++) {
             var v = levels[SIGNALS[i]];
             if (v != null) {
                 out[SIGNALS[i]] = v;
             }
+        }
+        if (out.size() == 0) {
+            return null;
         }
         var t = System.getClockTime();
         out["at"] = t.hour.format("%02d") + ":" + t.min.format("%02d");

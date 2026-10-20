@@ -75,7 +75,9 @@ function overallIsBodyBatteryOrNothing(logger as Test.Logger) as Boolean {
 (:test)
 function onlyLevelsAndTheTimeLeaveTheWatch(logger as Test.Logger) as Boolean {
     var levels = { "energy" => 1, "sleep" => null, "stress" => 2, "heart" => 3, "breathing" => null, "pulseOx" => null, "recovery" => 3 } as Dictionary<String, Number or Null>;
-    var p = Health.payload(levels);
+    var result = Health.payload(levels);
+    Test.assert(result != null);
+    var p = result as Dictionary;
     Test.assert(!p.hasKey("sleep"));
     Test.assertEqual(p["energy"], 1);
     Test.assert(p["at"] instanceof String);

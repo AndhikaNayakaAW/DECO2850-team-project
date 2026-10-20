@@ -17,8 +17,11 @@ class OffshiftService extends System.ServiceDelegate {
         var params = null;
         var httpMethod = Communications.HTTP_REQUEST_METHOD_GET;
         if (Sharing.isOn()) {
-            params = { "health" => Health.payload(Health.levels(Health.read())) };
-            httpMethod = Communications.HTTP_REQUEST_METHOD_POST;
+            var payload = Health.payload(Health.levels(Health.read()));
+            if (payload != null) {
+                params = { "health" => payload };
+                httpMethod = Communications.HTTP_REQUEST_METHOD_POST;
+            }
         }
         var options = {
             :method => httpMethod,

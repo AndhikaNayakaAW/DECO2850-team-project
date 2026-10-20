@@ -77,10 +77,11 @@ class OffshiftModel {
         }
         if (Sharing.isOn()) {
             var key = Health.key(_levels);
-            if (!key.equals(_sentKey) || now - _sentAt > 300000) {
+            var payload = Health.payload(_levels);
+            if (payload != null && (!key.equals(_sentKey) || now - _sentAt > 300000)) {
                 _sentKey = key;
                 _sentAt = now;
-                _api.sendHealth(Health.payload(_levels), method(:onSummary));
+                _api.sendHealth(payload, method(:onSummary));
                 return;
             }
         }

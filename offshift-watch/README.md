@@ -47,7 +47,7 @@ node offshift-watch/scripts/build.mjs --test
 node --test offshift-watch/test/*.test.mjs
 ```
 
-There are 24 native tests and 9 Node build contracts/artifact checks. This SDK returned exit status 1 even for a complete native pass; inspect its final `PASSED (passed=24, failed=0, errors=0)` summary. The native tests use the real device profile's fonts, test round-screen bounds and contrast, and isolate replies from real network activity.
+There are 26 native tests and 9 Node build contracts/artifact checks. This SDK returned exit status 1 even for a complete native pass; inspect its final `PASSED (passed=26, failed=0, errors=0)` summary. The native tests use the real device profile's fonts, test round-screen bounds and contrast, and isolate replies from real network activity.
 
 For an isolated laptop simulation, run the web app with a separate `OFFSHIFT_STATE_FILE`, then build explicitly for loopback:
 
@@ -85,6 +85,8 @@ One deployment holds one participant session at a time. The `/team` response omi
 | Steps | Steps today, intensity minutes this week | Shown on the watch only |
 
 The overall word is Body Battery, which Garmin already builds from sleep, stress, heart-rate variability and activity. When it is unavailable, the app does not invent a reading. Availability depends on the watch, permissions and recent sensor history. Breathing and pulse ox are single moments that change when you walk upstairs, so they show on the watch and the calendar but never colour the check on their own.
+
+If all readings are unavailable, foreground and background checks fetch the calendar without uploading a timestamp-only health object. A zero band is still valid and is shared when allowed. This avoids an HTTP 400 being shown as a calendar failure when the actual problem is simply missing sensor history.
 
 Every reader looks back for the most recent real sample, because samples are blank while the watch is off the wrist or on its cable. Sleep and resting heart come from last night only (10 pm to an hour after your usual wake time). They are worked out once a day and remembered, and only when the watch still holds the night from before 3 am. Otherwise they read "No reading", because a guess about someone's night is worse than none.
 
