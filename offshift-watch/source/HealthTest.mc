@@ -90,6 +90,26 @@ function onlyLevelsAndTheTimeLeaveTheWatch(logger as Test.Logger) as Boolean {
     return true;
 }
 
+//! Missing sensor history must not become a timestamp-only upload rejected by the API.
+(:test)
+function unavailableReadingsDoNotCreateAnUpload(logger as Test.Logger) as Boolean {
+    var none = Health.levels({} as Dictionary<String, Number or Null>);
+    Test.assert(Health.payload(none) == null);
+    Test.assert(Health.payload({} as Dictionary<String, Number or Null>) == null);
+    return true;
+}
+
+//! Zero is a real band, not a missing reading.
+(:test)
+function lowestBandStillCreatesAnUpload(logger as Test.Logger) as Boolean {
+    var result = Health.payload({ "energy" => 0 } as Dictionary<String, Number or Null>);
+    Test.assert(result != null);
+    var payload = result as Dictionary;
+    Test.assertEqual(payload["energy"], 0);
+    Test.assert(payload["at"] instanceof String);
+    return true;
+}
+
 (:test)
 function riseTrackerFindsHowMuchCameBack(logger as Test.Logger) as Boolean {
     var rise = new RiseTracker();
