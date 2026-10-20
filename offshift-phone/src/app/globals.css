@@ -416,7 +416,7 @@ button.status-pill{cursor:pointer;border:0;min-height:40px}
   .board-title{min-width:0;flex:0 1 auto}
   .board-head h1{font-size:24px}
   .board-actions{margin-left:auto}
-  .board-actions>button.btn.neutral{display:none}
+  .board-actions>button.btn.neutral:not(.test-offer){display:none}
   .board-legend{order:4;width:100%;margin-left:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
   .board .stage.big .hint{display:none}
   .assistant{left:auto;right:max(12px,calc(env(safe-area-inset-right) + 8px));bottom:calc(12px + env(safe-area-inset-bottom));align-items:flex-end}
@@ -435,9 +435,9 @@ button.status-pill{cursor:pointer;border:0;min-height:40px}
   .board-title{flex:1 1 auto;min-width:0}
   .board-head h1{font-size:26px}
   .board-legend{order:3;width:100%;margin-left:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
-  .board-actions{order:4;width:100%;flex-wrap:nowrap}
+  .board-actions{order:4;width:100%;flex-wrap:wrap}
   .board-actions>.btn:not(.icon){flex:1 1 auto;padding-inline:10px}
-  .board-actions>button.btn.neutral{display:none}
+  .board-actions>button.btn.neutral:not(.test-offer){display:none}
   .board-main{display:flex;flex-direction:column;gap:12px}
   .stage-wrap-3d{flex:none;height:auto;aspect-ratio:5/4;max-height:min(58vh,460px)}
   .board .stage.big{border-radius:22px;touch-action:pan-y}

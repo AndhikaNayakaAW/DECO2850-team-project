@@ -20,7 +20,7 @@ describe("calendar test-offer delivery", () => {
   it("defaults to tomorrow when the selected day is today or earlier, including across year end", () => {
     expect(defaultTestOffer("2026-10-20", NOW)).toMatchObject({ date: "2026-10-23", start: "16:00", end: "21:00" });
     expect(defaultTestOffer("2026-10-22", NOW).date).toBe("2026-10-23");
-    expect(defaultTestOffer("2026-12-31", { date: "2026-12-31", time: "23:59" }).date).toBe("2027-01-01");
+    expect(defaultTestOffer("2026-12-31", { date: "2026-12-31" }).date).toBe("2027-01-01");
     expect(defaultTestOffer("2026-11-02", NOW).date).toBe("2026-11-02");
   });
 
@@ -76,7 +76,7 @@ describe("calendar test-offer delivery", () => {
     expect(g.__offshiftState!.version).toBe(7);
   });
 
-  it.each([new Response("Unavailable", { status: 503 }), Response.json({}), new Response("<html>Access</html>")])("does not show success for an unavailable or malformed response", async (response) => {
+  it.each([new Response("Unavailable", { status: 503 }), Response.json({}), Response.json({ version: 8, asks: [] }), Response.json({ version: 8, asks: [{ ...input, id: "other", from: "Another sender", status: "pending" }] }), new Response("<html>Access</html>")])("does not show success for an unavailable or malformed response", async (response) => {
     const request = vi.fn<typeof fetch>().mockResolvedValue(response);
     await expect(submitTestOffer(input, NOW, request)).rejects.toThrow(/check the calendar before retrying/i);
     expect(request).toHaveBeenCalledTimes(1);

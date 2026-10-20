@@ -8,6 +8,7 @@ import BodyCard from "./BodyCard";
 import Immersive from "./Immersive";
 import ItemForm, { type ItemKindChoice, type ItemTarget, type Removed } from "./ItemForm";
 import SettingsForm from "./SettingsForm";
+import TestOfferForm from "./TestOfferForm";
 import { Sheet } from "./Sheet";
 import Week3D, { type DropTarget } from "./Week3D";
 import { buildWeek, clashes, waitingAsks } from "@/lib/checks";
@@ -25,7 +26,7 @@ const KINDS: { kind: string; label: string; cls: string }[] = [
   { kind: "offer", label: "Asks", cls: "offer" },
 ];
 
-type SheetState = { type: "item"; target: ItemTarget } | { type: "settings" } | null;
+type SheetState = { type: "item"; target: ItemTarget } | { type: "settings" } | { type: "test-offer" } | null;
 type Undo = Removed | { kind: "moved"; id: string; title: string; from: DateKey; to: DateKey };
 
 function kindOf(it: DayItem): ItemKindChoice | null {
@@ -269,6 +270,9 @@ export default function CalendarBoard() {
           <button className="btn" onClick={() => addItem()}>
             + Add
           </button>
+          <button className="btn neutral test-offer" onClick={() => setSheet({ type: "test-offer" })}>
+            Test offer
+          </button>
           <Link className="btn neutral" href={`/calendar?view=day&date=${selected}`}>
             Reflect
           </Link>
@@ -417,6 +421,22 @@ export default function CalendarBoard() {
       {sheet?.type === "settings" && (
         <Sheet title="Settings" onClose={() => setSheet(null)}>
           <SettingsForm onDone={() => setSheet(null)} />
+        </Sheet>
+      )}
+      {sheet?.type === "test-offer" && (
+        <Sheet title="Send a test offer" onClose={() => setSheet(null)}>
+          <TestOfferForm
+            selected={selected}
+            now={now}
+            waiting={pending.length}
+            onCancel={() => setSheet(null)}
+            onSent={(date) => {
+              setSheet(null);
+              setOfferId(null);
+              goToDate(date);
+              useStore.getState().showToast("Test offer saved. It will appear on your watch when it syncs.");
+            }}
+          />
         </Sheet>
       )}
     </div>
