@@ -10,10 +10,30 @@ const passes = (r: Response) => r.headers.get("x-middleware-next") === "1";
 const enter = (code: unknown) => POST(new Request("https://offshift.example/api/access", { method: "POST", body: JSON.stringify({ code }) }));
 
 describe("without an access code", () => {
+  beforeEach(() => {
+    delete process.env.OFFSHIFT_ACCESS_CODE;
+  });
   it("lets every page and the API through, as on a laptop", () => {
     delete process.env.OFFSHIFT_ACCESS_CODE;
     expect(passes(proxy(req("/calendar")))).toBe(true);
     expect(passes(proxy(req("/api/state")))).toBe(true);
+    expect(passes(proxy(req("/api/team")))).toBe(true);
+    expect(passes(proxy(req("/api/watch")))).toBe(true);
+  });
+
+  it("keeps an already installed watch's old address working when the code is removed", () => {
+    const r = proxy(req("/w/previous-code/api/watch?since=5"));
+    expect(r.headers.get("x-middleware-rewrite")).toBe("https://offshift.example/api/watch?since=5");
+  });
+
+  it("takes an old access-page tab straight back to the calendar", () => {
+    const r = proxy(req("/access?next=%2Fcalendar%3Fview%3Dday"));
+    expect(r.status).toBe(307);
+    expect(r.headers.get("location")).toBe("https://offshift.example/calendar?view=day");
+  });
+
+  it("does not let an old access link redirect to another site", () => {
+    expect(proxy(req("/access?next=%2F%2Felsewhere.example")).headers.get("location")).toBe("https://offshift.example/calendar");
   });
 });
 
