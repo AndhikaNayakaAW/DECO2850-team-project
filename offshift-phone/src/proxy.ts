@@ -1,16 +1,22 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { ACCESS_COOKIE, accessCode, codeMatches, hasAccess } from "@/lib/access";
+import { ACCESS_COOKIE, accessCode, codeMatches, hasAccess, safeNext } from "@/lib/access";
 
 /**
  * With an access code set (OFFSHIFT_ACCESS_CODE), only people who entered it can open Offshift or its API.
  * The watch carries the code in its server address instead: https://…/w/<code>, then /api/watch as usual.
+ * Leaving the code unset opens the prototype directly and preserves older installed watch addresses.
  */
 export function proxy(req: NextRequest) {
   const code = accessCode();
-  if (!code) return NextResponse.next();
   const { pathname, search } = req.nextUrl;
-
   const watch = /^\/w\/([^/]+)\/api\/watch$/.exec(pathname);
+  if (!code) {
+    // Existing watches have the old address compiled in. Keep their connection after opening the site.
+    if (watch) return NextResponse.rewrite(new URL(`/api/watch${search}`, req.url));
+    if (pathname === "/access") return NextResponse.redirect(new URL(safeNext(req.nextUrl.searchParams.get("next")), req.url));
+    return NextResponse.next();
+  }
+
   if (watch) {
     let given = "";
     try {

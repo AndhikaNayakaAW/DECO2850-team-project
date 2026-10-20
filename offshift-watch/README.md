@@ -69,7 +69,7 @@ The calendar page shows the last successful sync and sharing choice. A failed an
 
 ## Cloud connection
 
-The deployed route is watch → paired phone/Garmin Connect → internet → Vercel → Redis. Once installed it does not depend on a laptop server or tunnel. The app polls every five seconds while open and registers a five-minute background event; Garmin controls actual background scheduling. The public server uses `KV_REST_API_URL` and `KV_REST_API_TOKEN` and a shared access code.
+The deployed route is watch → paired phone/Garmin Connect → internet → Vercel → Redis. Once installed it does not depend on a laptop server or tunnel. The app polls every five seconds while open and registers a five-minute background event; Garmin controls actual background scheduling. The public server uses `KV_REST_API_URL` and `KV_REST_API_TOKEN`. The prototype opens without an access code; older installed watch addresses remain compatible. `OFFSHIFT_ACCESS_CODE` is optional if access restriction is needed later.
 
 One deployment holds one participant session at a time. The `/team` response omits body readings and private plans, but the shared code does not implement separate employer and worker account roles. The `/watch` browser preview uses a separate import/reflection store and is not the native Garmin feed.
 
