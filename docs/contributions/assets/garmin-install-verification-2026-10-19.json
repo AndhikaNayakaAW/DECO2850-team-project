@@ -1,7 +1,7 @@
 {
   "installedAt": "2026-10-19T13:42:57.054253+00:00",
   "model": "fenix 8 47mm",
-  "operation": "new Offshift app installation; no existing PRG in Apps",
+  "operation": "Offshift file transferred into visible Apps folder; no existing PRG exposed",
   "filename": "OFFSHIFT.PRG",
   "bytes": 37420,
   "sha256": "b63267d1f18547dc4c3946e960daf972f7ea5556ce8e2401369bd74706fdccda",
@@ -17,5 +17,6 @@
   "ownerReportedSavedGlance": true,
   "ownerReportedBodyUnavailable": true,
   "ownerClarifiedPairedPhoneUnavailable": true,
-  "remainingDependency": "available paired phone running Garmin Connect; installed release has no manual Wi-Fi sync mode"
+  "remainingDependency": "available paired phone running Garmin Connect; installed release has no manual Wi-Fi sync mode",
+  "interpretationCorrection2026_10_20": "A running app can be absent from the visible MTP PRG listing; this record does not establish a fresh installation."
 }

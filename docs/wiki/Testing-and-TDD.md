@@ -2,7 +2,7 @@
 
 # Testing and TDD
 
-The current web suite passes **200 tests across 20 files**. The native Garmin suite passes **24 tests** in the `fenix847mm` simulator. The release builder has **9 Node contract and artifact tests**, also run in GitHub Actions. Native simulator checks run separately on a Mac with Garmin's SDK and device profile.
+The current web suite passes **200 tests across 20 files**. The native Garmin suite passes **26 tests** in the `fenix847mm` simulator. The release builder has **9 Node contract and artifact tests**, also run in GitHub Actions. Native simulator checks run separately on a Mac with Garmin's SDK and device profile.
 
 ## Run the checks
 
@@ -23,9 +23,9 @@ node offshift-watch/scripts/build.mjs --test
 "$OFFSHIFT_GARMIN_SDK/bin/monkeydo" offshift-watch/bin/offshift-test.prg fenix847mm -t
 ```
 
-The simulator must be open. Inspect its final `PASSED (passed=24, failed=0, errors=0)` summary. On this SDK installation `monkeydo` returned status 1 even when that complete summary passed; the native result was checked from its output, not inferred from the exit status.
+The simulator must be open. Inspect its final `PASSED (passed=26, failed=0, errors=0)` summary. On this SDK installation `monkeydo` returned status 1 even when that complete summary passed; the native result was checked from its output, not inferred from the exit status.
 
-## Five observed test-first cycles
+## Six observed test-first cycles
 
 | Cycle | Red evidence | Green implementation |
 | :--- | :--- | :--- |
@@ -34,6 +34,7 @@ The simulator must be open. Inspect its final `PASSED (passed=24, failed=0, erro
 | Reply status and confirmation | 21 native tests pass; 2 fail on stale offline status and an opaque 401. | Clear status after a reply and explain access errors; all 23 pass. Cancellation and failed-send safety also verified. |
 | Retained laptop settings | A targeted native regression fails after persisting a laptop URL. | Each build uses its compiled endpoint; all 24 native tests pass. |
 | Private build artifacts | Two new tests fail: MIR is published beside the release and compiler failure replaces a working binary. | Compile privately and publish program/symbol files after success; all nine build tests pass. |
+| Missing sensor history | `6e81a03`: 25 pass; one new assertion errors because a timestamp-only payload is produced. | `9465c22`: no health upload without a signal; foreground/background fetch the calendar, and band zero remains valid. All 26 pass. |
 
 Each red test commit precedes its green implementation commit. The [current contribution record](Weekly-Contribution) links every commit. UI copy and glance polish were subsequent refinements, not represented as additional TDD cycles.
 
@@ -50,3 +51,7 @@ Seventeen synthetic checks ran against the deployed HTTPS API with Redis. They v
 These checks do not prove physical watch installation, real sensor delivery, accessibility on the wrist or worker outcomes. Record those separately when actually observed. Previous browser-reflection and overnight-shift TDD evidence remains in the [15 October contribution report](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/contributions/2026-10-15-watch-reflection.md).
 
 [Build contract and artifact test output](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/contributions/assets/garmin-build-tests-2026-10-19.txt).
+
+## Physical test and screenshot report · 20 October
+
+The physical watch completed a verified request/reply round trip and delivered available Garmin bands. See the [PDF and sanitized evidence](https://github.com/AndhikaNayakaAW/DECO2850-team-project/tree/main/docs/testing/garmin-2026-10-20). All watch images in the PDF are native simulator captures; physical results are recorded separately. The corrected release was transferred and read back exactly; post-transfer connection evidence is tracked independently.

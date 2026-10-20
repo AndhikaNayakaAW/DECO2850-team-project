@@ -11,9 +11,9 @@ Offshift explores how casual workers can reflect on work alongside their energy,
 
 **[Open the calendar ↗](https://offshift-nine.vercel.app/calendar)** · **[Daily reflection ↗](https://offshift-nine.vercel.app/calendar?view=day)** · **[Circular browser preview ↗](https://offshift-nine.vercel.app/watch)**
 
-## Current release · 19 October 2026
+## Current release · 20 October 2026
 
-The fēnix 8 47mm app now uses the calendar's cream and forest-green theme. Its release builder targets protected Vercel HTTPS independently of old laptop settings. Production has free Redis storage and a shared access code. A Git push automatically deployed the release; 200 web tests, 24 native simulator tests, 9 build contracts and 17 synthetic live API checks passed. The watch app is installed and its readback hash verified; the paired-phone internet connection is still being checked.
+The fēnix 8 47mm has completed a physical request/reply round trip through the paired phone to Vercel and Redis, and available Garmin bands arrived. A missing-reading upload bug was reproduced and fixed with TDD; all 26 native, 200 web and nine build tests pass. The corrected watch transfer matches its readback hash. [Open the screen-by-screen testing PDF](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/testing/garmin-2026-10-20/Offshift-Garmin-Testing-2026-10-20.pdf) for simulator images, physical evidence and remaining limits.
 
 | Explore | What you will find |
 | :--- | :--- |

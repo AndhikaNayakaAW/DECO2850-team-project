@@ -5,6 +5,8 @@
 **Recorded:** 19 October 2026
 **Starting point:** teammate release `bcfbc85`
 
+> Follow-up: [20 October physical testing and regression fix](2026-10-20-garmin-physical-testing.md). Status below records the 19 October session.
+
 ## Contribution narrative
 
 I pulled the latest team implementation and extended the existing native Garmin application for the confirmed fēnix 8 47mm. My teammate had already implemented the native app, sensor mapping, dated calendar, team session controls, access-code support and Redis-compatible server. My contribution focused on making the watch UI consistent with the calendar, preparing a reliable private cloud build, configuring the deployment and documenting evidence. I preserved the teammate's authorship and the existing unrelated lockfile edit. Implementation, test execution and documentation were assisted by Codex.
@@ -81,7 +83,7 @@ The build-safety fix and updated record were also released in `4c6b0d1`, with [s
 
 ## Physical installation and remaining connection check
 
-The initial USB connection was intermittent, but MTP became stable after reconnecting. The device identified itself as a fēnix 8 47mm with software 23.40. Inspection of `GARMIN/Apps` found no existing PRG application, so this was a new Offshift installation rather than replacement of an older build. I saved the directory listing privately and left the existing folders and `OUT.BIN` unchanged.
+The initial USB connection was intermittent, but MTP became stable after reconnecting. The device identified itself as a fēnix 8 47mm with software 23.40. The visible `GARMIN/Apps` listing exposed no PRG, so the file was added without deleting a visible program. A 20 October check found the same empty listing while Offshift was running; therefore the listing does not establish whether an app was already installed. I saved the directory listing privately and left the existing folders and `OUT.BIN` unchanged.
 
 I installed the protected `OFFSHIFT.PRG`, downloaded the installed file back from the watch and compared SHA-256 hashes. Both hashes matched exactly for the 37,420-byte release. The owner then unplugged the watch, opened Offshift and confirmed that it launches. [Installation and readback record](assets/garmin-install-verification-2026-10-19.json).
 
