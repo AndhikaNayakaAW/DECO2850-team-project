@@ -37,7 +37,7 @@ export interface Actions {
   resolveAsk: (offerId: string, action: "confirm-alt" | "approve-swap") => void;
   /** A note from the worker to the team, such as a request to move a rostered shift. */
   sendMessage: (text: string, offerId?: string) => void;
-  /** A private note, such as the immersive view's check-in. Logged for the worker only; the team page never shows it. */
+  /** A private note, such as the immersive view's check-in. Logged for the worker only; the team view never shows it. */
   notePrivate: (text: string) => void;
   updateSettings: (patch: Partial<Settings>) => void;
   newSession: () => void;

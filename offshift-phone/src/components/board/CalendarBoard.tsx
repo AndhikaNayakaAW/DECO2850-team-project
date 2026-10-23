@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Assistant from "./Assistant";
 import AskPanel from "./AskPanel";
@@ -273,9 +272,6 @@ export default function CalendarBoard() {
           <button className="btn neutral test-offer" onClick={() => setSheet({ type: "test-offer" })}>
             Test offer
           </button>
-          <Link className="btn neutral" href={`/calendar?view=day&date=${selected}`}>
-            Reflect
-          </Link>
           <button className="btn neutral" onClick={() => setImmersive(true)}>
             Immersive
           </button>

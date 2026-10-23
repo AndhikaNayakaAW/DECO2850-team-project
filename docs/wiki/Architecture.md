@@ -9,11 +9,10 @@ flowchart LR
   G[Garmin Offshift app] --> P[Paired phone / Garmin Connect]
   P --> W[Protected watch API]
   C[Calendar browser] <--> S[State API]
-  T[Research team page] <--> A[Team API / restricted response]
+  C -- Test offer --> A[Team API / restricted response]
   W <--> R[(Redis: week + version)]
   S <--> R
   A <--> R
-  B[Browser watch preview] <--> L[Private browser storage]
 ```
 
 ## Shared session
@@ -26,7 +25,7 @@ Events have dates and a time zone, Australia/Brisbane by default. A session has 
 | Browser sync | `offshift-phone/src/lib/sync.tsx` | Polling, browser merges and session changes. |
 | Watch API | `offshift-phone/src/app/api/watch/route.ts` | Summary, confirmed replies, optional health bands and sharing-off. |
 | Garmin mapping | `offshift-phone/src/lib/garmin.ts` | Words and watch-sized summaries. |
-| Team API | `offshift-phone/src/app/api/team/route.ts` | Research session controls and restricted projection. |
+| Team API | `offshift-phone/src/app/api/team/route.ts` | Asks from the calendar's Test offer, and the restricted projection. |
 | Native watch | `offshift-watch/source` | Circular pages, answer confirmation, sensors and serial requests. |
 | Release builder | `offshift-watch/scripts/build.mjs` | Validate HTTPS and privately embed the deployment endpoint. |
 
@@ -38,11 +37,11 @@ The native release embeds the Vercel endpoint in a temporary source copy. Retain
 
 The intended deployed route is watch → Garmin Connect on the paired phone → internet → Vercel → Redis. The laptop is needed for development and sideload installation, not for the server once installed. The phone must still be paired and able to provide the communication bridge.
 
-## Two data paths
+## Body data
 
-Native body data belongs to the shared session as timestamped bands and is displayed by the calendar. Raw sensor values remain on the watch. The `/team` response omits body data and private plans. However, this is a shared-code prototype: it does not implement separate employer and worker API roles or separate accounts.
+Native body data belongs to the shared session as timestamped bands and is displayed by the calendar. Raw sensor values remain on the watch. The `/api/team` response omits body data and private plans. However, this is a shared-code prototype: it does not implement separate employer and worker API roles or separate accounts.
 
-The `/watch` browser preview has a different file-import path. Its numeric readings, written reflections and recovery blocks use private browser storage, scoped to the current session. Demo data is loaded explicitly; imported origin is self-reported and unverified. Those local records do not become a live Garmin feed.
+The earlier `/watch` browser preview kept file-imported readings and reflections in private browser storage. It was removed on 23 Oct 2026, and the calendar now deletes that storage when it opens.
 
 ## Evidence boundary
 

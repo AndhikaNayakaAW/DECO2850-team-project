@@ -10,17 +10,11 @@ Offshift helps students who work casual shifts answer a shift ask on their own t
   - **In the 3D week**, drag to turn it and pinch or scroll to zoom. Hold a block still for a moment to pick it up. You can then move a plan to another day, or drop anything on the bin to remove it, and Undo is offered either way. A quick swipe only ever turns the view. Throwing an ask away opens a drafted "no", and nothing reaches the manager until you press Send.
   - A waiting ask shows as an amber block, in the side list and as a pill in the header. Open it to see the Body and Week checks, pick an answer, edit the drafted reply and send it. "Decide later" sends nothing and reminds the worker in half an hour.
   - **⚙** opens settings: first name, days kept clear, how replies sound, and what counts as a late finish.
-  - **Reflect** opens the daily reflection for the selected day (`/calendar?view=day&date=YYYY-MM-DD`).
+  - **Test offer** sends a sample ask, as a manager would. It reaches the calendar and the watch.
   - **Immersive** opens the wide, hands-free week (`/calendar?immersive=1`), described below.
-- **`/team`** is for the research team only and isn't linked from the worker's screens. From here you can:
-  - start a new session and set the participant's first name;
-  - load a practice week;
-  - send asks as the manager, see the replies, and confirm another time or approve a swap;
-  - see when the watch last checked in.
+- **`/api/state`** holds the shared week, **`/api/watch`** is the watch's door, and **`/api/assistant`** is the voice assistant. **`/api/team`** takes the asks that Test offer sends and returns the manager's view of the week, which never includes body readings, plans or private notes.
 
-  Body readings and private notes never appear on this page.
-- **`/watch`** is the browser watch preview with file import. It is a separate prototype from the Garmin app.
-- **`/api/state`** holds the shared week, **`/api/watch`** is the watch's door, and **`/api/assistant`** is the voice assistant.
+The calendar is the whole website. The research console (`/team`), the browser watch preview (`/watch`) and the daily reflection (`?view=day`) were removed on 23 Oct 2026; old links to `/team` and `/watch` open the week.
 
 ## Run it
 
@@ -30,15 +24,15 @@ npm install
 npm run dev
 ```
 
-The terminal prints a Network URL such as `http://192.168.1.20:3000`. Open `…/calendar` on the worker's phone or iPad and `…/team` on the researcher's laptop. All devices must be on the same Wi-Fi. On iOS, Add to Home Screen gives a full-screen app.
+The terminal prints a Network URL such as `http://192.168.1.20:3000`. Open `…/calendar` on the worker's phone, iPad or laptop. All devices must be on the same Wi-Fi. On iOS, Add to Home Screen gives a full-screen app.
 
 ## Running a field-testing session
 
-1. On `/team`, press **New session**. Every open calendar empties. You can enter the participant's first name; it is used in greetings and drafted replies, and is optional.
-2. The participant adds their real week on `/calendar`. For a walkthrough instead, press **Load practice week**, which loads a generic week with no real names.
-3. Send an ask from `/team`. It reaches the calendar and the watch within about two seconds.
-4. The participant answers on the calendar or on the watch. The reply shows on `/team`. If they offered another time or a swap, confirm it there.
-5. Press **New session** before the next participant. `/calendar?reset=1` does the same from the worker's device.
+1. Open `/calendar?reset=1` to start a new session. Every open calendar empties. The participant can enter their first name in **⚙**; it is used in greetings and drafted replies, and is optional.
+2. The participant adds their real week on `/calendar`.
+3. Press **Test offer** to send an ask. It reaches the calendar and the watch within about two seconds.
+4. The participant answers on the calendar or on the watch.
+5. Open `/calendar?reset=1` again before the next participant.
 
 One running server holds one shared week. Anyone who opens the same server sees it, so run one session at a time and start a new one between participants.
 
@@ -48,7 +42,7 @@ Everything is dated in the worker's time zone: Australia/Brisbane by default (`s
 
 ## Sync and storage
 
-Every open page polls `/api/state`, every second or every two seconds with Redis, and merges changes three ways. Edits from the calendar, the team page and the watch then don't overwrite each other, even when two arrive at once. Where the week is stored:
+Every open page polls `/api/state`, every second or every two seconds with Redis, and merges changes three ways. Edits from the calendar and the watch then don't overwrite each other, even when two arrive at once. Where the week is stored:
 
 - **Upstash Redis or Vercel KV**, when `KV_REST_API_URL` and `KV_REST_API_TOKEN` are set (or `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`). Use this on Vercel.
 - **A file** otherwise: `.offshift-state.json` in this folder, or the path in `OFFSHIFT_STATE_FILE`.
@@ -69,7 +63,7 @@ The Garmin app in [`offshift-watch`](../offshift-watch/README.md) runs on a fēn
 - it sends the worker's answer;
 - only after the worker agrees on the watch, it sends body readings as words, one level from 0 to 3 per signal and never a number.
 
-The calendar shows those words in the Body card, in the ask's body check and in the assistant's greeting. Turning sharing off on the watch clears them. Nothing about the body reaches `/team` or an employer.
+The calendar shows those words in the Body card, in the ask's body check and in the assistant's greeting. Turning sharing off on the watch clears them. Nothing about the body reaches `/api/team` or an employer.
 
 A real watch only talks to https. Run `npm run watch-gateway`, which forwards `/api/watch` and nothing else on port 3001, and point a tunnel at it, for example `cloudflared tunnel --url http://127.0.0.1:3001`. A deployed https site such as Vercel needs no gateway: set the watch's server address to it.
 

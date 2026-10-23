@@ -366,7 +366,7 @@ export function offerChecks(offer: Offer, state: DataState, now: When): Check[] 
 /* ---------- alternatives ---------- */
 
 /**
- * "Fri 4–9 pm" within the week, or "Thu 5 Nov 4–9 pm" further out. The label goes into the reply and onto the team page,
+ * "Fri 4–9 pm" within the week, or "Thu 5 Nov 4–9 pm" further out. The label goes into the reply and into the team view,
  * where it's read later, so anything a week or more away carries its date.
  */
 function altLabel(date: DateKey, start: string, end: string, now: When): string {

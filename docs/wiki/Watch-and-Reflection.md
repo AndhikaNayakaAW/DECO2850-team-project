@@ -4,7 +4,7 @@
 
 **Proposed focus:** Offshift helps casual workers reflect on how work fits with their energy, rest and other commitments. This responds to tutor feedback and remains a direction to test with workers.
 
-**[Week calendar ↗](https://offshift-nine.vercel.app/calendar)** · **[Daily reflection ↗](https://offshift-nine.vercel.app/calendar?view=day)** · **[Browser watch preview ↗](https://offshift-nine.vercel.app/watch)**
+**[Week calendar ↗](https://offshift-nine.vercel.app/calendar)**
 
 ## Native Garmin experience
 
@@ -31,13 +31,9 @@ Sharing is a worker choice. The server receives timestamped bands encoded 0–3,
 
 Body words are an interaction representation of available Garmin readings, not a diagnosis or evidence that work caused stress. “Sleep” is an overnight Body Battery recharge proxy, not Garmin's sleep score. Missing readings stay missing.
 
-## Browser reflection remains separate
+## Browser reflection removed
 
-`/watch` is a circular browser preview with explicit demo loading and file import. Imported numeric readings are unverified because the file's device label is self-reported. This preview does not pair with the Garmin and does not display the live native health bands.
-
-Use **Reflect on my day** to open `/calendar?view=day&date=YYYY-MM-DD`. Select an activity, optionally write context, then preview and confirm recovery time. Cancel changes nothing. Reflections and recovery blocks remain in the private browser store rather than a manager reply. A new shared session clears this browser's previous participant data when it next loads.
-
-The main `/calendar` is now the dated 3D week, following the teammate's update. The daily view is selected explicitly with `?view=day`. Earlier September fixtures and phone screens are course history, not the default current scenario.
+The circular browser preview (`/watch`) and the daily reflection (`/calendar?view=day`) were removed on 23 Oct 2026 to keep the website to one screen, the 3D week. Old `/watch` links open the week. When a browser that used them next opens the calendar, the reflections and imported readings they kept in that browser are deleted, since nothing is left to show or clear them. Their design and TDD evidence stays in the [15 October contribution record](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/contributions/2026-10-15-watch-reflection.md).
 
 ## What has been verified
 

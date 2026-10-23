@@ -8,7 +8,7 @@ const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], variabl
 
 export const metadata: Metadata = {
   title: "Offshift",
-  description: "Offshift: a watch preview and calendar for reflecting on work, rest and other commitments.",
+  description: "Offshift: a week calendar and Garmin watch app for answering shift asks on your own terms.",
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Offshift" },
 };
 

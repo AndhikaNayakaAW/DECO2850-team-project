@@ -8,11 +8,12 @@ import { DATA_KEYS, UNLOADED, pickData, useStore } from "./store";
 import type { DataSlice } from "./types";
 import { cleanData } from "./validate";
 import { hidden, wait } from "./visible";
-import { usePrivateWatchStore } from "./watch-store";
 
 const CLIENT = Math.random().toString(36).slice(2);
 /** Where this device keeps the last week it and the server agreed on, so a reload can merge edits made offline. */
 const META_KEY = "offshift-sync-v2";
+/** Reflections and imported heart rate from the removed watch preview: nothing can show or clear them any more. */
+const REMOVED_PRIVATE_KEY = "offshift-private-watch-v1";
 
 let version = -1;
 let applying = false;
@@ -71,14 +72,6 @@ function noteOverridden(before: DataSlice | null, mine: DataSlice, merged: DataS
       return;
     }
   }
-}
-
-/** This browser's private reflections belong to one session: a new session clears them. */
-async function keepPrivateDataToSession(session: string) {
-  try {
-    await usePrivateWatchStore.persist.rehydrate();
-    usePrivateWatchStore.getState().forSession(session);
-  } catch {}
 }
 
 /** Edits made here that the server hasn't confirmed yet. */
@@ -243,6 +236,7 @@ export default function SyncProvider() {
       }
     }
 
+    try { localStorage.removeItem(REMOVED_PRIVATE_KEY); } catch {}
     (async () => {
       // The saved week first, before anything listens, so loading it is never mistaken for an edit.
       await useStore.persist.rehydrate();
@@ -251,7 +245,6 @@ export default function SyncProvider() {
       // The saved week couldn't be read (or there was none): start from the last week this device and the server agreed on.
       if (useStore.getState().sessionStartedAt === UNLOADED && base) apply(base);
       unsub = useStore.subscribe((s, prev) => {
-        if (s.sessionStartedAt !== prev.sessionStartedAt) void keepPrivateDataToSession(s.sessionStartedAt);
         if (applying) return;
         if (DATA_KEYS.every((k) => s[k] === prev[k])) return;
         schedule();
@@ -264,7 +257,6 @@ export default function SyncProvider() {
       }
       if (stopped) return;
       started = true;
-      await keepPrivateDataToSession(useStore.getState().sessionStartedAt);
       markReady();
       // Nothing on the server yet, or edits saved here while offline: send them now.
       if (unsynced() || base === null) await push();

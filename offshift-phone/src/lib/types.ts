@@ -168,7 +168,7 @@ export interface Wearable {
 /** Bumped whenever the shape changes, so old saved weeks are never read as new ones. */
 export const SCHEMA = 2;
 
-/** Everything that syncs between the calendar, the team page, the watch and the server. */
+/** Everything that syncs between the calendar, the team API, the watch and the server. */
 export interface DataSlice {
   schema: number;
   sessionStartedAt: string;

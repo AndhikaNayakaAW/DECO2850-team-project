@@ -56,4 +56,4 @@ Back up the installed Offshift app before copying the release into the watch's `
 
 ## Prototype limits
 
-One deployment serves one shared session. A shared code is not separate participant accounts or employer/worker role authorization. The `/team` response hides private fields, but everyone with the shared code has access to the prototype's other routes. The free storage plan has quotas; automatic paid upgrades are disabled. No worker evaluation or clinical interpretation is established by these technical checks.
+One deployment serves one shared session. A shared code is not separate participant accounts or employer/worker role authorization. The `/api/team` response hides private fields, but everyone with the shared code has access to the prototype's other routes. The free storage plan has quotas; automatic paid upgrades are disabled. No worker evaluation or clinical interpretation is established by these technical checks.
