@@ -23,10 +23,10 @@ describe("the scripted voice", () => {
     expect(r.actions).toEqual([{ type: "show_day", date: "2026-10-24" }]);
     expect(scriptedTurn("what about sunday", week(), NOW).text).toBe("Sunday is clear, and kept for rest.");
   });
-  it("turns a decision into a draft for the worker to send, never a sent reply", () => {
+  it("opens the ask for the worker to press the answer they said, never answering for them", () => {
     const r = scriptedTurn("not tonight", week(), NOW);
     expect(r.actions[0]).toMatchObject({ type: "respond", offerId: "o-thu", decision: "decline" });
-    expect(r.text).toBe("Here's a kind no to Alex for tonight. Have a look, change anything you like, then press Send reply.");
+    expect(r.text).toBe("I've opened Alex's ask for tonight. Press Decline to take it off your week.");
     expect(scriptedTurn("I'll take it", week(), NOW).actions[0]).toMatchObject({ decision: "accept" });
     expect(scriptedTurn("remind me later", week(), NOW).actions[0]).toMatchObject({ decision: "later" });
   });
@@ -95,11 +95,12 @@ describe("the opening words", () => {
 });
 
 describe("what the assistant is told", () => {
-  it("carries the ask's checks and free times, and no money or old demo names", () => {
+  it("carries the ask's checks, and no money or old demo names", () => {
     const ctx = assistantContext(week(), NOW);
     expect(ctx.person.name).toBe("Sam");
     expect(ctx.today).toBe("Thursday 22 October");
-    expect(ctx.pending_asks[0]).toMatchObject({ from: "Alex", when: "tonight", alternative_times: ["Fri 4–9 pm", "Sat 5–10 pm", "Thu 29 Oct 4–9 pm"] });
+    expect(ctx.pending_asks[0]).toMatchObject({ from: "Alex", when: "tonight" });
+    expect(ctx.pending_asks[0]).not.toHaveProperty("alternative_times");
     expect(ctx.pending_asks[0].checks.week.state).toBe("bad");
     expect(JSON.stringify(ctx)).not.toMatch(/\$|rent|Dinda|Jess|Pandora/);
     expect(assistantContext(emptyData(AT), NOW).person.name).toBeNull();

@@ -21,7 +21,7 @@ The teammate's native Garmin app is now in the repository. This release extends 
 | Body | Available body words; press for values and sources on the watch. |
 | Calendar | Last successful sync, waiting asks and the current sharing choice. |
 
-Up/Down or a swipe moves between pages. Select opens the five replies on the first two pages and body details on the last two. Replies require confirmation; deciding later sets a reminder without sending a manager message. Failed sends retain the ask. Successful replies clear any old offline message.
+Up/Down or a swipe moves between pages. Select opens the three answers (Accept, Decline, Decide later) on the first two pages and body details on the last two. Accept and Decline require confirmation; deciding later keeps the ask, marked "Saved for later". No answer sends the manager a message. Failed sends retain the ask. Successful answers clear any old offline message.
 
 ## Connection and privacy
 

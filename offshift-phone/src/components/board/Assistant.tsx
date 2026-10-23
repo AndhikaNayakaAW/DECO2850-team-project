@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ANNOUNCE, ANSWER, BRIEF, type AssistantAction } from "@/lib/assistant";
-import { offerWhen, waitingAsks } from "@/lib/checks";
+import { waitingAsks } from "@/lib/checks";
 import { pickData, useStore } from "@/lib/store";
-import { nowIn } from "@/lib/time";
 import type { DateKey, Decision } from "@/lib/types";
 
 type Status = "idle" | "thinking" | "speaking" | "listening";
@@ -44,7 +43,7 @@ function pickVoice(): SpeechSynthesisVoice | null {
   return voices.find((v) => /^en-(AU|GB)/.test(v.lang)) || voices.find((v) => v.lang.startsWith("en")) || null;
 }
 
-/** `onOpenAsk` opens an ask with a drafted reply ready; the worker checks it and presses Send. The assistant never sends. */
+/** `onOpenAsk` opens an ask with the answer the worker said pointed out; they press it themselves. The assistant never answers. */
 export default function Assistant({ onShowDay, onShowOffer, onOpenAsk }: { onShowDay: (date: DateKey) => void; onShowOffer: (id: string | null) => void; onOpenAsk: (id: string, decision: Exclude<Decision, "later">) => void }) {
   const respond = useStore((s) => s.respondToOffer);
   const addPersonal = useStore((s) => s.addPersonal);
@@ -121,8 +120,8 @@ export default function Assistant({ onShowDay, onShowOffer, onOpenAsk }: { onSho
         if (a.type === "respond") {
           const o = s.offers.find((x) => x.id === a.offerId);
           if (!o || (o.status !== "pending" && o.status !== "deferred")) continue;
-          // Deciding later sends nothing, so it can happen now. Every other answer opens its draft for the worker to send.
-          if (a.decision === "later") respond(a.offerId, "later", "", { reminderMinutes: 30 });
+          // Later changes nothing but how the ask looks, so it can happen now. Accept and decline open the ask for the worker to press.
+          if (a.decision === "later") respond(a.offerId, "later");
           else onOpenAsk(a.offerId, a.decision);
         } else if (a.type === "add_plan") {
           addPersonal({ title: a.title, date: a.date, start: a.start, end: a.end, category: "personal" });
@@ -250,10 +249,8 @@ export default function Assistant({ onShowDay, onShowOffer, onOpenAsk }: { onSho
   const pending = useStore((s) => waitingAsks(s.offers)[0]);
   const chips: [string, string, string][] = pending
     ? [
-        ["Take it", `${ANSWER}${pending.id}:accept`, "take"],
-        [`Not ${offerWhen(pending, nowIn(useStore.getState().settings.timeZone))}`, `${ANSWER}${pending.id}:decline`, "no"],
-        ["Another time", `${ANSWER}${pending.id}:negotiate`, "alt"],
-        ["Swap", `${ANSWER}${pending.id}:swap`, "swap"],
+        ["Accept", `${ANSWER}${pending.id}:accept`, "take"],
+        ["Decline", `${ANSWER}${pending.id}:decline`, "no"],
         ["Later", `${ANSWER}${pending.id}:later`, "later"],
       ]
     : [["Brief me", BRIEF, ""]];

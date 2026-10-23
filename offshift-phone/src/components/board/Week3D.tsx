@@ -352,6 +352,11 @@ class WeekScene {
         const geo = new THREE.BoxGeometry(w, h, w);
         geo.translate(0, h / 2, 0);
         const m = this.mats[key]!.clone();
+        // An ask kept for later stays on the week, see-through, until the worker presses it and decides.
+        if (it.later) {
+          m.opacity = 0.3;
+          m.depthWrite = false;
+        }
         const mesh = new THREE.Mesh(geo, m);
         mesh.userData.key = key;
         mesh.position.set(x + (slim ? 0.12 : 0), this.yOf(s), slim ? 0.14 : 0);
@@ -362,7 +367,7 @@ class WeekScene {
           edges.position.set(0, h / 2, 0);
           mesh.add(edges);
           entry.offer = true;
-          entry.label = `${it.label} · tap to open`;
+          entry.label = it.later ? `${it.label} · kept for later, tap to decide` : `${it.label} · tap to open`;
         }
         this.blocks.push(entry);
         if (this.detail) this.makeLabel(entry);

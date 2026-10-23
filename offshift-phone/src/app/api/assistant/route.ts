@@ -25,12 +25,12 @@ When asked for the briefing, say: the greeting, what is on today in order, any w
 
 When a new ask is announced, say who is asking, where and when, the main trade-off, and ask what they would like to do.
 
-When they decide on an ask (take it, another time, a swap, not this time, later), call respond_to_ask with the matching decision. Nothing is sent by you: the calendar opens the drafted reply for them to check and send, so say the draft is ready to look over and send. For later, say you'll remind them in half an hour and nothing was sent. If they sound unsure, don't pick for them: say there's no rush and ask which they'd like. When asked to add a plan, call add_plan. When asked about a day, call show_day and describe that day in a sentence. Days are real dates: use the dates in the context's week. If asked something outside Offshift, answer in one sentence and come back to the week.`;
+An ask has three answers: accept (the shift goes on their week), decline (it comes off their week) and later (it stays on their week, see-through, until they press it). No message is ever sent to the manager. When they decide on an ask, call respond_to_ask with the matching decision. You never answer for them: for accept or decline the calendar opens the ask and they press the button themselves, so say it's open and which button to press. For later, say it stays on their week and nothing was sent. If they sound unsure, don't pick for them: say there's no rush and ask which they'd like. When asked to add a plan, call add_plan. When asked about a day, call show_day and describe that day in a sentence. Days are real dates: use the dates in the context's week. If asked something outside Offshift, answer in one sentence and come back to the week.`;
 
 const tools: Anthropic.Tool[] = [
   {
     name: "respond_to_ask",
-    description: "Open the drafted reply to a pending shift ask on the worker's calendar, for them to check and send. Nothing is sent until they press Send. 'later' sets a reminder and sends nothing.",
+    description: "Open a pending shift ask on the worker's calendar so they can press Accept or Decline themselves. 'later' keeps it on the week, see-through, and changes nothing else. Nothing is ever sent to the manager.",
     strict: true,
     input_schema: {
       type: "object",
@@ -38,8 +38,8 @@ const tools: Anthropic.Tool[] = [
         offer_id: { type: "string", description: "The id of the pending ask from the context." },
         decision: {
           type: "string",
-          enum: ["accept", "negotiate", "swap", "decline", "later"],
-          description: "accept = take it; negotiate = offer another time; swap = ask a colleague to take it; decline = say no; later = set a reminder and send nothing.",
+          enum: ["accept", "decline", "later"],
+          description: "accept = they want the shift; decline = they don't; later = keep it on the week to decide later.",
         },
       },
       required: ["offer_id", "decision"],
@@ -84,7 +84,7 @@ function hasCredentials(): boolean {
   }
 }
 
-const DECISIONS: Decision[] = ["accept", "negotiate", "swap", "decline", "later"];
+const DECISIONS: Decision[] = ["accept", "decline", "later"];
 
 /** Only well-formed actions reach the calendar: real dates and times, a known decision, a short title. */
 function toAction(name: string, input: unknown): AssistantAction | null {
@@ -112,7 +112,7 @@ function userText(input: string, state: DataSlice): string {
   if (input.startsWith(ANSWER)) {
     const [id, decision] = input.slice(ANSWER.length).split(":");
     const o = state.offers.find((x) => x.id === id);
-    const words: Record<string, string> = { accept: "take it", decline: "say no", negotiate: "offer another time", swap: "ask for a swap", later: "decide later" };
+    const words: Record<string, string> = { accept: "accept it", decline: "decline it", later: "decide later" };
     return o ? `For ${o.from}'s ask (id ${o.id}), I'd like to ${words[decision] ?? decision}.` : "Never mind.";
   }
   if (input.startsWith(ANNOUNCE)) {

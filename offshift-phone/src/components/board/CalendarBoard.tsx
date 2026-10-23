@@ -26,7 +26,7 @@ const KINDS: { kind: string; label: string; cls: string }[] = [
 ];
 
 type SheetState = { type: "item"; target: ItemTarget } | { type: "settings" } | { type: "test-offer" } | null;
-type Undo = Removed | { kind: "moved"; id: string; title: string; from: DateKey; to: DateKey };
+type Undo = Removed | { kind: "moved"; id: string; title: string; from: DateKey; to: DateKey } | { kind: "answer"; offerId: string; text: string };
 
 function kindOf(it: DayItem): ItemKindChoice | null {
   if (it.kind === "shift") return "shift";
@@ -46,13 +46,13 @@ export default function CalendarBoard() {
   const removePersonal = useStore((s) => s.removePersonal);
   const updatePersonal = useStore((s) => s.updatePersonal);
   const restore = useStore((s) => s.restore);
-  const fireReminders = useStore((s) => s.fireReminders);
+  const unanswerOffer = useStore((s) => s.unanswerOffer);
   const clearToast = useStore((s) => s.clearToast);
 
   const [anchor, setAnchor] = useState<DateKey | null>(null);
   const [picked, setPicked] = useState<DateKey | null>(null);
   const [offerId, setOfferId] = useState<string | null>(null);
-  /** An answer to open the ask with, e.g. "decline" after the worker flicks the ask away. Changing `askKey` reopens it. */
+  /** An answer to point out when the ask opens, e.g. "decline" after the worker flicks the ask away. Changing `askKey` reopens it. */
   const [askChoice, setAskChoice] = useState<Exclude<Decision, "later"> | null>(null);
   const [askKey, setAskKey] = useState(0);
   const sideRef = useRef<HTMLElement>(null);
@@ -76,20 +76,6 @@ export default function CalendarBoard() {
   }, []);
 
   useEffect(() => {
-    // Only a screen someone can see shows a reminder; a hidden tab would use it up unseen.
-    const tick = () => {
-      if (document.visibilityState === "visible") fireReminders();
-    };
-    tick();
-    const t = setInterval(tick, 15_000);
-    document.addEventListener("visibilitychange", tick);
-    return () => {
-      clearInterval(t);
-      document.removeEventListener("visibilitychange", tick);
-    };
-  }, [fireReminders]);
-
-  useEffect(() => {
     if (!state.toast) return;
     const t = setTimeout(clearToast, state.toastMs || 4500);
     return () => clearTimeout(t);
@@ -106,6 +92,8 @@ export default function CalendarBoard() {
   const view = week.find((d) => d.date === selected)!;
   const clash = useMemo(() => clashes(state), [state.shifts, state.personal, state.uni]); // eslint-disable-line react-hooks/exhaustive-deps
   const pending = waitingAsks(state.offers);
+  /** New asks: the header pill. One kept for later waits quietly on the week instead. */
+  const fresh = pending.filter((o) => o.status === "pending");
   const offer = offerId ? state.offers.find((o) => o.id === offerId) : null;
   const weekIsEmpty = week.every((d) => d.items.every((it) => it.kind === "rest"));
   const nothingAtAll = !state.shifts.length && !state.uni.length && !state.personal.length;
@@ -166,7 +154,7 @@ export default function CalendarBoard() {
       }
     } else if (item.kind === "offer" && item.offerId) {
       const o = s.offers.find((x) => x.id === item.offerId);
-      // Nothing reaches a manager from a gesture: the drafted "no" opens for the worker to read and send.
+      // A flick never answers by itself: the ask opens with Decline pointed out, for the worker to press.
       if (o && (o.status === "pending" || o.status === "deferred")) openAsk(o.id, "decline");
     }
   }
@@ -261,9 +249,9 @@ export default function CalendarBoard() {
           ))}
         </div>
         <div className="board-actions">
-          {pending.length > 0 && (
-            <button className="status-pill lamp big" onClick={() => openAsk(pending[0].id)}>
-              {pending.length} ask{pending.length > 1 ? "s" : ""}
+          {fresh.length > 0 && (
+            <button className="status-pill lamp big" onClick={() => openAsk(fresh[0].id)}>
+              {fresh.length} ask{fresh.length > 1 ? "s" : ""}
             </button>
           )}
           <button className="btn" onClick={() => addItem()}>
@@ -331,7 +319,17 @@ export default function CalendarBoard() {
         </div>
         <aside className="board-side" aria-label={offer ? "Ask" : "Day"} ref={sideRef}>
           {offer ? (
-            <AskPanel key={askKey} offerId={offer.id} now={now} initialChoice={askChoice} onClose={() => setOfferId(null)} />
+            <AskPanel
+              key={askKey}
+              offerId={offer.id}
+              now={now}
+              suggested={askChoice}
+              onClose={() => setOfferId(null)}
+              onAnswered={(id, text) => {
+                setOfferId(null);
+                setUndo({ kind: "answer", offerId: id, text });
+              }}
+            />
           ) : (
             <>
               <div className="side-head">
@@ -384,10 +382,11 @@ export default function CalendarBoard() {
 
       {undo && (
         <div className="undo" role="status">
-          <span>{undo.kind === "moved" ? `Moved ${undo.title} to ${weekdayName(undo.to)}` : `Removed ${"workplace" in undo.item ? `${undo.item.workplace} shift` : undo.item.title}`}</span>
+          <span>{undo.kind === "answer" ? undo.text : undo.kind === "moved" ? `Moved ${undo.title} to ${weekdayName(undo.to)}` : `Removed ${"workplace" in undo.item ? `${undo.item.workplace} shift` : undo.item.title}`}</span>
           <button
             onClick={() => {
-              if (undo.kind === "moved") updatePersonal(undo.id, { date: undo.from });
+              if (undo.kind === "answer") unanswerOffer(undo.offerId);
+              else if (undo.kind === "moved") updatePersonal(undo.id, { date: undo.from });
               else restore(undo.kind, undo.item);
               setUndo(null);
             }}
@@ -443,11 +442,11 @@ function ListRow({ it, clash, onOpen }: { it: DayItem; clash?: string; onOpen: (
   const cls = it.kind === "shift" && (it.workplaceIndex ?? 0) % 2 === 1 ? "mcd" : it.kind;
   const time = it.kind === "due" ? `Due\n${clock12(it.start)}` : `${clock12(it.start)}\n${clock12(it.end)}`;
   return (
-    <button className={`cal-ev ${cls}`} onClick={onOpen} aria-label={`${it.label}, ${it.kind === "due" ? `due ${clock12(it.start)}` : `${clock12(it.start)} to ${clock12(it.end)}`}${it.kind === "offer" ? ". Open the ask" : ". Change it"}`}>
+    <button className={`cal-ev ${cls}${it.later ? " later" : ""}`} onClick={onOpen} aria-label={`${it.label}, ${it.kind === "due" ? `due ${clock12(it.start)}` : `${clock12(it.start)} to ${clock12(it.end)}`}${it.kind === "offer" ? ". Open the ask" : ". Change it"}`}>
       <span className="tm">{time}</span>
       <span className="ev-body">
         <b>{it.label}</b>
-        <span className="src">{it.kind === "offer" ? "Ask · open it" : it.status || it.source}</span>
+        <span className="src">{it.kind === "offer" ? (it.later ? "Kept for later · press to decide" : "Ask · open it") : it.status || it.source}</span>
         {it.warn && <span className="warn-tag">{it.warn}</span>}
         {clash && <span className="clash">Clashes with {clash}</span>}
       </span>

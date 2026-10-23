@@ -87,13 +87,12 @@ describe("merging settings and answers", () => {
     const client = { ...base, settings: { ...base.settings, protectedIds: ["b"] } };
     expect(mergeData(base, server, client).settings.protectedIds).toEqual(["b", "c"]);
   });
-  it("lets the first answer to an ask stand, and drops the second device's reply and shift", () => {
+  it("lets the first answer to an ask stand, and drops the second device's shift and log line", () => {
     const base = week();
-    const watch = applyResponse(base, "o-thu", "decline", "Not tonight, sorry.", {}, AT)!.data;
-    const calendar = applyResponse(base, "o-thu", "accept", "Yes, I can.", {}, AT)!.data;
+    const watch = applyResponse(base, "o-thu", "decline", AT)!.data;
+    const calendar = applyResponse(base, "o-thu", "accept", AT)!.data;
     const merged = mergeData(base, watch, calendar);
     expect(merged.offers[0].status).toBe("declined");
-    expect(merged.messages.filter((m) => m.offerId === "o-thu").map((m) => m.text)).toEqual(["Not tonight, sorry."]);
     expect(merged.shifts.some((s) => s.viaOffer === "o-thu")).toBe(false);
     expect(merged.sync.filter((e) => e.offerId === "o-thu").map((e) => e.text)).toEqual(["Declined Thu 22 Oct 4–9 pm."]);
   });

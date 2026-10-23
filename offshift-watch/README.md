@@ -34,7 +34,7 @@ The endpoint is compiled into the release. An old saved `baseUrl` setting cannot
 
 Set the unplugged watch to **Watch Settings → System → Advanced → USB Mode → MTP**, reconnect it and allow the Mac accessory if asked. Back up the existing Offshift PRG before replacing it. On macOS use an MTP client such as libmtp to access `GARMIN/Apps`; MTP storage may not appear in Finder. Copy only the new Offshift program, leaving other apps, activities and firmware alone.
 
-After unplugging, open Offshift with the paired phone online and Garmin Connect available. On Calendar, check the last successful sync. Send a test ask, cancel a reply once, then explicitly confirm a reply and verify it on the calendar/team page. Obtain consent before checking real sensor delivery. A new signing key may cause the watch to treat this as a fresh install and ask about sharing again.
+After unplugging, open Offshift with the paired phone online and Garmin Connect available. On Calendar, check the last successful sync. Send a test ask from the calendar, cancel an answer once, then confirm Accept and check the shift appears on the calendar. Obtain consent before checking real sensor delivery. A new signing key may cause the watch to treat this as a fresh install and ask about sharing again.
 
 **Installation status, 19 October 2026:** installed on the actual fēnix 8 47mm. No existing PRG was exposed in the visible Apps listing; existing files were preserved. That listing does not establish whether Offshift was already installed. The 37,420-byte program downloaded back from the watch has exactly the same SHA-256 as the release. The owner confirms Offshift opens, currently reporting “Phone not connected.” The paired-phone communication bridge is being checked; real sensor delivery is not yet verified.
 
@@ -63,7 +63,7 @@ Use **Settings → Glance Launch Mode → Launch in Normal Mode** for the full a
 
 ## Pages and controls
 
-Up/Down or a swipe moves between Ask, Around it/Today, Body and Calendar. Select on the first two pages opens the five answers; a manager reply requires confirmation. Decide later sets a reminder without sending the manager a message. Select on Body or Calendar opens reading details, sources and the sharing switch.
+Up/Down or a swipe moves between Ask, Around it/Today, Body and Calendar. Select on the first two pages opens the three answers: Accept and Decline each ask for confirmation, and Decide later keeps the ask, marked "Saved for later". No answer sends the manager a message. Select on Body or Calendar opens reading details, sources and the sharing switch.
 
 The calendar page shows the last successful sync and sharing choice. A failed answer retains the ask for retry. A successful answer clears an old offline status. An access-code error is shown without exposing the private endpoint.
 

@@ -4,7 +4,7 @@ import { SCHEMA, type DataSlice, type Settings } from "./types";
 import { cleanData } from "./validate";
 
 export function defaultSettings(): Settings {
-  return { name: "", tone: "warm", restDays: [], protectedIds: [], lateFinish: "21:00", lateFinishesBeforeFlag: 2, timeZone: DEFAULT_TIME_ZONE };
+  return { name: "", restDays: [], protectedIds: [], lateFinish: "21:00", lateFinishesBeforeFlag: 2, timeZone: DEFAULT_TIME_ZONE };
 }
 
 /** A clean calendar for the next participant: nothing from the last session carries over. */

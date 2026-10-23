@@ -90,7 +90,10 @@ const plan = object({
   category: optional(oneOf(["study", "personal", "rest", "appointment", "custom"])),
   importance: optional(oneOf(["flexible", "important", "protected"])),
 });
-const alt = object({ date, start: clock, end: clock, label: text(80) });
+/** Answers saved before 23 Oct 2026, when an ask could also get another time or a swap: the worker didn't take the asked shift, unless the other time was confirmed. */
+const OLD_STATUS: Record<string, string> = { countered: "declined", "swap-requested": "declined", swapped: "declined", "alt-confirmed": "accepted" };
+const answered = oneOf(["pending", "deferred", "accepted", "declined"]);
+const status: Clean = (v) => answered(typeof v === "string" && Object.hasOwn(OLD_STATUS, v) ? OLD_STATUS[v] : v);
 const offer = object({
   id,
   from: text(40, true),
@@ -100,18 +103,13 @@ const offer = object({
   end: clock,
   note: text(1000),
   sentAt: iso,
-  status: oneOf(["pending", "deferred", "accepted", "declined", "countered", "alt-confirmed", "swap-requested", "swapped"]),
-  alt: optional(alt),
-  colleague: optional(text(40)),
-  reminderAt: optional(iso),
-  reminded: optional(check((v) => typeof v === "boolean")),
+  status,
   repliedAt: optional(iso),
 });
 const message = object({ id, offerId: optional(id), from: oneOf(["team", "worker"]), text: text(2000), at: iso });
 const entry = object({ id, at: iso, from: text(40), to: text(40), text: text(500), offerId: optional(id) });
 const settings = object({
   name: text(40),
-  tone: oneOf(["warm", "plain"]),
   restDays: check((v) => Array.isArray(v) && v.length <= 7 && new Set(v).size === v.length && v.every((d) => (DAYS as string[]).includes(d))),
   protectedIds: check((v) => Array.isArray(v) && v.length <= 1000 && v.every((x) => typeof x === "string" && x.length <= 80)),
   lateFinish: clock,

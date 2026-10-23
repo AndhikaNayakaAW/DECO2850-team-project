@@ -15,7 +15,7 @@ function allStrings(v: unknown): string[] {
 describe("what the watch receives", () => {
   it("summarises the waiting ask in short plain-text lines", () => {
     const s = watchSummary(week(), AT);
-    expect(s.ask).toMatchObject({ id: "o-thu", from: "Alex", employer: "Cafe", day: "Thu", when: "tonight", time: "4-9 pm", alt: "Fri 4-9 pm", swap: "Someone else", status: "pending", reminder: null });
+    expect(s.ask).toMatchObject({ id: "o-thu", from: "Alex", employer: "Cafe", day: "Thu", when: "tonight", time: "4-9 pm", alt: "Not offered", swap: "No one", status: "pending", reminder: null });
     expect(s.ask!.week).toEqual(["7:30pm clash: Dinner with a friend", "60 min after Tutorial 3pm", "Fri starts 10am"]);
     expect(s.clock).toBe("13:02");
   });
@@ -40,16 +40,16 @@ describe("what the watch receives", () => {
 });
 
 describe("answers from the wrist", () => {
-  it("declining from the watch records the drafted reply and clears the ask", () => {
+  it("declining from the watch sends no message and clears the ask", () => {
     const r = applyWatchAnswer(week(), "o-thu", "decline", AT)!;
-    expect(r.data.messages.at(-1)?.text).toContain("I can't do tonight");
+    expect(r.data.messages).toEqual(week().messages);
     const s = watchSummary(r.data, AT);
     expect(s.ask).toBeNull();
     expect(s.replied).toMatchObject({ from: "Alex", status: "Declined" });
   });
-  it("deciding later keeps the ask on the watch with its reminder time", () => {
+  it("deciding later keeps the ask on the watch, marked as kept for later", () => {
     const s = watchSummary(applyWatchAnswer(week(), "o-thu", "later", AT)!.data, AT);
-    expect(s.ask).toMatchObject({ status: "deferred", reminder: "1:32 pm" });
+    expect(s.ask).toMatchObject({ status: "deferred", reminder: "later" });
   });
 });
 
@@ -112,7 +112,7 @@ describe("watch text and order", () => {
     expect(s.ask).toMatchObject({ from: "Your manager", employer: "Cafe" });
   });
   it("shows a new ask before one the worker is deciding later", () => {
-    const deferred = ask({ id: "o-old", status: "deferred", sentAt: "2026-10-22T01:00:00.000Z", reminderAt: "2026-10-22T04:00:00.000Z" });
+    const deferred = ask({ id: "o-old", status: "deferred", sentAt: "2026-10-22T01:00:00.000Z" });
     expect(watchSummary({ ...week(), offers: [deferred, ask()] }, AT).ask?.id).toBe("o-thu");
   });
   it("forgets the logged readings too when sharing is turned off", () => {

@@ -23,6 +23,6 @@ function confirmingAnAnswerNeverSaysSend(logger as Test.Logger) as Boolean {
 function anAskSavedForLaterSaysSoInsteadOfAReminder(logger as Test.Logger) as Boolean {
     Test.assertEqual(askHint((ask(true) as Dictionary)["ask"] as Dictionary), "Saved for later");
     Test.assertEqual(askHint((ask(false) as Dictionary)["ask"] as Dictionary), "Press to answer");
-    Test.assertEqual(askHint(null), null);
+    Test.assert(askHint(null) == null);
     return true;
 }

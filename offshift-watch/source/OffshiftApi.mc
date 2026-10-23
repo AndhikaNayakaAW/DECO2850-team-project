@@ -38,7 +38,7 @@ class OffshiftApi {
         enqueue(new PendingRequest(Communications.HTTP_REQUEST_METHOD_GET, null, callback));
     }
 
-    //! Sends one of: accept, negotiate, swap, decline, later.
+    //! Sends one of: accept, decline, later.
     function answer(offerId as String, decision as String, callback as ResponseCallback) as Void {
         enqueue(new PendingRequest(Communications.HTTP_REQUEST_METHOD_POST, { "answer" => { "offerId" => offerId, "decision" => decision } }, callback));
     }

@@ -1,37 +1,50 @@
 import Toybox.Lang;
 import Toybox.WatchUi;
 
-//! The same five answers as the phone, each sent only after a confirmation.
+//! The same three answers as the calendar: label, line under it, and the answer the server takes.
+function answerChoices(ask as Dictionary) as Array {
+    var choices = [
+        ["Accept", "Puts it on your week", "accept"],
+        ["Decline", "Takes it off your week", "decline"]
+    ];
+    if (!"deferred".equals(ask["status"])) {
+        choices.add(["Decide later", "Stays on your week", "later"]);
+    }
+    return choices;
+}
+
+//! What the watch asks before an answer changes the week. Nothing is sent to the manager.
+function answerPrompt(decision as String) as String {
+    return "accept".equals(decision) ? "Add this shift to your week?" : "Decline this shift?";
+}
+
 function pushAnswerMenu(model as OffshiftModel, ask as Dictionary) as Void {
-    var from = ask["from"] as String;
-    var menu = new WatchUi.Menu2({ :theme => WatchUi.MENU_THEME_GREEN, :title => "Answer " + from });
-    menu.addItem(new WatchUi.MenuItem("Take it", "Adds it to your week", "accept", null));
-    menu.addItem(new WatchUi.MenuItem("Another time", ask["alt"] as String, "negotiate", null));
-    menu.addItem(new WatchUi.MenuItem("Ask for a swap", (ask["swap"] as String) + " could take it", "swap", null));
-    menu.addItem(new WatchUi.MenuItem("Not " + (ask["when"] as String), "Honest, no excuse", "decline", null));
-    menu.addItem(new WatchUi.MenuItem("Decide later", "Reminder, nothing sent", "later", null));
-    WatchUi.pushView(menu, new AnswerMenuDelegate(model, from), WatchUi.SLIDE_UP);
+    var menu = new WatchUi.Menu2({ :theme => WatchUi.MENU_THEME_GREEN, :title => "Answer " + (ask["from"] as String) });
+    var choices = answerChoices(ask);
+    for (var i = 0; i < choices.size(); i++) {
+        var c = choices[i] as Array;
+        menu.addItem(new WatchUi.MenuItem(c[0] as String, c[1] as String, c[2] as String, null));
+    }
+    WatchUi.pushView(menu, new AnswerMenuDelegate(model), WatchUi.SLIDE_UP);
 }
 
 class AnswerMenuDelegate extends WatchUi.Menu2InputDelegate {
     private var _model as OffshiftModel;
-    private var _from as String;
 
-    function initialize(model as OffshiftModel, from as String) {
+    function initialize(model as OffshiftModel) {
         Menu2InputDelegate.initialize();
         _model = model;
-        _from = from;
     }
 
     function onSelect(item as MenuItem) as Void {
         var decision = item.getId() as String;
         WatchUi.popView(WatchUi.SLIDE_IMMEDIATE);
+        // Later only changes how the ask looks, so it needs no confirmation.
         if ("later".equals(decision)) {
             _model.answer(decision);
             return;
         }
-        var prompt = "Send \"" + (item.getLabel() as String) + "\" to " + _from + "?";
-        WatchUi.pushView(new WatchUi.Confirmation(prompt), new SendConfirmDelegate(_model, decision), WatchUi.SLIDE_IMMEDIATE);
+        WatchUi.pushView(new WatchUi.Confirmation(answerPrompt(decision)), new SendConfirmDelegate(_model, decision), WatchUi.SLIDE_IMMEDIATE);
     }
 
     function onBack() as Void {

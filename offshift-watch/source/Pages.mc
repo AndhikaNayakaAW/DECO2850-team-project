@@ -161,13 +161,8 @@ class AskPage extends Page {
         return rows;
     }
 
-    //! While deciding later, the reminder takes the hint's place; pressing still answers.
     function hint() as String? {
-        var ask = _model.ask();
-        if (ask == null) {
-            return null;
-        }
-        return "deferred".equals(ask["status"]) ? "Reminder " + (ask["reminder"] as String) : "Press to answer";
+        return askHint(_model.ask());
     }
 
 }
@@ -292,4 +287,12 @@ class PageDelegate extends WatchUi.BehaviorDelegate {
         pushBodyMenu(_model);
         return true;
     }
+}
+
+//! The line under an ask: an ask kept for later says so, and pressing still answers.
+function askHint(ask as Dictionary?) as String? {
+    if (ask == null) {
+        return null;
+    }
+    return "deferred".equals(ask["status"]) ? "Saved for later" : "Press to answer";
 }

@@ -34,7 +34,7 @@ describe("/api/watch", () => {
     expect(res.status).toBe(200);
     expect(j.ask).toBeNull();
     expect(j.v).toBe(1);
-    expect(j.toast).toContain("Alex");
+    expect(j.toast).toBe("Declined. Thursday stays as it is.");
   });
   it("rejects answers it doesn't understand", async () => {
     expect((await post({ answer: { offerId: "o-thu", decision: "maybe" } })).status).toBe(400);

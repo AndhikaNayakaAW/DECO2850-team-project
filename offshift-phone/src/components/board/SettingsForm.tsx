@@ -4,22 +4,21 @@ import { useState } from "react";
 import { DAYS, DAY_NAMES } from "@/lib/logic";
 import { useStore } from "@/lib/store";
 import { isClock } from "@/lib/time";
-import type { Day, Tone } from "@/lib/types";
+import type { Day } from "@/lib/types";
 
-/** The worker's own settings: their name, the days they keep clear, how replies sound, and what counts as a late finish. */
+/** The worker's own settings: their name, the days they keep clear, and what counts as a late finish. */
 export default function SettingsForm({ onDone }: { onDone: () => void }) {
   const settings = useStore((s) => s.settings);
   const update = useStore((s) => s.updateSettings);
-  const [opened] = useState(() => ({ name: settings.name, restDays: DAYS.filter((d) => settings.restDays.includes(d)), tone: settings.tone, lateFinish: settings.lateFinish }));
+  const [opened] = useState(() => ({ name: settings.name, restDays: DAYS.filter((d) => settings.restDays.includes(d)), lateFinish: settings.lateFinish }));
   const [name, setName] = useState(settings.name);
   const [restDays, setRestDays] = useState<Day[]>(settings.restDays);
-  const [tone, setTone] = useState<Tone>(settings.tone);
   const [lateFinish, setLateFinish] = useState(settings.lateFinish);
 
   function save(e: React.FormEvent) {
     e.preventDefault();
     // Only what changed here, so a name the team set meanwhile isn't put back.
-    const next = { name: name.trim().slice(0, 30), restDays: DAYS.filter((d) => restDays.includes(d)), tone, lateFinish: isClock(lateFinish) ? lateFinish : settings.lateFinish };
+    const next = { name: name.trim().slice(0, 30), restDays: DAYS.filter((d) => restDays.includes(d)), lateFinish: isClock(lateFinish) ? lateFinish : settings.lateFinish };
     const patch = Object.fromEntries(Object.entries(next).filter(([k, v]) => JSON.stringify(v) !== JSON.stringify(opened[k as keyof typeof opened])));
     if (Object.keys(patch).length) update(patch);
     onDone();
@@ -29,7 +28,7 @@ export default function SettingsForm({ onDone }: { onDone: () => void }) {
     <form className="item-form" onSubmit={save}>
       <div className="field full">
         <label htmlFor="set-name">Your first name (optional)</label>
-        <input id="set-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={30} autoComplete="given-name" placeholder="Used in greetings and drafted replies" />
+        <input id="set-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={30} autoComplete="given-name" placeholder="Used in greetings" />
       </div>
       <div className="field full">
         <span className="label">Days you keep clear</span>
@@ -42,16 +41,6 @@ export default function SettingsForm({ onDone }: { onDone: () => void }) {
               </button>
             );
           })}
-        </div>
-      </div>
-      <div className="field">
-        <span className="label">Replies sound</span>
-        <div className="seg" role="radiogroup" aria-label="Replies sound">
-          {(["warm", "plain"] as Tone[]).map((t) => (
-            <button type="button" key={t} role="radio" aria-checked={tone === t} className={tone === t ? "on" : ""} onClick={() => setTone(t)}>
-              {t === "warm" ? "Warm" : "Plain"}
-            </button>
-          ))}
         </div>
       </div>
       <div className="field">

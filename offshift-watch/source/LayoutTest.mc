@@ -21,7 +21,7 @@ function everyPageFitsWithNothingWaiting(logger as Test.Logger) as Boolean {
         "ask" => null,
         "waiting" => 0,
         "today" => ["1pm Tute - INFS2200", "7:30pm Dinner with Ayu"],
-        "replied" => { "from" => "Jess", "time" => "4-9 pm", "status" => "Another time offered" }
+        "replied" => { "from" => "Jess", "time" => "4-9 pm", "status" => "Taken" }
     };
     return pagesFit(logger, summary, {} as Dictionary<String, Number or Null>);
 }

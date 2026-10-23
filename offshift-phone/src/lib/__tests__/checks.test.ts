@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { altSlots, bodyCheck, bodyTile, buildWeek, clashes, dayItems, draftFor, isLateFinish, offerChecks, replyDraft, weekCheck, workplacesOf } from "@/lib/checks";
+import { bodyCheck, bodyTile, buildWeek, clashes, dayItems, isLateFinish, offerChecks, weekCheck, workplacesOf } from "@/lib/checks";
 import { NOW, ask, week } from "./fixture";
 
 describe("the checks on an ask", () => {
@@ -40,25 +40,6 @@ describe("the checks on an ask", () => {
   });
 });
 
-describe("alternatives and replies", () => {
-  it("offers free windows in the next days, then the same time next week", () => {
-    expect(altSlots(ask(), week(), NOW).map((a) => a.label)).toEqual(["Fri 4–9 pm", "Sat 5–10 pm", "Thu 29 Oct 4–9 pm"]);
-  });
-  it("declines honestly without naming the worker's plans, and wishes Mia well", () => {
-    const d = replyDraft(ask(), "decline", week(), NOW);
-    expect(d.warm).toBe("Hi Alex, thanks for thinking of me. I can't do tonight. I've got plans I can't move. Hope Mia feels better soon.");
-    expect(draftFor(d, "plain")).toBe("Hi Alex, I can't do tonight, sorry. I've got plans I can't move. Hope Mia's okay.");
-  });
-  it("accepting mentions class finishing first, by its kind only", () => {
-    expect(replyDraft(ask(), "accept", week(), NOW).warm).toBe("Hi Alex, yes, I can do tonight. My class finishes at 3 pm, so I'll be there for 4 pm.");
-  });
-  it("another time names the slot, a swap names someone only if the worker does", () => {
-    expect(replyDraft(ask(), "negotiate", week(), NOW).warm).toContain("I could do Friday 4–9 pm if that helps.");
-    expect(replyDraft(ask(), "swap", week(), NOW).warm).toBe("Hi Alex, I can't do tonight. I'm happy to ask around the team to see if someone can swap. Hope Mia feels better soon.");
-    expect(replyDraft(ask(), "swap", week(), NOW, { colleague: "Priya" }).plain).toBe("Hi Alex, can't do tonight. Priya can take it if that's okay.");
-  });
-});
-
 describe("the week", () => {
   it("builds Monday to Sunday with real dates, today marked and the rest day kept", () => {
     const days = buildWeek(week(), "2026-10-22", NOW);
@@ -86,30 +67,6 @@ describe("the week", () => {
   });
 });
 
-describe("what a drafted reply may say", () => {
-  const plan = (title: string) => ({ ...week(), personal: [{ id: "p-x", date: "2026-10-22", start: "17:00", end: "18:00", title, category: "appointment" as const, importance: "protected" as const }] });
-  it("never names a plan, and never gives a reason from the body", () => {
-    const watch = { ...plan("Psychologist appointment"), wearable: { level: 0 as const, word: "Very low", at: "12:00", source: "Garmin", signals: { energy: 0 as const, sleep: 0 as const } } };
-    for (const decision of ["decline", "accept", "negotiate", "swap"] as const) {
-      const d = replyDraft(ask(), decision, watch, NOW);
-      expect(`${d.warm} ${d.plain}`).not.toMatch(/psychologist|appointment|rest|tired|long days|sleep|watch|dinner/i);
-    }
-  });
-  it("never calls a rest day a day off when the worker is rostered on it", () => {
-    const rostered = { ...week(), shifts: [...week().shifts, { id: "s-sun", date: "2026-10-25", start: "08:00", end: "12:00", workplace: "Café" }] };
-    const sunday = ask({ date: "2026-10-25", start: "14:00", end: "18:00" });
-    expect(replyDraft(sunday, "decline", rostered, NOW).warm).not.toMatch(/day off/);
-    expect(replyDraft(sunday, "decline", week(), NOW).warm).toContain("Sunday's my day off.");
-    expect(bodyCheck(sunday, rostered, NOW).text).not.toMatch(/nothing else lands on it/);
-  });
-  it("gives a reason by its kind only", () => {
-    const working = { ...week(), personal: [], shifts: [...week().shifts, { id: "s-x", date: "2026-10-22", start: "15:00", end: "18:00", workplace: "Bar" }] };
-    expect(replyDraft(ask(), "decline", working, NOW).warm).toContain("I'm already working then.");
-    const studying = { ...week(), personal: [], uni: [{ id: "u-x", date: "2026-10-22", start: "17:00", end: "19:00", title: "Lab", type: "class" as const }] };
-    expect(replyDraft(ask(), "decline", studying, NOW).warm).toContain("I've got class then.");
-  });
-});
-
 describe("checks keep reading right", () => {
   it("flags a clash on a rest day", () => {
     const data = { ...week(), personal: [{ id: "p-sun", date: "2026-10-25", start: "12:00", end: "15:00", title: "Lunch", category: "personal" as const, importance: "flexible" as const }] };
@@ -133,15 +90,6 @@ describe("checks keep reading right", () => {
     expect(isLateFinish({ start: "09:00", end: "13:00" }, { lateFinish: "00:30" })).toBe(false);
     expect(isLateFinish({ start: "18:00", end: "01:00" }, { lateFinish: "00:30" })).toBe(true);
     expect(isLateFinish({ start: "16:00", end: "00:00" }, { lateFinish: "21:00" })).toBe(true);
-  });
-  it("names a time a week or more away by its date, and never offers one that has passed", () => {
-    const mon = { date: "2026-10-19", time: "10:00" };
-    const saturdayNight = ask({ date: "2026-10-24", start: "22:00", end: "06:00" });
-    expect(altSlots(saturdayNight, week(), mon).some((a) => a.date === "2026-10-31")).toBe(false);
-    const old = ask({ date: "2026-10-01", start: "16:00", end: "21:00" });
-    expect(altSlots(old, week(), NOW).every((a) => a.date >= NOW.date)).toBe(true);
-    const labels = altSlots(ask({ date: "2026-10-24", start: "10:00", end: "14:00" }), { ...week(), settings: { ...week().settings, restDays: [] } }, mon).map((a) => a.label);
-    expect(labels.some((l) => l.startsWith("Mon 26 Oct"))).toBe(true);
   });
   it("lets a reading from the watch go quiet after twelve hours", () => {
     const at = "2026-10-21T20:00:00.000Z"; // Thursday 6 am in Brisbane

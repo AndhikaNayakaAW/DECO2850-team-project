@@ -65,10 +65,8 @@ function noteOverridden(before: DataSlice | null, mine: DataSlice, merged: DataS
     // Only an ask that was waiting, and that this device answered.
     if (isOpen(o.status) || !isOpen(before?.offers.find((x) => x.id === o.id)?.status)) continue;
     const now = merged.offers.find((x) => x.id === o.id);
-    const reply = mine.messages.find((m) => m.offerId === o.id && m.from === "worker" && !before?.messages.some((b) => b.id === m.id));
-    const lost = !!reply && !merged.messages.some((m) => m.id === reply.id);
-    if (now && lost) {
-      useStore.getState().showToast(`${o.from}'s ask was already answered on another device${now.status !== o.status ? ` (${STATUS[now.status]})` : ""}, so your reply wasn't sent.`);
+    if (now && now.status !== o.status) {
+      useStore.getState().showToast(`${o.from}'s ask was already answered on another device (${STATUS[now.status]}), so your answer wasn't saved.`);
       return;
     }
   }

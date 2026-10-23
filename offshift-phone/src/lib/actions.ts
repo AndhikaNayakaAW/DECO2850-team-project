@@ -1,14 +1,7 @@
-import { altSlots } from "./checks";
 import { uid } from "./ids";
-import { clock12, range12 } from "./logic";
+import { range12 } from "./logic";
 import { isClock, isDateKey, nowIn, shortDate, weekdayName, whenWord } from "./time";
-import type { AltSlot, DataSlice, Decision, Offer, SyncEntry } from "./types";
-
-export interface ResponseExtras {
-  alt?: AltSlot;
-  colleague?: string;
-  reminderMinutes?: number;
-}
+import type { DataSlice, Decision, Offer, SyncEntry } from "./types";
 
 function logLine(at: Date, from: string, to: string, text: string, offerId?: string): SyncEntry {
   return { id: uid("y"), at: at.toISOString(), from, to, text, ...(offerId ? { offerId } : {}) };
@@ -16,51 +9,48 @@ function logLine(at: Date, from: string, to: string, text: string, offerId?: str
 
 /**
  * Answers an ask without touching the input: the calendar, the watch and the server all use this,
- * so a reply from any of them changes the shared week the same way.
+ * so an answer from any of them changes the shared week the same way. No answer sends a message.
  */
-export function applyResponse(data: DataSlice, offerId: string, decision: Decision, text: string, extras: ResponseExtras = {}, at: Date = new Date()): { data: DataSlice; toast: string } | null {
+export function applyResponse(data: DataSlice, offerId: string, decision: Decision, at: Date = new Date()): { data: DataSlice; toast: string } | null {
   const offer = data.offers.find((o) => o.id === offerId);
   if (!offer || (offer.status !== "pending" && offer.status !== "deferred")) return null;
-  const now = nowIn(data.settings.timeZone, at);
   const what = `${shortDate(offer.date)} ${range12(offer.start, offer.end)}`;
-  const reply = () => [...data.messages, { id: uid("m"), offerId, from: "worker" as const, text, at: at.toISOString() }];
-  let next: Offer = { ...offer, repliedAt: at.toISOString() };
-  let messages = data.messages;
-  let sync = data.sync;
+  let next: Offer;
   let shifts = data.shifts;
-  let toast = "";
-  if (decision === "later") {
-    const mins = extras.reminderMinutes || 30;
-    const due = new Date(at.getTime() + mins * 60_000);
-    const clock = clock12(nowIn(data.settings.timeZone, due).time);
-    next = { ...offer, status: "deferred", reminderAt: due.toISOString(), reminded: false };
-    sync = [...sync, logLine(at, "Offshift", "Only you", `Reminder set for ${clock}. Nothing sent to ${offer.from}.`, offerId)];
-    toast = `Reminder set for ${clock}. Nothing sent.`;
-  } else if (decision === "accept") {
-    next = { ...next, status: "accepted" };
+  let line: string;
+  let toast: string;
+  if (decision === "accept") {
+    next = { ...offer, status: "accepted", repliedAt: at.toISOString() };
     shifts = [...shifts, { id: uid("s"), date: offer.date, start: offer.start, end: offer.end, workplace: offer.workplace, viaOffer: offerId }];
-    messages = reply();
-    sync = [...sync, logLine(at, "Offshift", offer.from, `Took ${what} at ${offer.workplace}. Added to the week.`, offerId)];
-    toast = `Sent to ${offer.from}. Added to your week.`;
+    line = `Took ${what} at ${offer.workplace}. Added to the week.`;
+    toast = `Added to your week.`;
   } else if (decision === "decline") {
-    next = { ...next, status: "declined" };
-    messages = reply();
-    sync = [...sync, logLine(at, "Offshift", offer.from, `Declined ${what}.`, offerId)];
-    toast = `Sent to ${offer.from}. ${weekdayName(offer.date)} stays as it is.`;
-  } else if (decision === "negotiate") {
-    const alt = extras.alt || altSlots(offer, data, now)[0];
-    next = { ...next, status: "countered", alt };
-    messages = reply();
-    sync = [...sync, logLine(at, "Offshift", offer.from, alt ? `Offered ${alt.label} instead of ${what}.` : `Offered another time instead of ${what}.`, offerId)];
-    toast = alt ? `Sent to ${offer.from}: ${alt.label} instead.` : `Sent to ${offer.from}.`;
-  } else if (decision === "swap") {
-    const who = extras.colleague?.trim() || undefined;
-    next = { ...next, status: "swap-requested", colleague: who };
-    messages = reply();
-    sync = [...sync, logLine(at, "Offshift", offer.from, who ? `Suggested ${who} for ${what}.` : `Offered to find a swap for ${what}.`, offerId)];
-    toast = `Sent to ${offer.from}. Waiting on a reply.`;
+    next = { ...offer, status: "declined", repliedAt: at.toISOString() };
+    line = `Declined ${what}.`;
+    toast = `Declined. ${weekdayName(offer.date)} stays as it is.`;
+  } else if (decision === "later") {
+    next = { ...offer, status: "deferred" };
+    line = `Kept ${what} for later.`;
+    toast = "Kept for later. Press it on your week when you're ready.";
+  } else {
+    return null;
   }
-  return { data: { ...data, offers: data.offers.map((o) => (o.id === offerId ? next : o)), messages, sync, shifts }, toast };
+  // Deciding later is the worker's own business: the team view never learns of it.
+  const to = decision === "later" ? "Only you" : offer.from;
+  return { data: { ...data, offers: data.offers.map((o) => (o.id === offerId ? next : o)), shifts, sync: [...data.sync, logLine(at, "Offshift", to, line, offerId)] }, toast };
+}
+
+/** Undo for an answer: the ask waits again, and a shift it put on the week comes off. */
+export function unanswer(data: DataSlice, offerId: string, at: Date = new Date()): DataSlice {
+  const offer = data.offers.find((o) => o.id === offerId);
+  if (!offer || offer.status === "pending") return data;
+  const { repliedAt: _, ...waiting } = offer;
+  return {
+    ...data,
+    offers: data.offers.map((o) => (o.id === offerId ? { ...waiting, status: "pending" } : o)),
+    shifts: data.shifts.filter((s) => s.viaOffer !== offerId),
+    sync: [...data.sync, logLine(at, "Offshift", offer.from, `Answer undone. ${shortDate(offer.date)} ${range12(offer.start, offer.end)} is waiting again.`, offerId)],
+  };
 }
 
 export interface AskInput {
@@ -104,29 +94,4 @@ export function sendAsk(data: DataSlice, input: AskInput, at: Date = new Date())
       sync: [...data.sync, logLine(at, offer.from, "Offshift", `Ask for ${shortDate(offer.date)} ${range12(offer.start, offer.end)} at ${offer.workplace}.`)],
     },
   };
-}
-
-/** The manager's side of a counter-offer or swap, played by the team. */
-export function resolveAsk(data: DataSlice, offerId: string, action: "confirm-alt" | "approve-swap", at: Date = new Date()): DataSlice {
-  const offer = data.offers.find((o) => o.id === offerId);
-  if (!offer) return data;
-  if (action === "confirm-alt" && offer.status === "countered" && offer.alt) {
-    const alt = offer.alt;
-    return {
-      ...data,
-      offers: data.offers.map((o) => (o.id === offerId ? { ...o, status: "alt-confirmed" } : o)),
-      shifts: [...data.shifts, { id: uid("s"), date: alt.date, start: alt.start, end: alt.end, workplace: offer.workplace, viaOffer: offerId }],
-      messages: [...data.messages, { id: uid("m"), offerId, from: "team", text: `Thanks, ${alt.label} works.`, at: at.toISOString() }],
-      sync: [...data.sync, logLine(at, offer.from, "Offshift", `${alt.label} confirmed. Added to the week.`)],
-    };
-  }
-  if (action === "approve-swap" && offer.status === "swap-requested") {
-    return {
-      ...data,
-      offers: data.offers.map((o) => (o.id === offerId ? { ...o, status: "swapped" } : o)),
-      messages: [...data.messages, { id: uid("m"), offerId, from: "team", text: "Thanks for sorting the swap.", at: at.toISOString() }],
-      sync: [...data.sync, logLine(at, offer.from, "Offshift", "Swap approved. Nothing changes in the week.")],
-    };
-  }
-  return data;
 }

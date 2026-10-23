@@ -15,24 +15,25 @@ describe("the shared calendar", () => {
 
   it("turns an accepted ask into a shift and takes the amber block off the day", () => {
     expect(dayItems(data(), "2026-10-22").some((it) => it.kind === "offer")).toBe(true);
-    useStore.getState().respondToOffer("o-thu", "accept", "Yes, I can do tonight.");
+    useStore.getState().respondToOffer("o-thu", "accept");
     expect(data().offers[0].status).toBe("accepted");
     const thu = dayItems(data(), "2026-10-22");
     expect(thu.some((it) => it.kind === "offer")).toBe(false);
     expect(thu.find((it) => it.kind === "shift")).toMatchObject({ start: "16:00", end: "21:00", workplace: "Café" });
-    expect(useStore.getState().toast).toBe("Sent to Alex. Added to your week.");
+    expect(useStore.getState().toast).toBe("Added to your week.");
   });
-  it("reminds the worker once when a deferred ask comes due", () => {
-    useStore.getState().respondToOffer("o-thu", "later", "");
-    useStore.getState().fireReminders();
-    expect(useStore.getState().toast).toBe("Reminder set for 1:32 pm. Nothing sent.");
-    vi.setSystemTime(new Date("2026-10-22T03:33:00Z"));
-    useStore.getState().fireReminders();
-    expect(useStore.getState().toast).toBe("Reminder: Alex asked about tonight, 4 pm.");
-    expect(data().offers[0].reminded).toBe(true);
-    const key = useStore.getState().toastKey;
-    useStore.getState().fireReminders();
-    expect(useStore.getState().toastKey).toBe(key);
+  it("undoes an answer: the ask waits again and its shift comes off the day", () => {
+    useStore.getState().respondToOffer("o-thu", "accept");
+    useStore.getState().unanswerOffer("o-thu");
+    expect(data().offers[0].status).toBe("pending");
+    const thu = dayItems(data(), "2026-10-22");
+    expect(thu.some((it) => it.kind === "offer")).toBe(true);
+    expect(thu.some((it) => it.kind === "shift" && it.start === "16:00")).toBe(false);
+  });
+  it("keeps an ask for later on the day, see-through, with no reminder", () => {
+    useStore.getState().respondToOffer("o-thu", "later");
+    expect(dayItems(data(), "2026-10-22").find((it) => it.kind === "offer")).toMatchObject({ later: true });
+    expect(useStore.getState().toast).toBe("Kept for later. Press it on your week when you're ready.");
   });
   it("puts a removed item back where undo expects it", () => {
     const tutorial = data().uni[0];

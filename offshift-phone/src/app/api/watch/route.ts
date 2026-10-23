@@ -56,7 +56,7 @@ export async function POST(req: Request) {
   return retrying(async () => {
     const s = await loadState();
     // Never start or replace a week from the wrist: that's for the calendar or a new session.
-    if (noWeek(s)) return Response.json({ error: "No session yet. Open the calendar or start a new session on the team page." }, { status: 409, headers });
+    if (noWeek(s)) return Response.json({ error: "No session yet. Open the calendar first." }, { status: 409, headers });
     const data = currentData(s);
     const next = apply(data);
     if (next !== data && !cleanData(capLogs(next))) return Response.json({ error: "That would break the week" }, { status: 400, headers });

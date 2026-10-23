@@ -1,10 +1,8 @@
 import { create } from "zustand";
 import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
-import { applyResponse, resolveAsk, sendAsk, type AskInput, type ResponseExtras } from "./actions";
+import { applyResponse, sendAsk, unanswer, type AskInput } from "./actions";
 import { uid } from "./ids";
-import { clock12 } from "./logic";
 import { emptyData, exampleWeek } from "./session";
-import { nowIn, whenWord } from "./time";
 import type { BodyRating, DataSlice, Decision, PersonalEvent, Settings, Shift, UniEvent } from "./types";
 import { LOG_LIMIT, MESSAGE_LIMIT, cleanData } from "./validate";
 
@@ -13,7 +11,7 @@ export type { DataSlice } from "./types";
 export interface UISlice {
   toast: string | null;
   toastKey: number;
-  /** How long the toast stays: longer for a reminder the worker mustn't miss. */
+  /** How long the toast stays. */
   toastMs: number;
 }
 
@@ -32,9 +30,11 @@ export interface Actions {
   restore: (kind: "shift" | "uni" | "personal", item: Shift | UniEvent | PersonalEvent) => void;
   setProtected: (id: string, on: boolean) => void;
   rateShift: (id: string, rating: BodyRating | null) => void;
-  respondToOffer: (offerId: string, decision: Decision, text: string, extras?: ResponseExtras) => void;
+  /** Accept, decline or keep for later. Nothing is sent to the manager. */
+  respondToOffer: (offerId: string, decision: Decision) => void;
+  /** Undo for an answer: the ask waits again and its shift comes off the week. */
+  unanswerOffer: (offerId: string) => void;
   sendAsk: (input: AskInput) => string;
-  resolveAsk: (offerId: string, action: "confirm-alt" | "approve-swap") => void;
   /** A note from the worker to the team, such as a request to move a rostered shift. */
   sendMessage: (text: string, offerId?: string) => void;
   /** A private note, such as the immersive view's check-in. Logged for the worker only; the team view never shows it. */
@@ -42,7 +42,6 @@ export interface Actions {
   updateSettings: (patch: Partial<Settings>) => void;
   newSession: () => void;
   loadExample: () => void;
-  fireReminders: () => void;
   showToast: (text: string) => void;
   clearToast: () => void;
 }
@@ -142,38 +141,22 @@ export const useStore = create<Store>()(
             return { settings: { ...s.settings, protectedIds: [...ids] }, personal: on ? s.personal : s.personal.map((p) => (p.id === id && p.importance === "protected" ? { ...p, importance: "important" } : p)) };
           }),
         rateShift: (id, rating) => set((s) => ({ shifts: s.shifts.map((x) => (x.id === id ? { ...x, rated: rating ?? undefined } : x)) })),
-        respondToOffer: (offerId, decision, text, extras) =>
+        respondToOffer: (offerId, decision) =>
           set((s) => {
-            const r = applyResponse(pickData(s), offerId, decision, text, extras);
+            const r = applyResponse(pickData(s), offerId, decision);
             return r ? { ...r.data, ...toast(s, r.toast) } : {};
           }),
+        unanswerOffer: (offerId) => set((s) => ({ ...unanswer(pickData(s), offerId) })),
         sendAsk: (input) => {
           const r = sendAsk(pickData(get()), input);
           set({ ...r.data });
           return r.id;
         },
-        resolveAsk: (offerId, action) => set((s) => ({ ...resolveAsk(pickData(s), offerId, action) })),
         sendMessage: (text, offerId) => set((s) => ({ messages: [...s.messages, { id: uid("m"), offerId, from: "worker", text, at: new Date().toISOString() }] })),
         notePrivate: (text) => set((s) => ({ sync: [...s.sync, { id: uid("y"), at: new Date().toISOString(), from: "Offshift", to: "Only you", text }] })),
         updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
         newSession: () => set((s) => ({ ...emptyData(), ...toast(s, "New session. The calendar is empty.") })),
         loadExample: () => set((s) => ({ ...exampleWeek(), ...toast(s, "Example week loaded.") })),
-        fireReminders: () => {
-          const nowMs = Date.now();
-          const isDue = (o: DataSlice["offers"][number]) => o.status === "deferred" && !o.reminded && !!o.reminderAt && Date.parse(o.reminderAt) <= nowMs;
-          // Nothing due: no state change at all, so nothing re-renders or rewrites storage.
-          if (!get().offers.some(isDue)) return;
-          set((s) => {
-            const due = s.offers.filter(isDue);
-            if (!due.length) return {};
-            const o = due[0];
-            const now = nowIn(s.settings.timeZone);
-            return {
-              offers: s.offers.map((x) => (due.some((d) => d.id === x.id) ? { ...x, reminded: true } : x)),
-              ...toast(s, `Reminder: ${o.from} asked about ${whenWord(o.date, o.start, now)}, ${clock12(o.start)}.`, 15000),
-            };
-          });
-        },
         showToast: (text) => set((s) => toast(s, text)),
         clearToast: () => set({ toast: null }),
       };

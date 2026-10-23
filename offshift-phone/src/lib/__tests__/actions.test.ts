@@ -1,40 +1,34 @@
 import { describe, expect, it } from "vitest";
-import { applyResponse, askProblem, resolveAsk, sendAsk } from "@/lib/actions";
+import { applyResponse, askProblem, sendAsk } from "@/lib/actions";
 import { emptyData, exampleWeek, isCurrent } from "@/lib/session";
 import { AT, week } from "./fixture";
 
 describe("answering an ask, as pure data", () => {
-  it("taking it books the shift at that workplace and records the reply for the manager", () => {
-    const r = applyResponse(week(), "o-thu", "accept", "Hi Alex, yes.", {}, AT)!;
+  it("accepting books the shift at that workplace and logs it, with no message", () => {
+    const r = applyResponse(week(), "o-thu", "accept", AT)!;
     expect(r.data.offers[0].status).toBe("accepted");
     expect(r.data.shifts.at(-1)).toMatchObject({ date: "2026-10-22", start: "16:00", end: "21:00", workplace: "Café", viaOffer: "o-thu" });
-    expect(r.data.messages.at(-1)).toMatchObject({ from: "worker", offerId: "o-thu", text: "Hi Alex, yes." });
-    expect(r.toast).toBe("Sent to Alex. Added to your week.");
+    expect(r.data.sync.at(-1)).toMatchObject({ to: "Alex", offerId: "o-thu", text: "Took Thu 22 Oct 4–9 pm at Café. Added to the week." });
+    expect(r.toast).toBe("Added to your week.");
   });
-  it("declining sends the reply and books nothing", () => {
-    const r = applyResponse(week(), "o-thu", "decline", "Not tonight.", {}, AT)!;
+  it("declining books nothing", () => {
+    const r = applyResponse(week(), "o-thu", "decline", AT)!;
     expect(r.data.offers[0].status).toBe("declined");
     expect(r.data.shifts).toHaveLength(week().shifts.length);
-    expect(r.toast).toBe("Sent to Alex. Thursday stays as it is.");
+    expect(r.toast).toBe("Declined. Thursday stays as it is.");
   });
-  it("deciding later sets a reminder in half an hour and sends nothing", () => {
-    const r = applyResponse(week(), "o-thu", "later", "", {}, AT)!;
-    expect(r.data.offers[0]).toMatchObject({ status: "deferred", reminderAt: "2026-10-22T03:32:00.000Z", reminded: false });
-    expect(r.data.messages).toHaveLength(0);
-    expect(r.toast).toBe("Reminder set for 1:32 pm. Nothing sent.");
-  });
-  it("another time offers the first free slot; a swap names someone only if the worker did", () => {
-    expect(applyResponse(week(), "o-thu", "negotiate", "x", {}, AT)!.data.offers[0].alt?.label).toBe("Fri 4–9 pm");
-    expect(applyResponse(week(), "o-thu", "swap", "x", {}, AT)!.data.offers[0].colleague).toBeUndefined();
-    expect(applyResponse(week(), "o-thu", "swap", "x", { colleague: " Priya " }, AT)!.data.offers[0].colleague).toBe("Priya");
+  it("deciding later is logged for the worker only", () => {
+    const r = applyResponse(week(), "o-thu", "later", AT)!;
+    expect(r.data.offers[0].status).toBe("deferred");
+    expect(r.data.sync.at(-1)).toMatchObject({ to: "Only you" });
   });
   it("leaves its input untouched and ignores unknown or answered asks", () => {
     const data = week();
     const before = structuredClone(data);
-    const r = applyResponse(data, "o-thu", "accept", "yes", {}, AT)!;
+    const r = applyResponse(data, "o-thu", "accept", AT)!;
     expect(data).toEqual(before);
-    expect(applyResponse(data, "nope", "accept", "yes", {}, AT)).toBeNull();
-    expect(applyResponse(r.data, "o-thu", "decline", "no", {}, AT)).toBeNull();
+    expect(applyResponse(data, "nope", "accept", AT)).toBeNull();
+    expect(applyResponse(r.data, "o-thu", "decline", AT)).toBeNull();
   });
 });
 
@@ -55,15 +49,6 @@ describe("the team's side", () => {
     expect(askProblem({ from: "Alex", workplace: "Café", date: "2026-10-22", start: "16:00", end: "18:00" }, now)).toBe("That time has passed.");
     expect(askProblem({ from: "Alex", workplace: "Café", date: "2026-10-21", start: "16:00", end: "18:00" }, now)).toBe("That date has passed.");
     expect(askProblem({ from: "Alex", workplace: "Café", date: "2026-10-22", start: "22:00", end: "02:00" }, now)).toBeNull();
-  });
-  it("confirming another time books it; approving a swap changes nothing in the week", () => {
-    const countered = applyResponse(week(), "o-thu", "negotiate", "x", {}, AT)!.data;
-    const confirmed = resolveAsk(countered, "o-thu", "confirm-alt", AT);
-    expect(confirmed.offers[0].status).toBe("alt-confirmed");
-    expect(confirmed.shifts.at(-1)).toMatchObject({ date: "2026-10-23", start: "16:00", end: "21:00", workplace: "Café" });
-    const swapped = resolveAsk(applyResponse(week(), "o-thu", "swap", "x", {}, AT)!.data, "o-thu", "approve-swap", AT);
-    expect(swapped.offers[0].status).toBe("swapped");
-    expect(swapped.shifts).toHaveLength(week().shifts.length);
   });
 });
 

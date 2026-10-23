@@ -1,25 +1,21 @@
 /** What the Garmin watch app receives and sends through /api/watch: the waiting ask, answers and body readings. */
 import { applyResponse } from "./actions";
 import { BODY_SIGNALS, OVERALL_WORDS, overallLevel } from "./body";
-import { altSlots, dayItems, draftFor, eventsFor, isRestDay, offerImpact, replyDraft, waitingAsks } from "./checks";
+import { dayItems, eventsFor, isRestDay, offerImpact, waitingAsks } from "./checks";
 import { uid } from "./ids";
 import { clock12, minutes, range12 } from "./logic";
 import { addDays, nowIn, weekdayOf, whenWord } from "./time";
 import type { BodyLevel, BodySignals, DataSlice, Decision, Offer, OfferStatus, Wearable } from "./types";
 
-export const WATCH_DECISIONS: Decision[] = ["accept", "negotiate", "swap", "decline", "later"];
+export const WATCH_DECISIONS: Decision[] = ["accept", "decline", "later"];
 
 export const WEARABLE_WORDS: Record<Wearable["level"], string> = OVERALL_WORDS;
 
 const STATUS_WORDS: Record<OfferStatus, string> = {
   pending: "Waiting",
-  deferred: "Deciding later",
+  deferred: "Kept for later",
   accepted: "Taken",
   declined: "Declined",
-  countered: "Another time offered",
-  "alt-confirmed": "Confirmed",
-  "swap-requested": "Swap requested",
-  swapped: "Swapped",
 };
 
 export interface WatchAsk {
@@ -32,9 +28,11 @@ export interface WatchAsk {
   time: string;
   note: string;
   week: string[];
+  /** Only for watch builds from before 23 Oct 2026, whose menu still lists another time and a swap. */
   alt: string;
   swap: string;
   status: "pending" | "deferred";
+  /** Older builds show this after "Reminder" for an ask kept for later. There is no reminder any more. */
   reminder: string | null;
 }
 
@@ -120,10 +118,10 @@ export function watchSummary(data: DataSlice, atTime: Date = new Date()): WatchS
         time: watchRange(o.start, o.end),
         note: ascii(o.note),
         week: weekLines(o, data),
-        alt: ascii(altSlots(o, data, now)[0]?.label ?? "Another day"),
-        swap: "Someone else",
+        alt: "Not offered",
+        swap: "No one",
         status: o.status as "pending" | "deferred",
-        reminder: o.reminderAt ? ascii(clock12(nowIn(data.settings.timeZone, new Date(o.reminderAt)).time)) : null,
+        reminder: o.status === "deferred" ? "later" : null,
       }
     : null;
   const last = data.offers
@@ -139,13 +137,9 @@ export function watchSummary(data: DataSlice, atTime: Date = new Date()): WatchS
   };
 }
 
-/** An answer chosen on the wrist goes out with the same drafted reply the calendar would send. */
+/** An answer chosen on the wrist changes the week exactly as the same answer on the calendar would. */
 export function applyWatchAnswer(data: DataSlice, offerId: string, decision: Decision, atTime: Date = new Date()): { data: DataSlice; toast: string } | null {
-  const offer = data.offers.find((o) => o.id === offerId);
-  if (!offer || (offer.status !== "pending" && offer.status !== "deferred")) return null;
-  const now = nowIn(data.settings.timeZone, atTime);
-  const text = decision === "later" ? "" : draftFor(replyDraft(offer, decision, data, now), data.settings.tone);
-  return applyResponse(data, offerId, decision, text, { reminderMinutes: 30 }, atTime);
+  return applyResponse(data, offerId, decision, atTime);
 }
 
 /** Keeps an older watch build's single reading as a word, and logs it only when it changes. */

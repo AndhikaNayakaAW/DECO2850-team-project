@@ -3,17 +3,9 @@ export type Day = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
 /** A calendar date in the worker's zone, "2026-10-19". */
 export type DateKey = string;
 
-export type Decision = "accept" | "negotiate" | "swap" | "decline" | "later";
-export type OfferStatus =
-  | "pending"
-  | "deferred"
-  | "accepted"
-  | "declined"
-  | "countered"
-  | "alt-confirmed"
-  | "swap-requested"
-  | "swapped";
-export type Tone = "warm" | "plain";
+/** How a worker answers an ask: take the shift, turn it down, or keep it on the week to decide later. */
+export type Decision = "accept" | "decline" | "later";
+export type OfferStatus = "pending" | "deferred" | "accepted" | "declined";
 export type BodyRating = "fine" | "tired" | "wiped";
 export type CheckState = "ok" | "warn" | "bad";
 
@@ -53,12 +45,6 @@ export interface PersonalEvent {
   importance?: Importance;
 }
 
-export interface AltSlot {
-  date: DateKey;
-  start: string;
-  end: string;
-  label: string;
-}
 
 /** A shift ask, sent by the research team on behalf of a manager. */
 export interface Offer {
@@ -71,10 +57,6 @@ export interface Offer {
   note: string;
   sentAt: string;
   status: OfferStatus;
-  alt?: AltSlot;
-  colleague?: string;
-  reminderAt?: string;
-  reminded?: boolean;
   repliedAt?: string;
 }
 
@@ -100,7 +82,6 @@ export interface SyncEntry {
 export interface Settings {
   /** The worker's first name, or empty. */
   name: string;
-  tone: Tone;
   /** Weekdays the worker keeps clear, booked like a shift. */
   restDays: Day[];
   protectedIds: string[];
@@ -130,6 +111,8 @@ export interface DayItem {
   /** Which of the worker's workplaces, for its colour: 0 for the first one named, 1 for the next. */
   workplaceIndex?: number;
   offerId?: string;
+  /** An ask the worker kept for later: drawn see-through until they press it and decide. */
+  later?: boolean;
   warn?: string;
   category?: PlanCategory;
   importance?: Importance;

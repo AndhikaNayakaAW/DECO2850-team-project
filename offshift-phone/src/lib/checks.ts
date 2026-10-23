@@ -1,20 +1,17 @@
 import { bodyNotes, bodySentence, bodyState } from "./body";
-import { clock12, elapsedMinutes, fromMinutes, minutes, range12, shiftImpact, spanMinutes } from "./logic";
-import { addDays, dayNumber, daysBetween, longDate, nowIn, shortDate, stamp, weekDates, weekdayName, weekdayOf, whenWord, type Now } from "./time";
+import { clock12, elapsedMinutes, minutes, range12, shiftImpact, spanMinutes } from "./logic";
+import { addDays, dayNumber, daysBetween, nowIn, stamp, weekDates, weekdayName, weekdayOf, whenWord, type Now } from "./time";
 import type {
-  AltSlot,
   BodyRating,
   Check,
   CheckState,
   DateKey,
   DayItem,
   DayView,
-  Decision,
   Offer,
   PersonalEvent,
   Settings,
   Shift,
-  Tone,
   UniEvent,
   Wearable,
 } from "./types";
@@ -171,7 +168,8 @@ export function dayItems(state: DataState, date: DateKey): DayItem[] {
         workplace: o.workplace,
         workplaceIndex: workplaceIndex(state, o.workplace),
         offerId: o.id,
-        status: o.status === "deferred" && o.reminderAt ? `Waiting · reminder ${clock12(nowIn(state.settings.timeZone, new Date(o.reminderAt)).time)}` : "Waiting on you",
+        later: o.status === "deferred" || undefined,
+        status: o.status === "deferred" ? "Kept for later · press to decide" : "Waiting on you",
       }),
     );
   state.personal
@@ -361,161 +359,6 @@ export function weekCheck(offer: Offer, state: DataState, now: When): Check {
 
 export function offerChecks(offer: Offer, state: DataState, now: When): Check[] {
   return [bodyCheck(offer, state, now), weekCheck(offer, state, now)];
-}
-
-/* ---------- alternatives ---------- */
-
-/**
- * "Fri 4–9 pm" within the week, or "Thu 5 Nov 4–9 pm" further out. The label goes into the reply and into the team view,
- * where it's read later, so anything a week or more away carries its date.
- */
-function altLabel(date: DateKey, start: string, end: string, now: When): string {
-  return `${daysBetween(now.date, date) >= 7 ? shortDate(date) : weekdayOf(date)} ${range12(start, end)}`;
-}
-
-/** Up to three other times the worker could offer: free windows of the same length in the next four days, then the same time next week. */
-export function altSlots(offer: Offer, state: DataState, now: When): AltSlot[] {
-  const length = Math.min(elapsedMinutes(offer.start, offer.end) || 60, 10 * 60);
-  const events = eventsFor(state).filter((e) => e.viaOffer !== offer.id);
-  const free = (date: DateKey, start: string) => {
-    const end = fromMinutes(minutes(start) + length);
-    return shiftImpact({ date, start, end }, events).conflicts.length === 0 ? { date, start, end } : null;
-  };
-  const out: AltSlot[] = [];
-  for (let i = 1; i <= 4 && out.length < 2; i++) {
-    const date = addDays(offer.date, i);
-    if (date < now.date || isRestDay(date, state.settings)) continue;
-    const starts = [offer.start, ...Array.from({ length: 29 }, (_, k) => fromMinutes(8 * 60 + k * 30))];
-    for (const start of starts) {
-      if (minutes(start) + length > 22 * 60 || minutes(start) < 8 * 60) continue;
-      // Not a time that has already gone today.
-      if (date === now.date && minutes(start) <= minutes(now.time)) continue;
-      const slot = free(date, start);
-      if (slot) {
-        out.push({ ...slot, label: altLabel(date, slot.start, slot.end, now) });
-        break;
-      }
-    }
-  }
-  const nextWeek = addDays(offer.date, 7);
-  const endsNextDay = minutes(offer.end) <= minutes(offer.start);
-  const restful = isRestDay(nextWeek, state.settings) || (endsNextDay && isRestDay(addDays(nextWeek, 1), state.settings));
-  if (nextWeek > now.date && !restful && free(nextWeek, offer.start)) {
-    out.push({ date: nextWeek, start: offer.start, end: offer.end, label: altLabel(nextWeek, offer.start, offer.end, now) });
-  }
-  return out.slice(0, 3);
-}
-
-/* ---------- reply drafts ---------- */
-
-/**
- * A drafted reply only says what the manager already knows, or what the worker typed: a reason by its kind
- * ("I've got class then"), never a plan's name, and nothing from the watch. The watch and the voice send
- * these without the worker reading them first.
- */
-export interface Draft {
-  title: string;
-  warm: string;
-  plain: string;
-  note: string;
-  after: string;
-}
-
-function wellWish(offer: Offer): { warm: string; plain: string } {
-  const m = /(\w+)'s (?:sick|unwell|off sick)/i.exec(offer.note);
-  if (m) return { warm: ` Hope ${m[1]} feels better soon.`, plain: ` Hope ${m[1]}'s okay.` };
-  if (/sick|unwell/i.test(offer.note)) return { warm: " Hope they feel better soon.", plain: " Hope they're okay." };
-  return { warm: "", plain: "" };
-}
-
-function reason(offer: Offer, state: DataState, now: When): { warm: string; plain: string } {
-  const rostered = state.shifts.some((s) => s.date === offer.date && s.viaOffer !== offer.id);
-  if (isRestDay(offer.date, state.settings) && !rostered) return { warm: `${weekdayName(offer.date)}'s my day off.`, plain: `${weekdayName(offer.date)}'s my day off.` };
-  const c = offerImpact(offer, state).conflicts[0];
-  if (c?.kind === "work") return { warm: "I'm already working then.", plain: "I'm working then." };
-  if (c?.kind === "study") return { warm: "I've got class then.", plain: "I've got class then." };
-  if (c) return { warm: "I've got plans I can't move.", plain: "I've got plans I can't move." };
-  if (weekCheck(offer, state, now).state === "warn") return { warm: "It's too tight with everything else that day.", plain: "It's too tight that day." };
-  return { warm: "It doesn't work for me this time.", plain: "It doesn't work this time." };
-}
-
-/** How the reply names the other time: by weekday within the week, by date further out. */
-function altText(alt: AltSlot | undefined, offer: Offer, now: When): string {
-  if (!alt) return "another day this week";
-  const day = daysBetween(now.date, alt.date) >= 7 ? longDate(alt.date) : weekdayName(alt.date);
-  if (alt.date === addDays(offer.date, 7) && alt.start === offer.start) return `the same shift on ${day}`;
-  return `${day} ${range12(alt.start, alt.end)}`;
-}
-
-export function replyDraft(offer: Offer, decision: Decision, state: DataState, now: When, opts: { alt?: AltSlot; colleague?: string } = {}): Draft {
-  const m = offer.from;
-  const when = whenWord(offer.date, offer.start, now);
-  const dayW = cap(when);
-  const wish = wellWish(offer);
-  const x = offerImpact(offer, state);
-  const next = nextDayLine(offer, state);
-  const conflict = x.conflicts[0];
-
-  if (decision === "decline") {
-    const r = reason(offer, state, now);
-    return {
-      title: `Not ${when}.`,
-      warm: `Hi ${m}, thanks for thinking of me. I can't do ${when}. ${r.warm}${wish.warm}`,
-      plain: `Hi ${m}, I can't do ${when}, sorry. ${r.plain}${wish.plain}`,
-      note: "Honest is enough. Offshift never names your plans: add more only if you want to.",
-      after: `${dayW} stays as it is.${next ? ` ${cap(next)}.` : ""}`,
-    };
-  }
-  if (decision === "negotiate") {
-    const text = altText(opts.alt || altSlots(offer, state, now)[0], offer, now);
-    return {
-      title: "Another time, then.",
-      warm: `Hi ${m}, ${when} isn't going to work for me, but I could do ${text} if that helps.${wish.warm}`,
-      plain: `Hi ${m}, can't do ${when}. I can do ${text} if that helps.`,
-      note: `Offering a time keeps you a good colleague without giving up ${when}.`,
-      after: `If ${m} says yes to ${text}, it goes into your week.`,
-    };
-  }
-  if (decision === "swap") {
-    const who = opts.colleague?.trim();
-    return {
-      title: "Handing it on.",
-      warm: who ? `Hi ${m}, I can't do ${when}, but I've checked with ${who} and they can take it if that works for you.${wish.warm}` : `Hi ${m}, I can't do ${when}. I'm happy to ask around the team to see if someone can swap.${wish.warm}`,
-      plain: who ? `Hi ${m}, can't do ${when}. ${who} can take it if that's okay.` : `Hi ${m}, can't do ${when}. I can ask around for a swap.`,
-      note: "A swap keeps the shift covered without giving up your time.",
-      after: who ? `If ${m} approves, the shift goes to ${who}. Nothing changes in your week.` : "Nothing changes in your week.",
-    };
-  }
-  if (decision === "later") {
-    return { title: "Deciding later.", warm: "", plain: "", note: "Nothing is sent. A reminder comes back in 30 minutes.", after: `${dayW} stays open while you think.` };
-  }
-  // accept: how the worker gets there, by kind only
-  let arriveWarm = `See you at ${clock12(offer.start)}.`;
-  let arrivePlain = arriveWarm;
-  if (x.previous && x.previous.kind !== "personal") {
-    const gap = x.gapBefore ?? 0;
-    const sameShop = x.previous.kind === "work" && x.previous.workplace?.trim().toLowerCase() === offer.workplace.trim().toLowerCase();
-    const what = x.previous.kind === "work" ? "other shift" : "class";
-    if (sameShop && gap <= 30) {
-      arriveWarm = `I'll just stay on after my ${range12(x.previous.start, x.previous.end)} shift.`;
-      arrivePlain = `I'll stay on after my ${range12(x.previous.start, x.previous.end)}.`;
-    } else {
-      const tight = gap < 30;
-      arriveWarm = `My ${what} finishes at ${clock12(x.previous.end)}, so I'll be there for ${clock12(offer.start)}.${tight ? " I might need a few minutes to grab something to eat." : ""}`;
-      arrivePlain = `There for ${clock12(offer.start)} after ${what === "class" ? "class" : "my other shift"}.`;
-    }
-  }
-  return {
-    title: "Taking it.",
-    warm: `Hi ${m}, yes, I can do ${when}. ${arriveWarm}`,
-    plain: `Hi ${m}, yes. ${arrivePlain}`,
-    note: "Saying yes is fine too. Offshift just keeps tomorrow in view.",
-    after: `Added to your week.${conflict ? ` It overlaps your ${conflict.phrase}.` : ""}${next ? ` ${cap(next)}.` : ""}`,
-  };
-}
-
-export function draftFor(draft: Draft, tone: Tone): string {
-  return tone === "warm" ? draft.warm : draft.plain;
 }
 
 export function offerWhen(offer: Offer, now: When): string {

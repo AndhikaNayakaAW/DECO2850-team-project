@@ -1,6 +1,6 @@
 # Offshift · calendar and watch
 
-Offshift helps students who work casual shifts answer a shift ask on their own terms. When a manager asks "can you cover tonight?", the ask lands on the worker's week, in 3D, and on their Garmin watch, next to their classes, plans, rest days and how tired they are. The worker chooses: take it, offer another time, ask for a swap, say no, or decide later. Offshift drafts the reply, and the worker edits it and sends it. Nothing is sent without them.
+Offshift helps students who work casual shifts answer a shift ask on their own terms. When a manager asks "can you cover tonight?", the ask lands on the worker's week, in 3D, and on their Garmin watch, next to their classes, plans, rest days and how tired they are. The worker chooses one of three answers: Accept puts the shift on their week, Decline takes the ask off it, and Later keeps it on the week, see-through, to decide when they are ready. No message is sent to the manager.
 
 ## What's here
 
@@ -8,8 +8,8 @@ Offshift helps students who work casual shifts answer a shift ask on their own t
   - **+ Add**, or **+ Add to {day}** in the side panel, adds a shift, class, due date or plan. Tap anything in the side panel to change or delete it. A deletion can be undone for a few seconds.
   - **‹ Today ›** moves between weeks, and the arrow keys move the day.
   - **In the 3D week**, drag to turn it and pinch or scroll to zoom. Hold a block still for a moment to pick it up. You can then move a plan to another day, or drop anything on the bin to remove it, and Undo is offered either way. A quick swipe only ever turns the view. Throwing an ask away opens a drafted "no", and nothing reaches the manager until you press Send.
-  - A waiting ask shows as an amber block, in the side list and as a pill in the header. Open it to see the Body and Week checks, pick an answer, edit the drafted reply and send it. "Decide later" sends nothing and reminds the worker in half an hour.
-  - **⚙** opens settings: first name, days kept clear, how replies sound, and what counts as a late finish.
+  - A waiting ask shows as an amber block, in the side list and as a pill in the header. Open it to see the Body and Week checks and press Accept, Decline or Later. Accept and Decline offer Undo for a few seconds. An ask kept for later stays on the week as a see-through block; press it to decide.
+  - **⚙** opens settings: first name, days kept clear, and what counts as a late finish.
   - **Test offer** sends a sample ask, as a manager would. It reaches the calendar and the watch.
   - **Immersive** opens the wide, hands-free week (`/calendar?immersive=1`), described below.
 - **`/api/state`** holds the shared week, **`/api/watch`** is the watch's door, and **`/api/assistant`** is the voice assistant. **`/api/team`** takes the asks that Test offer sends and returns the manager's view of the week, which never includes body readings, plans or private notes.
@@ -28,7 +28,7 @@ The terminal prints a Network URL such as `http://192.168.1.20:3000`. Open `…/
 
 ## Running a field-testing session
 
-1. Open `/calendar?reset=1` to start a new session. Every open calendar empties. The participant can enter their first name in **⚙**; it is used in greetings and drafted replies, and is optional.
+1. Open `/calendar?reset=1` to start a new session. Every open calendar empties. The participant can enter their first name in **⚙**; it is used in greetings, and is optional.
 2. The participant adds their real week on `/calendar`.
 3. Press **Test offer** to send an ask. It reaches the calendar and the watch within about two seconds.
 4. The participant answers on the calendar or on the watch.
@@ -115,4 +115,4 @@ npm run typecheck
 npm run build
 ```
 
-The tests cover dates and weeks, the Body and Week checks, drafted replies, answers and team actions, the three-way merge, the watch summary and health readings, the API routes, the assistant's script and the store.
+The tests cover dates and weeks, the Body and Week checks, the three answers and team actions, the three-way merge, the watch summary and health readings, the API routes, the assistant's script and the store.

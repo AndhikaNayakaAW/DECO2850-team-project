@@ -25,9 +25,9 @@ The fēnix 8 47mm has completed a physical request/reply round trip through the 
 | **[06 / Watch and reflection](Watch-and-Reflection)** | Four native pages, worker controls and the removed browser reflection. |
 | **[07 / Weekly contribution](Weekly-Contribution)** | Dated changes, commits, screenshots, evidence and remaining hardware work. |
 
-## One session, five responses
+## One session, three answers
 
-The researcher starts a session and sends an ask. The worker sees it beside the week, inspects context, chooses **Take it**, **Another time**, **Ask for a swap**, **Not now** or **Decide later**, then confirms a reply. Accepting adds the shift. Personal body readings do not become an employer explanation.
+The researcher starts a session and sends an ask. The worker sees it beside the week, inspects context, chooses **Accept**, **Decline** or **Later**. Accepting adds the shift, declining takes the ask off the week, and later keeps it there, see-through, until they decide. No message goes to the manager. Personal body readings do not become an employer explanation.
 
 The deployment holds one shared session at a time. The shared access code is supplied privately. The team API omits body data and plans, but the prototype does not have separate employer and worker accounts.
 

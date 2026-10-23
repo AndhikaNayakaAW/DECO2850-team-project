@@ -24,19 +24,20 @@ function privateWeek(): DataSlice {
 }
 
 describe("what the research team sees", () => {
-  it("shows asks, replies and the worker's messages to the team, never plans, body readings or private notes", () => {
-    const answered = applyResponse(privateWeek(), "o-thu", "decline", "Sorry, not tonight.", {}, AT)!.data;
+  it("shows asks, answers and the worker's messages to the team, never plans, body readings or private notes", () => {
+    const answered = applyResponse(privateWeek(), "o-thu", "decline", AT)!.data;
     const view = teamView(answered, 3, null);
     const json = JSON.stringify(view);
     expect(json).not.toMatch(/Running low|energy|sleep|Dinner with a friend|Call home|Tutorial|Check-in|Only you/);
-    expect(view.asks[0]).toMatchObject({ id: "o-thu", status: "declined", thread: [{ from: "worker", text: "Sorry, not tonight." }] });
+    expect(view.asks[0]).toMatchObject({ id: "o-thu", status: "declined" });
+    expect(view.asks[0].thread.some((m) => m.from === "worker")).toBe(false);
     expect(view.notes.map((n) => n.text)).toEqual(["Could I swap Friday's shift for Saturday?"]);
     expect(view.workplaces).toEqual(["Café"]);
   });
   it("can't tell an ask the worker is deciding later from one they haven't seen", () => {
-    const later = applyResponse(week(), "o-thu", "later", "", {}, AT)!.data;
+    const later = applyResponse(week(), "o-thu", "later", AT)!.data;
     expect(teamView(later, 1, null).asks[0].status).toBe("pending");
-    expect(JSON.stringify(teamView(later, 1, null))).not.toMatch(/remind|deferred/i);
+    expect(JSON.stringify(teamView(later, 1, null))).not.toMatch(/remind|deferred|later/i);
   });
 });
 

@@ -32,7 +32,7 @@ describe("calendar test-offer delivery", () => {
     expect(request).not.toHaveBeenCalled();
   });
 
-  it.each(["accept", "decline"])("sends from the calendar to the watch, then persists the watch's %s reply", async (decision) => {
+  it.each(["accept", "decline"])("sends from the calendar to the watch, then persists the watch's %s answer", async (decision) => {
     const initial = structuredClone(g.__offshiftState!.data) as ReturnType<typeof week>;
     const request = vi.fn<typeof fetch>(async (url, init) => {
       expect(url).toBe("/api/team");
@@ -55,7 +55,7 @@ describe("calendar test-offer delivery", () => {
     const shared = await (await state.GET(new Request("http://local/api/state"))).json();
     expect(shared.data.offers[0].status).toBe(decision === "accept" ? "accepted" : "declined");
     expect(shared.data.shifts).toHaveLength(initial.shifts.length + (decision === "accept" ? 1 : 0));
-    expect(shared.data.messages.filter((m: { from: string }) => m.from === "worker")).toHaveLength(1);
+    expect(shared.data.messages.filter((m: { from: string }) => m.from === "worker")).toHaveLength(0);
     expect(shared.data.personal).toEqual(initial.personal);
   });
 

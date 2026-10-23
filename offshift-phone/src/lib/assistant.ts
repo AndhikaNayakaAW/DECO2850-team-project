@@ -1,12 +1,12 @@
 import { BODY_SIGNALS, SIGNAL_LABELS, bodySentence, signalWord } from "./body";
-import { altSlots, bodyTile, buildWeek, currentWearable, dayItems, draftFor, isRestDay, offerChecks, offerWhen, replyDraft, waitingAsks, type DataState } from "./checks";
+import { bodyTile, buildWeek, currentWearable, dayItems, isRestDay, offerChecks, offerWhen, waitingAsks, type DataState } from "./checks";
 import { DAY_NAMES, DAYS, clock12, dayIndex, minutes } from "./logic";
 import { addDays, longDate, weekdayOf, type Now } from "./time";
 import type { DateKey, Day, DayItem, Decision, Offer } from "./types";
 
 /**
- * What the assistant can do. "respond" never sends anything by itself: the calendar opens the drafted reply
- * for the worker to check and send. Only "later", which sends nothing, applies straight away.
+ * What the assistant can do. "respond" never answers for the worker: for accept or decline the calendar opens
+ * the ask and the worker presses the button themselves. Only "later", which changes nothing, applies straight away.
  */
 export type AssistantAction =
   | { type: "respond"; offerId: string; decision: Decision }
@@ -22,7 +22,9 @@ export const BRIEF = "__brief__";
 export const ANNOUNCE = "__announce__:";
 /** A chip's answer names its ask outright: `${ANSWER}${offerId}:${decision}`, so it can never land on another ask. */
 export const ANSWER = "__answer__:";
-const DECISIONS: Decision[] = ["accept", "negotiate", "swap", "decline", "later"];
+const DECISIONS: Decision[] = ["accept", "decline", "later"];
+/** How the assistant offers the three answers. */
+const CHOICES = "accept it, decline it, or decide later";
 
 type When = Pick<Now, "date" | "time">;
 
@@ -102,7 +104,6 @@ export function assistantContext(state: DataState, now: When) {
       time: spokenRange(o.start, o.end),
       message: o.note,
       checks: Object.fromEntries(offerChecks(o, state, now).map((c) => [c.key, { state: c.state, text: c.text }])),
-      alternative_times: altSlots(o, state, now).map((a) => a.label),
       status: o.status,
     })),
     replied_asks: state.offers.filter((o) => o.status !== "pending" && o.status !== "deferred").map((o) => ({ from: o.from, date: o.date, time: spokenRange(o.start, o.end), status: o.status })),
@@ -144,7 +145,7 @@ function briefing(state: DataState, now: When): string {
     const flagged = offerChecks(o, state, now).filter((c) => c.state !== "ok").slice(0, 2);
     text += `${o.from} asked whether you could cover ${offerWhen(o, now)} at ${o.workplace}, ${spokenRange(o.start, o.end)}. `;
     text += flagged.length ? `${flagged.map((c) => c.text).join(" ")} ` : "Nothing is in the way. ";
-    text += `Would you like to take it, offer another time, ask for a swap, say not ${offerWhen(o, now)}, or decide later?`;
+    text += `Would you like to ${CHOICES}?`;
   } else {
     text += "No one is asking anything of you.";
     const rest = state.settings.restDays[0];
@@ -158,7 +159,7 @@ function announce(state: DataState, offerId: string, now: When): string {
   if (!o) return "";
   const flagged = offerChecks(o, state, now).filter((c) => c.state !== "ok")[0];
   const name = nameOf(state);
-  return `${name ? `${name}, ` : ""}${o.from} just asked whether you could cover ${offerWhen(o, now)} at ${o.workplace}, ${spokenRange(o.start, o.end)}. ${flagged ? flagged.text + " " : ""}Would you like to take it, offer another time, ask for a swap, say no, or decide later?`;
+  return `${name ? `${name}, ` : ""}${o.from} just asked whether you could cover ${offerWhen(o, now)} at ${o.workplace}, ${spokenRange(o.start, o.end)}. ${flagged ? flagged.text + " " : ""}Would you like to ${CHOICES}?`;
 }
 
 /** Hedges mean the worker isn't sure yet, so nothing is chosen for them. */
@@ -175,8 +176,6 @@ function decide(input: string): Decision | "unsure" | null {
   if (/\byeah,? nah\b/.test(t)) d = "decline";
   else if (/\bnah,? yeah\b/.test(t)) d = "accept";
   else if (/\b(later|remind|not now|let me think|think about it|give me a (minute|moment|bit))\b/.test(t)) d = "later";
-  else if (/\b(swap|someone else|cover for me|hand it)\b/.test(t)) d = "swap";
-  else if (/\b(another time|different time|counter|instead|next week|other time)\b/.test(t)) d = "negotiate";
   else if (/^(no|nope|nah|not)\b/.test(t) || /\b(not tonight|not today|not tomorrow|no thanks|decline|can't|cannot|pass|say no|turn it down)\b/.test(t) || /\b(don't|dont|do not|won't|will not)\b[^.!?]*\b(take|accept|do|want)\b/.test(t)) d = "decline";
   else if (/\b(take it|accept|yes|yeah|yep|sure|do it|i'll do it|okay take|go ahead)\b/.test(t)) d = "accept";
   if (d && d !== "later" && UNSURE.test(t)) return "unsure";
@@ -202,21 +201,15 @@ function describeDay(state: DataState, date: DateKey): string {
   return items.length ? `${name} has ${joinList(items.map(spokenItem))}.` : `${name} is clear${isRestDay(date, state.settings) ? ", and kept for rest" : ""}.`;
 }
 
-/** What the assistant says when it opens a drafted answer (or, for later, sets the reminder). */
-function answerReply(o: Offer, decision: Decision, state: DataState, now: When): AssistantReply {
+/** What the assistant says when it opens the ask for an answer (or, for later, keeps it on the week). */
+function answerReply(o: Offer, decision: Decision, now: When): AssistantReply {
   const when = offerWhen(o, now);
-  const alt = altSlots(o, state, now)[0];
-  const check = "Have a look, change anything you like, then press Send reply.";
   const text =
     decision === "accept"
-      ? `Here's a yes to ${o.from} for ${when}. ${check}`
+      ? `I've opened ${o.from}'s ask for ${when}. Press Accept to add it to your week.`
       : decision === "decline"
-        ? `Here's a kind no to ${o.from} for ${when}. ${check}`
-        : decision === "negotiate"
-          ? `Here's a reply offering ${o.from} ${alt ? alt.label : "another time"} instead. ${check}`
-          : decision === "swap"
-            ? `Here's a reply offering ${o.from} a swap. Add who could take it if you know, then press Send reply.`
-            : `All right. I'll remind you in half an hour. Nothing has been sent to ${o.from}.`;
+        ? `I've opened ${o.from}'s ask for ${when}. Press Decline to take it off your week.`
+        : `All right. It stays on your week, see-through, until you press it. Nothing was sent to ${o.from}.`;
   return { text, actions: [{ type: "respond", offerId: o.id, decision }] };
 }
 
@@ -226,7 +219,7 @@ export function scriptedTurn(input: string, state: DataState, now: When): Assist
   if (input.startsWith(ANSWER)) {
     const [id, decision] = input.slice(ANSWER.length).split(":");
     const o = pending.find((x) => x.id === id);
-    if (o && DECISIONS.includes(decision as Decision)) return answerReply(o, decision as Decision, state, now);
+    if (o && DECISIONS.includes(decision as Decision)) return answerReply(o, decision as Decision, now);
     return { text: "That ask has already been answered.", actions: [] };
   }
   const named = input === BRIEF ? null : dateFrom(input, now);
@@ -246,23 +239,16 @@ export function scriptedTurn(input: string, state: DataState, now: When): Assist
     }
     o ??= pending[0];
     if (decision === "unsure") {
-      return { text: `That's okay, there's no rush. You can take it, offer another time, ask for a swap, say not ${offerWhen(o, now)}, or decide later. Which would you like?`, actions: [] };
+      return { text: `That's okay, there's no rush. You can ${CHOICES}. Which would you like?`, actions: [] };
     }
-    return answerReply(o, decision, state, now);
+    return answerReply(o, decision, now);
   }
   if (named && /\b(what|show|on|have|anything)\b/i.test(input)) return { text: describeDay(state, named), actions: [{ type: "show_day", date: named }] };
   if (pending.length) {
     const o = pending[0];
-    return { text: `For ${o.from}'s ask, you can take it, offer another time, ask for a swap, say not ${offerWhen(o, now)}, or decide later. Which would you like?`, actions: [] };
+    return { text: `For ${o.from}'s ask, you can ${CHOICES}. Which would you like?`, actions: [] };
   }
   return { text: `Nothing is waiting on you. Ask me about any day this week, or say "brief me".`, actions: [] };
-}
-
-/** The reply Offshift records for the manager when the assistant applies a decision. */
-export function replyTextFor(state: DataState, offerId: string, decision: Decision, now: When): string {
-  const o = state.offers.find((x) => x.id === offerId);
-  if (!o || decision === "later") return "";
-  return draftFor(replyDraft(o, decision, state, now), state.settings.tone);
 }
 
 export function weekdayOrder(a: Day, b: Day): number {
