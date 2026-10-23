@@ -135,6 +135,8 @@ export interface DayView {
   today: boolean;
   rest: boolean;
   items: DayItem[];
+  /** The body band for this day, when the worker has shared readings. */
+  body?: BandDay;
 }
 
 /** 0 reads low, 3 reads well. */
@@ -160,6 +162,26 @@ export interface Wearable {
 export const SCHEMA = 2;
 
 /** Everything that syncs between the calendar, the team API, the watch and the server. */
+/** The latest reading the worker shared on one day, kept so the week can show days side by side. */
+export interface BodyDay {
+  date: DateKey;
+  /** The watch's clock time of the reading. */
+  at: string;
+  /** When the server got it (ISO). */
+  receivedAt: string;
+  signals: BodySignals;
+}
+
+/** One day's piece of the floor band: a shade from 0 (lightest) to 3 (darkest), or no reading. */
+export interface BandDay {
+  date: DateKey;
+  state: "reading" | "stale" | "none";
+  shade?: BodyLevel;
+  word?: string;
+  /** Last night's recharge, drawn between the day before and this one. */
+  overnight?: { shade: BodyLevel; word: string };
+}
+
 export interface DataSlice {
   schema: number;
   sessionStartedAt: string;
@@ -171,4 +193,6 @@ export interface DataSlice {
   sync: SyncEntry[];
   settings: Settings;
   wearable?: Wearable | null;
+  /** Day by day, only while sharing is on; private to the worker. */
+  bodyDays?: BodyDay[];
 }

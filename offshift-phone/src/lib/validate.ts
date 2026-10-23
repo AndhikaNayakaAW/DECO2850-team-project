@@ -1,7 +1,7 @@
 import { BODY_SIGNALS } from "./body";
 import { DAYS } from "./logic";
 import { isClock, isDateKey } from "./time";
-import { SCHEMA, type DataSlice } from "./types";
+import { SCHEMA, type BodyDay, type DataSlice } from "./types";
 
 /**
  * Checks a week that arrived over the network or from storage, field by field, and returns a clean copy
@@ -125,6 +125,13 @@ const wearable = object({
   signals: optional(object(Object.fromEntries(BODY_SIGNALS.map((k) => [k, optional(level)])))),
 });
 
+const bodyDay = object({
+  date,
+  at: clock,
+  receivedAt: iso,
+  signals: object(Object.fromEntries(BODY_SIGNALS.map((k) => [k, optional(level)]))),
+});
+
 const week = object({
   schema: oneOf([SCHEMA]),
   sessionStartedAt: iso,
@@ -136,15 +143,18 @@ const week = object({
   sync: list(entry, 2000),
   settings,
   wearable: optional(wearable),
+  bodyDays: optional(check((v) => Array.isArray(v) && v.length <= 60)),
 });
 
 /** The week in the current shape, cleaned, or null if anything in it is malformed or from an older version. */
 export function cleanData(input: unknown): DataSlice | null {
   const c = week(input);
   if (c === BAD) return null;
-  const data = c as DataSlice;
-  if (data.wearable === undefined) data.wearable = null;
-  return data;
+  const { wearable, bodyDays = [], ...rest } = c as DataSlice;
+  const days = bodyDays.map((d) => bodyDay(d));
+  if (days.includes(BAD)) return null;
+  // Always the same key order: devices compare weeks as JSON, so order matters.
+  return { ...rest, wearable: wearable ?? null, bodyDays: days as BodyDay[] };
 }
 
 /** How long the shared log and the conversation get before the oldest entries go: well inside what a week may hold. */

@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { throwSpeed } from "@/lib/gestures";
 import { DAYS, elapsedMinutes, fromMinutes, minutes } from "@/lib/logic";
+import { BAND_COLOUR } from "@/lib/body-week";
 import { EFFORT_COLOUR, EFFORT_WORD } from "@/lib/effort";
 import type { Day, DayItem, DayView } from "@/lib/types";
 
@@ -44,6 +45,8 @@ export interface SceneHandle {
   zoomBy: (factor: number) => void;
   nudgeOrbit: (dTheta: number, dPhi: number) => void;
   resetView: () => void;
+  /** Straight down from above, so the floor band reads as a flat calendar without perspective. Off returns to the usual view. */
+  setFlat: (on: boolean) => void;
   hoverAt: (nx: number, ny: number, visible: boolean) => void;
 }
 
@@ -139,6 +142,11 @@ class WeekScene {
   target = new THREE.Vector3(0, 1.8, 0);
   orbit = { theta: 0.4, phi: 1.2, r: 24 };
   baseTheta = 0.4;
+  /** Looking straight down: the idle sway stays still so the band can be read. */
+  flat = false;
+  bandMats = new Map<string, THREE.MeshBasicMaterial>();
+  hatch: THREE.CanvasTexture | null = null;
+  bandEdge = new THREE.LineBasicMaterial({ color: 0x374938 });
   zoom = 1;
   pointers = new Map<number, { x: number; y: number }>();
   pinchDist = 0;
@@ -330,6 +338,7 @@ class WeekScene {
       base.position.set(x, -0.035, 0);
       this.group.add(base);
       this.bases.push({ mesh: base, day });
+      if (day.body) this.addBand(day, di, x);
       if (day.rest) {
         const g = new THREE.BoxGeometry(0.96, this.yOf(H1), 0.96);
         g.translate(0, this.yOf(H1) / 2, 0);
@@ -385,7 +394,8 @@ class WeekScene {
       dn.textContent = day.day;
       lab.append(dn, String(day.dayNum));
       this.labels.appendChild(lab);
-      this.dayLabels.push({ el: lab, pos: new THREE.Vector3(x, -0.42, 0.6) });
+      // With a body band in front of the tile, the day's name moves forward so it never sits on the band.
+      this.dayLabels.push({ el: lab, pos: new THREE.Vector3(x, -0.42, day.body ? 1.08 : 0.6) });
     });
     const hourLines = this.detail ? [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24] : [12, 18, 24];
     const hourText = this.detail ? [8, 10, 12, 14, 16, 18, 20, 22, 24] : [12, 18, 24];
@@ -723,6 +733,66 @@ class WeekScene {
     this.start();
   }
 
+  /**
+   * The body band: a flat strip in front of the day's tile, unlit so its grey steps keep their values,
+   * hatched where there is no reading (and over a stale one), with last night's recharge bridging the gap from the day before.
+   */
+  addBand(day: DayView, di: number, x: number) {
+    const body = day.body!;
+    // Just in front of the tile (which ends at 0.56), deep enough to read from the usual angle.
+    const depth = 0.3;
+    const z = 0.6 + depth / 2;
+    const strip = (w: number, cx: number, mat: THREE.MeshBasicMaterial) => {
+      const geo = new THREE.PlaneGeometry(w, depth);
+      geo.rotateX(-Math.PI / 2);
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(cx, 0.004, z);
+      const edge = new THREE.LineSegments(new THREE.EdgesGeometry(geo), this.bandEdge);
+      mesh.add(edge);
+      this.group.add(mesh);
+    };
+    strip(1.12, x, this.bandMat(body.state === "none" ? undefined : body.shade, body.state !== "reading"));
+    if (body.overnight && di > 0) strip(SPACING - 1.12 - 0.04, x - SPACING / 2, this.bandMat(body.overnight.shade, false));
+  }
+
+  bandMat(shade: number | undefined, hatched: boolean) {
+    const key = `${shade ?? "none"}-${hatched}`;
+    let m = this.bandMats.get(key);
+    if (!m) {
+      if (hatched && !this.hatch) {
+        const c = document.createElement("canvas");
+        c.width = c.height = 32;
+        const g = c.getContext("2d")!;
+        g.fillStyle = "#ffffff";
+        g.fillRect(0, 0, 32, 32);
+        g.strokeStyle = "#5c5c57";
+        g.lineWidth = 3;
+        for (let i = -32; i <= 32; i += 10) {
+          g.beginPath();
+          g.moveTo(i, 32);
+          g.lineTo(i + 32, 0);
+          g.stroke();
+        }
+        this.hatch = new THREE.CanvasTexture(c);
+        this.hatch.wrapS = this.hatch.wrapT = THREE.RepeatWrapping;
+        this.hatch.repeat.set(4, 0.6);
+      }
+      m = new THREE.MeshBasicMaterial({ color: shade === undefined ? "#F5F2ED" : BAND_COLOUR[shade], map: hatched ? this.hatch : null });
+      this.bandMats.set(key, m);
+    }
+    return m;
+  }
+
+  setFlat(on: boolean) {
+    this.flat = on;
+    if (!on) return this.resetView();
+    this.orbit.theta = this.thetaTarget = this.baseTheta = 0;
+    this.orbit.phi = this.phiTarget = 0.06;
+    // Closer, so the week fills the stage from above.
+    this.zoom = this.zoomTarget = 0.62;
+    this.start();
+  }
+
   baseMat(day: DayView) {
     if (this.selected === day.day) return this.mats.baseSel!;
     if (day.rest) return this.mats.baseRest!;
@@ -769,6 +839,7 @@ class WeekScene {
   }
 
   resetView() {
+    this.flat = false;
     this.baseTheta = 0.4;
     this.orbit.theta = 0.4;
     this.thetaTarget = 0.4;
@@ -1240,7 +1311,7 @@ class WeekScene {
         this.phiTarget = this.orbit.phi;
       }
       this.zoom += (this.zoomTarget - this.zoom) * k;
-    } else if (!this.reduced && !this.dragging && !busy && t - this.lastInteract > 3) {
+    } else if (!this.reduced && !this.flat && !this.dragging && !busy && t - this.lastInteract > 3) {
       const sway = this.baseTheta + Math.sin((t - this.lastInteract - 3) * 0.22) * 0.15;
       this.orbit.theta += (sway - this.orbit.theta) * 0.05;
     }
@@ -1313,6 +1384,8 @@ class WeekScene {
     this.hourLabels.forEach((l) => {
       this.placeLabel(l);
       if (sparse && l.hour !== undefined && l.hour % 6 !== 0) l.el.style.opacity = "0";
+      // From straight above, hours have no height to label.
+      if (this.flat) l.el.style.opacity = "0";
     });
     if (this.detail) this.placeBlockLabels();
     const t1 = performance.now();
@@ -1373,6 +1446,9 @@ class WeekScene {
     this.clearPreview();
     this.clearCreateGhost();
     this.connectors.forEach((l) => l.geometry.dispose());
+    this.bandMats.forEach((m) => m.dispose());
+    this.hatch?.dispose();
+    this.bandEdge.dispose();
     this.dashMat.dispose();
     Object.values(this.mats).forEach((m) => m?.dispose());
     this.guide?.dispose();
@@ -1472,7 +1548,7 @@ export default function Week3D({
   readyRef.current = onReady;
   const daysRef = useRef(days);
   daysRef.current = days;
-  const key = JSON.stringify(days.map((d) => [d.date, d.rest, d.today, d.items.map((i) => [i.id, i.kind, i.start, i.end, i.label, i.offerId, i.workplaceIndex, i.protected, i.status])]));
+  const key = JSON.stringify(days.map((d) => [d.date, d.rest, d.today, d.items.map((i) => [i.id, i.kind, i.start, i.end, i.label, i.offerId, i.workplaceIndex, i.protected, i.status]), d.body ? [d.body.state, d.body.shade, d.body.overnight?.shade] : null]));
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -1524,6 +1600,7 @@ export default function Week3D({
         zoomBy: (f) => scene.zoomBy(f),
         nudgeOrbit: (a, b) => scene.nudgeOrbit(a, b),
         resetView: () => scene.resetView(),
+        setFlat: (on) => scene.setFlat(on),
         hoverAt: (nx, ny, v) => scene.hoverAt(nx, ny, v),
       });
       scene.selected = selectedDay ?? null;

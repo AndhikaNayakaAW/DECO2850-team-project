@@ -8,7 +8,9 @@ import ItemForm, { type ItemKindChoice, type ItemTarget, type Removed } from "./
 import SettingsForm from "./SettingsForm";
 import TestOfferForm from "./TestOfferForm";
 import { Sheet } from "./Sheet";
-import Week3D, { type DropTarget } from "./Week3D";
+import Week3D, { type DropTarget, type SceneHandle } from "./Week3D";
+import { BAND_COLOUR, BAND_MEANING, BAND_SIGNALS, bodyBand, type BandSignal } from "@/lib/body-week";
+import { SIGNAL_LABELS } from "@/lib/body";
 import { buildWeek, clashes, waitingAsks } from "@/lib/checks";
 import { EFFORTS, EFFORT_COLOUR, EFFORT_WORD } from "@/lib/effort";
 import { DAY_NAMES, clock12, dayIndex } from "@/lib/logic";
@@ -60,6 +62,17 @@ export default function CalendarBoard() {
   const [sheet, setSheet] = useState<SheetState>(null);
   const [undo, setUndo] = useState<Undo | null>(null);
   const [immersive, setImmersive] = useState(false);
+  /** Which reading the floor band shows: the worker's choice, remembered on this device. */
+  const [bandSignal, setBandSignal] = useState<BandSignal>(() => {
+    try {
+      const saved = localStorage.getItem("offshift-band-signal");
+      return (BAND_SIGNALS as readonly string[]).includes(saved ?? "") ? (saved as BandSignal) : "energy";
+    } catch {
+      return "energy";
+    }
+  });
+  const [flat, setFlat] = useState(false);
+  const scene = useRef<SceneHandle | null>(null);
   const immersiveRef = useRef(false);
   immersiveRef.current = immersive;
 
@@ -88,7 +101,21 @@ export default function CalendarBoard() {
   }, [undo]);
 
   const week = useMemo(() => buildWeek(state, weekAnchor, now), [state.shifts, state.uni, state.personal, state.offers, state.settings, weekAnchor, now.date]); // eslint-disable-line react-hooks/exhaustive-deps
-  const days = useMemo(() => week.map((d) => ({ ...d, items: d.items.filter((it) => !hidden.has(it.kind === "due" ? "uni" : it.kind)) })), [week, hidden]);
+  const band = useMemo(() => bodyBand(state, dates, bandSignal), [state.bodyDays, state.settings.timeZone, dates, bandSignal, now.date]); // eslint-disable-line react-hooks/exhaustive-deps
+  const days = useMemo(
+    () => week.map((d) => ({ ...d, items: d.items.filter((it) => !hidden.has(it.kind === "due" ? "uni" : it.kind)), body: band.find((b) => b.date === d.date) })),
+    [week, hidden, band],
+  );
+  function chooseBand(sig: BandSignal) {
+    setBandSignal(sig);
+    try {
+      localStorage.setItem("offshift-band-signal", sig);
+    } catch {}
+  }
+  function toggleFlat() {
+    scene.current?.setFlat(!flat);
+    setFlat(!flat);
+  }
   const view = week.find((d) => d.date === selected)!;
   const clash = useMemo(() => clashes(state), [state.shifts, state.personal, state.uni]); // eslint-disable-line react-hooks/exhaustive-deps
   const pending = waitingAsks(state.offers);
@@ -288,6 +315,7 @@ export default function CalendarBoard() {
             height="100%"
             detail
             days={days}
+            onReady={(h) => (scene.current = h)}
             selectedDay={view.day}
             onDayTap={(d) => {
               setPicked(dateOfDay(d));
@@ -299,6 +327,31 @@ export default function CalendarBoard() {
             editable
             hint="hold a block to pick it up · move plans between days · bin to remove · pinch to zoom"
           />
+          <div className="stage-legends">
+          {band.length > 0 && (
+            <div className="effort-legend band-legend" role="group" aria-label="Your body, from your watch, along the floor of each day">
+              <span>Floor: your watch</span>
+              {BAND_SIGNALS.map((sig) => (
+                <button key={sig} type="button" aria-pressed={bandSignal === sig} className={bandSignal === sig ? "on" : ""} onClick={() => chooseBand(sig)}>
+                  {SIGNAL_LABELS[sig]}
+                </button>
+              ))}
+              <span className="band-scale" title={`Darker means ${BAND_MEANING[bandSignal]}`}>
+                {BAND_COLOUR.map((c) => (
+                  <i key={c} className="swatch" style={{ background: c }} aria-hidden="true" />
+                ))}
+                darker: {BAND_MEANING[bandSignal]}
+              </span>
+              <span>
+                <i className="swatch hatch" aria-hidden="true" />
+                no reading
+              </span>
+              <span>between days: last night&apos;s recharge</span>
+              <button type="button" aria-pressed={flat} className={flat ? "on" : ""} onClick={toggleFlat}>
+                {flat ? "Back to 3D" : "Read flat"}
+              </button>
+            </div>
+          )}
           {week.some((d) => d.items.some((it) => it.effort)) && (
             <div className="effort-legend" aria-label="How the work was, lightest to hardest">
               <span>How the work was</span>
@@ -310,6 +363,7 @@ export default function CalendarBoard() {
               ))}
             </div>
           )}
+          </div>
           {weekIsEmpty && (
             <div className="empty-week" role="region" aria-label="Get started">
               <h2>{nothingAtAll ? "Start with this week." : "Nothing on this week."}</h2>

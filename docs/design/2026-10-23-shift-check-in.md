@@ -1,6 +1,6 @@
-# Design rationale: "How was the work?" after a shift
+# Design rationale: "How was the work?" after a shift, and the body band
 
-Offshift, DECO2850, 23 October 2026. This document explains a new feature and why it is designed the way it is. Every design decision below is tied to published research. The full evidence is in two research briefs in this repository:
+Offshift, DECO2850, 23 October 2026. This document explains two new features, the post-shift check-in (sections 1 to 5) and the body band on the calendar floor (section 6), and why they are designed the way they are. Every design decision below is tied to published research. The full evidence is in two research briefs in this repository:
 
 - [Post-shift difficulty rating](../research/2026-10-23-post-shift-difficulty.md) (48 references, each marked by how far it was checked)
 - [Biometrics on the calendar](../research/2026-10-23-biometrics-on-the-calendar.md) (about 75 references)
@@ -84,16 +84,23 @@ Workplace tracking raises surveillance worries (Chung et al., 2017), and tracked
 
 Li, Dey and Forlizzi (2010) separate short-term reflection, noticing right after recording, from long-term reflection, comparing across weeks. The block changing colour that evening supports the first. A week of coloured blocks, and later several weeks side by side, supports the second: "Friday closes are always dark." The calendar view is the classic way to make weekly patterns visible "almost effortlessly" (van Wijk & van Selow, 1999). Offshift shows the pattern and never names a cause or gives advice: reflection is not automatic, and systems should invite it rather than prescribe (Baumer, 2015).
 
-## 6. Next: body data on the calendar
+## 6. Body data on the calendar
 
-The second brief recommends showing the watch's body levels on the same 3D week, designed so they never compete with the difficulty colour:
+The second brief asked how the watch's readings could sit on the same 3D week without competing with the work colours. This is now built.
 
-- **A flat band along the floor of each day**, with four light-to-dark steps of one neutral hue, plus a short bridge between days for the overnight recharge. Height, size and hue are already taken (Munzner's guidance on 3D; Zacks et al., 1998, on depth biasing bar heights).
-- **A distinct mark for "no reading"**, such as hatching, never the lightest step (Song & Szafir, 2019).
-- **A "read flat" top-down view**, so the bands read as a 2D calendar heatmap without perspective distortion. This is a proposal from the evidence, not a tested design.
-- On a calendar overlay, moments where people could not explain their data fell from 29 to 8 (Huang, Tory & Bartram, 2016), which is why the body data belongs on the week rather than in a separate screen.
-
-This is designed but not built yet.
+| Decision | Why |
+| --- | --- |
+| On the calendar itself, not a separate screen | On a calendar overlay, moments where people could not explain their data fell from 29 to 8 (Huang, Tory & Bartram, 2016). Personal data means most next to the life events that explain it (Li, Dey & Forlizzi, 2010). |
+| Day by day, side by side, not on the hours | The watch gives one level per signal per day, so laying it along the time-of-day axis would claim a precision it doesn't have. Day-level placement next to each day is the juxtaposition pattern for comparing two kinds of data (Gleicher et al., 2011; Javed & Elmqvist, 2012). |
+| A flat strip along the floor, in front of each day | Height already means duration, perspective distorts size and height, and nearby bars bias judgements of height (Munzner, 2014, rules of thumb; Zacks et al., 1998). Hue is taken by the shift difficulty. A flat region of the floor in front of the tile stays clear of the blocks from the usual angle and from above. |
+| One neutral grey, four even steps: `#E2E2DE`, `#B9BAB4`, `#8E908A`, `#62645F` | A sequential ramp for ordered levels (Harrower & Brewer, 2003), evenly darker (Crameri et al., 2020). Grey has no hue, so it reads the same with colour-blind vision and never looks like a violet shift. Adjacent steps stay 9.8 to 17.4 apart in CIEDE2000 for typical, protan, deutan and tritan vision (Machado et al., 2009), checked with the same script. An ink outline separates the palest step from the cream ground. |
+| Darker means more of what the label names | People read darker as more (Schloss et al., 2019, via Sibrel et al., 2020). So the band reads "more energy", "more stress" or "heart further above your usual", and the legend says which. No red or green, and no good or bad: ranges against the worker's own usual, never verdicts (Ravichandran et al., 2017; Consolvo et al., 2008). |
+| No reading is hatched, never the palest step; a stale reading is hatched over its tone | Missing data must look missing, not low (Song & Szafir, 2019). Today's reading older than 12 hours is shown but marked, matching the Body card. |
+| Last night's recharge bridges the gap between two days | Sleep belongs between days. Showing it as a bridge makes the sequence "shift ends, the night after, the next day" visible, which is where late closes and quick returns cost sleep (Vedaa et al., 2016; Schneider & Harknett, 2019). |
+| The worker picks one signal: Energy, Stress or Heart | Showing everything overwhelms (Jones & Kelly, 2017). Pulse ox and breathing are left out: they are single moments, and Garmin's pulse ox gave a reading in only 59% of attempts in a validation study (Carrier et al., 2025). |
+| "Read flat" looks straight down | 2D beats 3D for reading and comparing values (Kraus et al., 2020; Munzner, 2014). From above the floor strips become a plain row, hours (which have no height from above) are hidden, and the day's name moves clear of the band. This is our proposal from the evidence, not a tested design. |
+| Keys under the week, never over it | A key on top hid the Monday to Thursday tiles on a laptop-sized window, so both keys sit below the 3D view. |
+| Private, and forgotten when sharing stops | The server keeps the latest reading of each day for 28 days, only while sharing is on. Turning sharing off on the watch clears every day, and the team view never sees them, like the existing body-reading rules. |
 
 ## 7. Open questions to test with workers
 
@@ -103,6 +110,8 @@ This is designed but not built yet.
 4. Does the violet read as "harder" without the legend? Include a colour-blind check of the rendered 3D view.
 5. Does seeing past ratings help when a new ask arrives, or does it feel like pressure?
 6. Do workers feel the body rating and the work rating ask the same thing twice?
+7. Does the floor band get noticed from the usual angle, or only in Read flat? Do workers read "darker = more stress" without the key?
+8. Which signal do workers choose for the band, and does anyone want two at once?
 
 ## References
 
@@ -110,11 +119,17 @@ Baumer, E. P. S. (2015). Reflective informatics: Conceptual dimensions for desig
 
 Borg, G. A. (1982). Psychophysical bases of perceived exertion. *Medicine & Science in Sports & Exercise, 14*(5), 377-381. https://doi.org/10.1249/00005768-198205000-00012
 
+Carrier, B., Marten Chaves, S., & Navalta, J. W. (2025). Validation of aerobic capacity (VO2max) and pulse oximetry in wearable technology. *Sensors, 25*(1), 275. https://doi.org/10.3390/s25010275
+
 Chung, C.-F., Gorm, N., Shklovski, I. A., & Munson, S. (2017). Finding the right fit: Understanding health tracking in workplace wellness programs. *Proc. CHI 2017*, 4875-4886. https://doi.org/10.1145/3025453.3025510
+
+Consolvo, S., McDonald, D. W., Toscos, T., Chen, M. Y., Froehlich, J., Harrison, B., Klasnja, P., LaMarca, A., LeGrand, L., Libby, R., Smith, I., & Landay, J. A. (2008). Activity sensing in the wild: A field trial of UbiFit Garden. *Proc. CHI 2008*, 1797-1806. https://doi.org/10.1145/1357054.1357335
 
 Crameri, F., Shephard, G. E., & Heron, P. J. (2020). The misuse of colour in science communication. *Nature Communications, 11*, 5444. https://doi.org/10.1038/s41467-020-19160-7
 
 Gilbert, S., & Kelloway, E. K. (2014). Using single items to measure job stressors. *International Journal of Workplace Health Management, 7*(3), 186-199. https://doi.org/10.1108/IJWHM-03-2013-0011
+
+Gleicher, M., Albers, D., Walker, R., Jusufi, I., Hansen, C. D., & Roberts, J. C. (2011). Visual comparison for information visualization. *Information Visualization, 10*(4), 289-309. https://doi.org/10.1177/1473871611416549
 
 Gorm, N., & Shklovski, I. (2016). Steps, choices and moral accounting: Observations from a step-counting campaign in the workplace. *Proc. CSCW 2016*, 148-159. https://doi.org/10.1145/2818048.2819944
 
@@ -128,6 +143,12 @@ Huang, D., Tory, M., & Bartram, L. (2016). A field study of on-calendar visualiz
 
 Intille, S., Haynes, C., Maniar, D., Ponnada, A., & Manjourides, J. (2016). µEMA: Microinteraction-based ecological momentary assessment (EMA) using a smartwatch. *Proc. UbiComp 2016*, 1124-1128. https://doi.org/10.1145/2971648.2971717
 
+Javed, W., & Elmqvist, N. (2012). Exploring the design space of composite visualization. *Proc. IEEE PacificVis 2012*, 1-8. https://doi.org/10.1109/PacificVis.2012.6183556
+
+Jones, S. L., & Kelly, R. (2017). Dealing with information overload in multifaceted personal informatics systems. *Human-Computer Interaction, 33*(1), 1-48. https://doi.org/10.1080/07370024.2017.1302334
+
+Kraus, M., Angerbauer, K., Buchmüller, J., Schweitzer, D., Keim, D. A., Sedlmair, M., & Fuchs, J. (2020). Assessing 2D and 3D heatmaps for comparative analysis: An empirical study. *Proc. CHI 2020*, 1-14. https://doi.org/10.1145/3313831.3376675
+
 Krosnick, J. A., & Presser, S. (2010). Question and questionnaire design. In P. V. Marsden & J. D. Wright (Eds.), *Handbook of Survey Research* (2nd ed., pp. 263-313). Emerald.
 
 Le, H., Potter, V., Lakshminarayanan, R., Mishra, V., & Intille, S. (2025). Feasibility and utility of multimodal micro ecological momentary assessment on a smartwatch. *Proc. CHI 2025*. https://doi.org/10.1145/3706598.3714086
@@ -138,11 +159,15 @@ Machado, G. M., Oliveira, M. M., & Fernandes, L. A. F. (2009). A physiologically
 
 Mehrotra, A., Pejovic, V., Vermeulen, J., Hendley, R., & Musolesi, M. (2016). My phone and me: Understanding people's receptivity to mobile notifications. *Proc. CHI 2016*, 1021-1032. https://doi.org/10.1145/2858036.2858566
 
+Munzner, T. (2014). *Visualization Analysis and Design*. CRC Press. Rules of thumb as summarised in the author's slides: https://cs.ubc.ca/~tmm/talks/vad/VAD-rules.pdf
+
 Ponnada, A., Thapa-Chhetry, B., Manjourides, J., & Intille, S. (2021). Measuring criterion validity of microinteraction ecological momentary assessment (micro-EMA). *JMIR mHealth and uHealth, 9*(3), e23391. https://doi.org/10.2196/23391
 
 Ponnada, A., Wang, S., Chu, D., Do, B., Dunton, G., & Intille, S. (2022). Intensive longitudinal data collection using microinteraction ecological momentary assessment. *JMIR Formative Research, 6*(2), e32772. https://doi.org/10.2196/32772
 
 Preston, C. C., & Colman, A. M. (2000). Optimal number of response categories in rating scales. *Acta Psychologica, 104*(1), 1-15. https://doi.org/10.1016/S0001-6918(99)00050-5
+
+Ravichandran, R., Sien, S.-W., Patel, S. N., Kientz, J. A., & Pina, L. R. (2017). Making sense of sleep sensors: How sleep sensing technologies support and undermine sleep health. *Proc. CHI 2017*, 6864-6875. https://doi.org/10.1145/3025453.3025557
 
 Redelmeier, D. A., & Kahneman, D. (1996). Patients' memories of painful medical treatments: Real-time and retrospective evaluations of two minimally invasive procedures. *Pain, 66*(1), 3-8. https://doi.org/10.1016/0304-3959(96)02994-6
 

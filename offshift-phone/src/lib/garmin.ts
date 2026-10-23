@@ -6,6 +6,7 @@ import { checkInDue } from "./effort";
 import { uid } from "./ids";
 import { clock12, minutes, range12 } from "./logic";
 import { addDays, nowIn, weekdayOf, whenWord } from "./time";
+import { recordBodyDay } from "./body-week";
 import type { BodyLevel, BodySignals, DataSlice, Decision, Offer, OfferStatus, Wearable } from "./types";
 
 export const WATCH_DECISIONS: Decision[] = ["accept", "decline", "later"];
@@ -186,21 +187,25 @@ export function applyWatchHealth(data: DataSlice, signals: BodySignals, at: stri
   const ordered: BodySignals = {};
   for (const k of BODY_SIGNALS) if (signals[k] !== undefined) ordered[k] = signals[k];
   const prev = data.wearable;
+  const now = nowIn(data.settings.timeZone, atTime);
+  const clock = at ?? now.time;
+  const bodyDays = recordBodyDay(data.bodyDays ?? [], now.date, clock, atTime, ordered);
   const unchanged = !!prev && prev.level === level && JSON.stringify(prev.signals ?? {}) === JSON.stringify(ordered);
-  // The same reading again only needs storing now and then, to show it's still current.
-  if (unchanged && !stale(prev, atTime)) return data;
+  // The same reading again only needs storing now and then, to show it's still current; a new day always gets its own.
+  if (unchanged && !stale(prev, atTime) && bodyDays.length === (data.bodyDays ?? []).length) return data;
   const word = OVERALL_WORDS[level];
-  const wearable: Wearable = { level, word, at: at ?? nowIn(data.settings.timeZone, atTime).time, source: "Garmin", receivedAt: atTime.toISOString(), signals: ordered };
+  const wearable: Wearable = { level, word, at: clock, source: "Garmin", receivedAt: atTime.toISOString(), signals: ordered };
   const sync = prev?.word === word ? data.sync : [...data.sync, { id: uid("y"), at: atTime.toISOString(), from: "Watch", to: "Only you", text: `Body reading: ${word.toLowerCase()}. Kept private.` }];
-  return { ...data, wearable, sync };
+  return { ...data, wearable, sync, bodyDays };
 }
 
-/** Sharing turned off on the watch: the calendar forgets the last reading, and the log forgets the readings too. */
+/** Sharing turned off on the watch: the calendar forgets the last reading and every day before it, and the log forgets the readings too. */
 export function stopWatchHealth(data: DataSlice, atTime: Date = new Date()): DataSlice {
-  if (!data.wearable) return data;
+  if (!data.wearable && !data.bodyDays?.length) return data;
   return {
     ...data,
     wearable: null,
+    bodyDays: [],
     sync: [...data.sync.filter((e) => !(e.from === "Watch" && e.text.startsWith("Body reading"))), { id: uid("y"), at: atTime.toISOString(), from: "Watch", to: "Only you", text: "Body sharing turned off on the watch. The calendar forgot the readings." }],
   };
 }

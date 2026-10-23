@@ -9,7 +9,7 @@ export function defaultSettings(): Settings {
 
 /** A clean calendar for the next participant: nothing from the last session carries over. */
 export function emptyData(at: Date = new Date()): DataSlice {
-  return { schema: SCHEMA, sessionStartedAt: at.toISOString(), shifts: [], uni: [], personal: [], offers: [], messages: [], sync: [], settings: defaultSettings(), wearable: null };
+  return { schema: SCHEMA, sessionStartedAt: at.toISOString(), shifts: [], uni: [], personal: [], offers: [], messages: [], sync: [], settings: defaultSettings(), wearable: null, bodyDays: [] };
 }
 
 /** True for a well-formed week in the current shape; anything older or malformed is treated as no data at all. */

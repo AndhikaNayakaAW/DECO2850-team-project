@@ -64,7 +64,7 @@ function safeStorage(): StateStorage {
   };
 }
 
-export const DATA_KEYS: (keyof DataSlice)[] = ["schema", "sessionStartedAt", "shifts", "uni", "personal", "offers", "messages", "sync", "settings", "wearable"];
+export const DATA_KEYS: (keyof DataSlice)[] = ["schema", "sessionStartedAt", "shifts", "uni", "personal", "offers", "messages", "sync", "settings", "wearable", "bodyDays"];
 
 export function pickData(s: DataSlice): DataSlice {
   return Object.fromEntries(DATA_KEYS.map((k) => [k, s[k]])) as unknown as DataSlice;

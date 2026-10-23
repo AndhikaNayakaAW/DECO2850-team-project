@@ -289,8 +289,19 @@ button.status-pill{cursor:pointer;border:0;min-height:40px}
 /* how the work was on a finished shift: one violet, darker for harder, always with its word */
 .swatch{display:inline-block;width:10px;height:10px;border-radius:3px;border:1px solid #374938;vertical-align:-1px;margin-right:5px}
 .seg.effort button{display:inline-flex;align-items:center;justify-content:center;padding-inline:6px}
-.effort-legend{position:absolute;left:14px;bottom:12px;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.04em;color:var(--ink);pointer-events:none}
+/* the keys sit under the week, never on top of it, so they hide no blocks */
+.stage-wrap-3d{flex-direction:column}
+.stage-wrap-3d>.stage{flex:1 1 auto;min-height:0;height:auto!important}
+.stage-legends{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:8px 2px 0}
+.stage-legends:empty{display:none}
+.effort-legend{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.04em;color:var(--ink)}
 .effort-legend>span:first-child{text-transform:uppercase;color:var(--ink-2)}
+/* the body band's key: the worker picks the signal, and can look straight down to read it flat */
+.band-legend{pointer-events:auto;border-radius:14px}
+.band-legend button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 9px;font:inherit;color:var(--ink);cursor:pointer;min-height:28px}
+.band-legend button.on{background:var(--ink-strong);color:var(--ground);border-color:var(--ink-strong)}
+.band-scale{display:inline-flex;align-items:center;gap:2px}
+.swatch.hatch{background:repeating-linear-gradient(135deg,#F5F2ED 0 2px,#5c5c57 2px 3px)}
 .cal-ev.shift{border-left-color:var(--accent)} .cal-ev.mcd{border-left-color:var(--mcd3d)} .cal-ev.uni{border-left-color:var(--uni3d)} .cal-ev.personal{border-left-color:var(--personal3d)} .cal-ev.due{border-left-color:var(--bad)}
 .cal-ev.offer{border-left-color:var(--lamp);border-style:dashed;border-left-style:solid;background:color-mix(in srgb,var(--lamp-soft) 45%,var(--surface))}
 .cal-ev.offer.later{opacity:.55;background:transparent}
