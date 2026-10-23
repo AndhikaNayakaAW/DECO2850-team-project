@@ -25,7 +25,6 @@ const CATEGORIES: { key: PlanCategory; label: string; title: string }[] = [
 
 type Pending =
   | { kind: "move"; itemId: string; title: string; from: SlotTarget; to: SlotTarget; warnings: string[] }
-  | { kind: "negotiate"; itemId: string; title: string; workplace: string; to: SlotTarget; draft: string }
   | { kind: "create"; slot: SlotTarget; step: "ask" | "form"; category: PlanCategory; title: string; start: string; end: string; importance: Importance }
   | { kind: "protect"; itemId: string; title: string };
 
@@ -95,7 +94,6 @@ export default function Immersive({ onExit, weekAnchor, now, onOpenAsk }: { onEx
   const addPersonal = useStore((s) => s.addPersonal);
   const removePersonal = useStore((s) => s.removePersonal);
   const setProtected = useStore((s) => s.setProtected);
-  const sendMessage = useStore((s) => s.sendMessage);
   const notePrivate = useStore((s) => s.notePrivate);
 
   const handle = useRef<SceneHandle | null>(null);
@@ -178,10 +176,10 @@ export default function Immersive({ onExit, weekAnchor, now, onOpenAsk }: { onEx
       if (!found) return;
       const { item, day } = found;
       const title = item.label.replace(/ · .*$/, "");
-      if (item.kind === "shift" && item.workplace) {
-        const draft = `Hi, would it be possible to move my ${DAY_NAMES[day]} ${range12(item.start, item.end)} shift at ${item.workplace} to ${DAY_NAMES[to.day]} ${range12(to.start, to.end)}? Happy to talk it through.`;
-        setPending({ kind: "negotiate", itemId, title, workplace: item.workplace, to, draft });
-        say(`${title} is a rostered shift, so it stays where it is. Thumbs up to send your manager a request, thumbs down to leave it.`);
+      // Rostered shifts never move here, and nothing goes to the manager: the shift snaps back.
+      if (item.kind === "shift") {
+        handle.current?.clearPreview();
+        say(`${title} is a rostered shift, so it stays where it is.`);
         return;
       }
       if (item.kind !== "personal") {
@@ -210,14 +208,6 @@ export default function Immersive({ onExit, weekAnchor, now, onOpenAsk }: { onEx
       pushUndo({ label: `Move ${p.title}`, undo: () => updatePersonal(p.itemId, { date: fromDate, start: p.from.start, end: p.from.end }) });
       handle.current?.clearPreview();
       say(`Moved to ${DAY_NAMES[p.to.day]}, ${range12(p.to.start, p.to.end)}. You can undo this.`);
-    } else if (p.kind === "negotiate") {
-      if (!p.draft.trim()) {
-        say("Write the request first.");
-        return;
-      }
-      sendMessage(p.draft.trim().slice(0, 1500));
-      handle.current?.clearPreview();
-      say("Request sent to your manager. The shift is unchanged until they reply.");
     } else if (p.kind === "create") {
       if (p.step === "ask") return;
       const title = (p.title.trim() || CATEGORIES.find((c) => c.key === p.category)?.title || "New plan").slice(0, 60);
@@ -812,7 +802,7 @@ export default function Immersive({ onExit, weekAnchor, now, onOpenAsk }: { onEx
             {pending && (
               <>
                 <button className="btn small" onClick={confirmPending} disabled={pending.kind === "create" && pending.step === "ask"}>
-                  {pending.kind === "move" ? "Confirm move" : pending.kind === "negotiate" ? "Send request" : pending.kind === "create" ? "Add" : "Yes, protect"}
+                  {pending.kind === "move" ? "Confirm move" : pending.kind === "create" ? "Add" : "Yes, protect"}
                 </button>
                 <button className="btn small neutral" onClick={cancelPending}>
                   {pending.kind === "move" ? "Keep original" : "Cancel"}
@@ -929,24 +919,6 @@ function PendingPanel({ pending, setPending, onConfirm, onCancel }: { pending: P
           </button>
           <button className="btn ghost" onClick={() => setEdit((v) => !v)}>
             {edit ? "Hide time" : "Edit time"}
-          </button>
-        </div>
-      </div>
-    );
-  }
-  if (pending.kind === "negotiate") {
-    return (
-      <div className="pend">
-        <div className="eyebrow">Rostered shift</div>
-        <h2>{pending.title}</h2>
-        <p className="when">Rostered shifts don't move here. You can ask your manager at {pending.workplace} instead.</p>
-        <textarea className="draft" value={pending.draft} maxLength={1500} onChange={(e) => setPending({ ...pending, draft: e.target.value })} aria-label="Request" />
-        <div className="btn-col">
-          <button className="btn" onClick={onConfirm}>
-            Send request
-          </button>
-          <button className="btn neutral" onClick={onCancel}>
-            Discard
           </button>
         </div>
       </div>

@@ -35,8 +35,6 @@ export interface Actions {
   /** Undo for an answer: the ask waits again and its shift comes off the week. */
   unanswerOffer: (offerId: string) => void;
   sendAsk: (input: AskInput) => string;
-  /** A note from the worker to the team, such as a request to move a rostered shift. */
-  sendMessage: (text: string, offerId?: string) => void;
   /** A private note, such as the immersive view's check-in. Logged for the worker only; the team view never shows it. */
   notePrivate: (text: string) => void;
   updateSettings: (patch: Partial<Settings>) => void;
@@ -152,7 +150,6 @@ export const useStore = create<Store>()(
           set({ ...r.data });
           return r.id;
         },
-        sendMessage: (text, offerId) => set((s) => ({ messages: [...s.messages, { id: uid("m"), offerId, from: "worker", text, at: new Date().toISOString() }] })),
         notePrivate: (text) => set((s) => ({ sync: [...s.sync, { id: uid("y"), at: new Date().toISOString(), from: "Offshift", to: "Only you", text }] })),
         updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
         newSession: () => set((s) => ({ ...emptyData(), ...toast(s, "New session. The calendar is empty.") })),

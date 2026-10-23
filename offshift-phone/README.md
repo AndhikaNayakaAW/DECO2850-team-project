@@ -97,7 +97,7 @@ Hand tracking is optional. It uses MediaPipe Hand Landmarker served from `public
 | Thumbs down | Cancels |
 | A held fist | Undoes |
 
-Nothing changes without a confirmation. Rostered shifts never move here; the view offers to draft a request to the manager instead. On opening, the assistant greets the worker, reads out today and any waiting ask, and asks how they are. That answer stays private.
+Nothing changes without a confirmation. Rostered shifts never move here: a dragged shift snaps back, and nothing goes to the manager. On opening, the assistant greets the worker, reads out today and any waiting ask, and asks how they are. That answer stays private.
 
 With the voice on (https only), it listens for: confirm, cancel, undo, expand calendar, show full week, add rest.
 

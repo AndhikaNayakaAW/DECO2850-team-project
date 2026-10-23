@@ -295,7 +295,6 @@ button.status-pill{cursor:pointer;border:0;min-height:40px}
 .fact.ok{border-left-color:var(--ok);background:var(--ok-soft)}
 .sel-actions{display:flex;flex-direction:column;gap:6px;margin-top:4px}
 .sel.empty p{font-size:13.5px;color:var(--ink-2)}
-.pend .draft{width:100%;min-height:110px;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--surface-2);font-size:13.5px;line-height:1.45;resize:vertical}
 .imm-bottom{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
 .caption{background:var(--ink-strong);color:var(--ground);border-radius:16px;padding:12px 18px;font-family:var(--font-display);font-size:20px;font-weight:600;letter-spacing:-.01em;line-height:1.3;min-height:52px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .caption.muted::before{content:"muted";font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.6}
