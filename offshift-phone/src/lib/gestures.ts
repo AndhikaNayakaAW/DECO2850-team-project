@@ -16,18 +16,9 @@ export interface HandInfo {
   thumb?: "up" | "down" | null; // thumbs up or down with the other fingers curled
 }
 
-export interface FaceBox {
-  x: number; // 0..1, mirrored like the hands
-  y: number;
-  w: number;
-  h: number;
-}
-
 export interface HandFrame {
   t: number; // ms
   hands: HandInfo[];
-  /** Someone is in front of the camera. Presence only: no identity, no expression. */
-  face?: FaceBox | null;
 }
 
 export type GestureEvent =

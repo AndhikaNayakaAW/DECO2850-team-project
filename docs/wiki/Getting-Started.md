@@ -32,10 +32,10 @@ Use Node 24, matching CI. For browser devices on the same Wi-Fi, use Next.js's p
 
 ## Try the complete interaction
 
-Open `/calendar?reset=1` to start a new session, and let the worker add their own commitments. Press **Test offer** to send an ask dated in the future. Read it on the calendar and on the Garmin, inspect the surrounding week, choose a reply and confirm sending. An accepted ask becomes a shift.
+Open `/calendar?reset=1` to start a new session, and let the worker add their own commitments. Press **Test offer** to send an ask dated in the future. Read it on the calendar and on the Garmin, inspect the surrounding week, and choose Accept, Decline or Later. An accepted ask becomes a shift.
 
 On the watch, body sharing is optional. Declining keeps readings on the watch. When sharing is enabled, the server receives bands encoded as 0–3 and timestamps; raw physiological values stay on the watch. Turning sharing off removes the shared wearable record.
 
-The phone and manager apps retained under `prototype/` are earlier course artifacts. They are not the main deployed interface. Camera and voice remain optional; normal touch and button controls work independently.
+The phone and manager apps retained under `prototype/` are earlier course artifacts. They are not the main deployed interface. The camera remains optional, and Offshift never speaks or listens; normal touch and button controls work independently.
 
 **Next:** [Watch and reflection](Watch-and-Reflection) · [Build and deploy](Deployment) · [Testing](Testing-and-TDD).

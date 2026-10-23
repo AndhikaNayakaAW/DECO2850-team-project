@@ -3,12 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Week3D, { type SceneHandle, type SlotTarget } from "@/components/board/Week3D";
 import { buildWeek, type DataState } from "@/lib/checks";
-import { GestureEngine, type FaceBox, type GestureEvent, type HandFrame } from "@/lib/gestures";
-import { openingLines } from "@/lib/assistant";
+import { GestureEngine, type GestureEvent, type HandFrame } from "@/lib/gestures";
 import BodyCard from "./BodyCard";
 import { startHandTracking, type HandTracker } from "@/lib/hands";
 import { DAYS, DAY_NAMES, clock12, dayIndex, minutes, range12 } from "@/lib/logic";
-import { createSpeaker, type Speaker } from "@/lib/speech";
 import { useStore } from "@/lib/store";
 import { isClock, weekDates, weekLabel, weekdayOf, type Now } from "@/lib/time";
 import type { DateKey, Day, DayItem, DayView, Importance, PlanCategory } from "@/lib/types";
@@ -31,22 +29,6 @@ type Pending =
 interface UndoEntry {
   label: string;
   undo: () => void;
-}
-
-type SR = {
-  lang: string;
-  interimResults: boolean;
-  continuous: boolean;
-  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }>; resultIndex: number }) => void) | null;
-  onend: (() => void) | null;
-  onerror: (() => void) | null;
-  start: () => void;
-  stop: () => void;
-};
-function recognitionCtor(): (new () => SR) | null {
-  if (typeof window === "undefined") return null;
-  const w = window as unknown as { SpeechRecognition?: new () => SR; webkitSpeechRecognition?: new () => SR };
-  return w.SpeechRecognition || w.webkitSpeechRecognition || null;
 }
 
 /** Items a proposed slot would touch, in plain words. Facts only, no advice. */
@@ -94,44 +76,28 @@ export default function Immersive({ onExit, weekAnchor, now, onOpenAsk }: { onEx
   const addPersonal = useStore((s) => s.addPersonal);
   const removePersonal = useStore((s) => s.removePersonal);
   const setProtected = useStore((s) => s.setProtected);
-  const notePrivate = useStore((s) => s.notePrivate);
 
   const handle = useRef<SceneHandle | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [exploded, setExploded] = useState(false);
   const [caption, setCaption] = useState("");
-  const [muted, setMuted] = useState(false);
   const [pending, setPending] = useState<Pending | null>(null);
   const [undo, setUndo] = useState<UndoEntry[]>([]);
   const [touch, setTouch] = useState(false);
-  const [consent, setConsent] = useState<"camera" | "mic" | null>(null);
+  const [consent, setConsent] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
   const [cameraStatus, setCameraStatus] = useState("Camera off");
   const [handsCount, setHandsCount] = useState(0);
   const [cursor, setCursor] = useState<{ x: number; y: number; visible: boolean; pinching: boolean }>({ x: 0.5, y: 0.5, visible: false, pinching: false });
-  const [question, setQuestion] = useState<"plan" | "mood" | null>(null);
-  const questionRef = useRef<"plan" | "mood" | null>(null);
-  questionRef.current = question;
-  const [face, setFace] = useState<FaceBox | null>(null);
-  const [scanning, setScanning] = useState(false);
-  const greeted = useRef(false);
-  const lastGreetAt = useRef(0);
-  const faceLastSeen = useRef(0);
-  const faceStateAt = useRef(0);
-  const greetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [voiceOn, setVoiceOn] = useState(false);
-  const [heard, setHeard] = useState("");
-  const speaker = useRef<Speaker | null>(null);
   const engine = useRef(new GestureEngine());
   const tracker = useRef<HandTracker | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const rec = useRef<SR | null>(null);
   const stageBox = useRef<HTMLDivElement>(null);
   const pinch = useRef<{ itemId: string | null; creating: boolean; previewing: boolean }>({ itemId: null, creating: false, previewing: false });
   const reduced = useMemo(() => (typeof window !== "undefined" ? window.matchMedia("(prefers-reduced-motion: reduce)").matches : false), []);
 
-  if (!speaker.current) speaker.current = createSpeaker(setCaption);
-  const say = useCallback((text: string, force = false) => speaker.current?.say(text, { force }), []);
+  // Offshift never speaks: every line is shown on screen as a caption instead.
+  const say = useCallback((text: string) => setCaption(text), []);
 
   /* ---------- data: the board's week and quiet-hour boundaries, straight from the shared store ---------- */
   const nowRef = useRef(now);
@@ -288,46 +254,6 @@ export default function Immersive({ onExit, weekAnchor, now, onOpenAsk }: { onEx
     }
   }
 
-  /* ---------- opening greeting and check-in ---------- */
-  const runGreeting = useCallback(async () => {
-    const sp = speaker.current;
-    if (!sp || greeted.current) return;
-    greeted.current = true;
-    lastGreetAt.current = Date.now();
-    const lines = openingLines(useStore.getState(), nowRef.current);
-    for (const l of lines) await sp.sayAsync(l);
-    setQuestion("plan");
-    await sp.sayAsync("Do you wish to change your plan? Thumbs up for yes, thumbs down for no.");
-  }, []);
-
-  const answerQuestion = useCallback(
-    (dir: "up" | "down") => {
-      const q = questionRef.current;
-      const sp = speaker.current;
-      if (!q || !sp) return false;
-      if (q === "plan") {
-        setQuestion("mood");
-        (async () => {
-          await sp.sayAsync(dir === "up" ? "Pinch and drag anything to move it, or pinch and hold a space to add something." : "All right. I'll leave it as it is.");
-          await sp.sayAsync("How are you today? Thumbs up if you're good, thumbs down if not so good.");
-        })();
-      } else {
-        setQuestion(null);
-        notePrivate(dir === "up" ? "Check-in: feeling good." : "Check-in: not so good today.");
-        sp.say(dir === "up" ? "Good to hear. That stays between us." : "Thanks for telling me. That stays between us, and nothing here is decided for you.");
-      }
-      return true;
-    },
-    [notePrivate],
-  );
-
-  useEffect(() => {
-    greetTimer.current = setTimeout(() => void runGreeting(), 900);
-    return () => {
-      if (greetTimer.current) clearTimeout(greetTimer.current);
-    };
-  }, [runGreeting]);
-
   /* ---------- gestures ---------- */
   const onGesture = useCallback(
     (ev: GestureEvent) => {
@@ -358,7 +284,7 @@ export default function Immersive({ onExit, weekAnchor, now, onOpenAsk }: { onEx
           if (pending) {
             if (ev.dir === "up") confirmPending();
             else cancelPending();
-          } else answerQuestion(ev.dir);
+          }
           break;
         case "fistHold":
           doUndo();
@@ -409,7 +335,7 @@ export default function Immersive({ onExit, weekAnchor, now, onOpenAsk }: { onEx
           break;
       }
     },
-    [selectedId, pending, exploded, days, proposeMove, selectItem, answerQuestion], // eslint-disable-line react-hooks/exhaustive-deps
+    [selectedId, pending, exploded, days, proposeMove, selectItem], // eslint-disable-line react-hooks/exhaustive-deps
   );
   const gestureRef = useRef(onGesture);
   gestureRef.current = onGesture;
@@ -422,29 +348,8 @@ export default function Immersive({ onExit, weekAnchor, now, onOpenAsk }: { onEx
     (frame: HandFrame) => {
       const events = engine.current.update(frame);
       for (const ev of events) gestureRef.current(ev);
-      if (frame.face !== undefined) {
-        const now = Date.now();
-        if (frame.face) {
-          const arrived = now - faceLastSeen.current > 30000;
-          faceLastSeen.current = now;
-          if (arrived) {
-            setScanning(true);
-            setTimeout(() => setScanning(false), 1800);
-            if (now - lastGreetAt.current > 60000) {
-              greeted.current = false;
-              if (greetTimer.current) clearTimeout(greetTimer.current);
-              speaker.current?.say("Scanning. Someone's here.");
-              greetTimer.current = setTimeout(() => void runGreeting(), 1600);
-            }
-          }
-        }
-        if (now - faceStateAt.current > 150) {
-          faceStateAt.current = now;
-          setFace(frame.face);
-        }
-      }
     },
-    [runGreeting],
+    [],
   );
 
   useEffect(() => {
@@ -455,7 +360,7 @@ export default function Immersive({ onExit, weekAnchor, now, onOpenAsk }: { onEx
   }, [feed]);
 
   async function enableCamera() {
-    setConsent(null);
+    setConsent(false);
     try {
       sessionStorage.setItem("offshift-camera-consent", "1");
     } catch {}
@@ -478,82 +383,11 @@ export default function Immersive({ onExit, weekAnchor, now, onOpenAsk }: { onEx
     setCursor((c) => ({ ...c, visible: false }));
   }
 
-  /* ---------- voice commands ---------- */
-  function enableVoice() {
-    setConsent(null);
-    const Ctor = recognitionCtor();
-    if (!Ctor || !window.isSecureContext) {
-      setHeard("Voice input needs HTTPS and a supported browser.");
-      return;
-    }
-    const r = new Ctor();
-    r.lang = "en-AU";
-    r.continuous = true;
-    r.interimResults = false;
-    r.onresult = (e) => {
-      const last = e.results[e.results.length - 1];
-      const t = last[0].transcript.trim().toLowerCase();
-      setHeard(t);
-      commandRef.current(t);
-    };
-    r.onend = () => {
-      if (rec.current === r) {
-        try {
-          r.start();
-        } catch {}
-      }
-    };
-    r.onerror = () => {};
-    rec.current = r;
-    try {
-      r.start();
-      setVoiceOn(true);
-    } catch {
-      setVoiceOn(false);
-    }
-  }
-  function disableVoice() {
-    const r = rec.current;
-    rec.current = null;
-    try {
-      r?.stop();
-    } catch {}
-    setVoiceOn(false);
-  }
-  const command = (t: string) => {
-    if (/\b(confirm|yes|go ahead)\b/.test(t)) confirmPending();
-    else if (/\b(cancel|keep|no thanks)\b/.test(t)) cancelPending();
-    else if (/\bundo\b/.test(t)) doUndo();
-    else if (/\b(expand|separate|explode)\b/.test(t)) explode(true);
-    else if (/\b(full week|whole week|show week|combine|back to week)\b/.test(t)) {
-      explode(false);
-      handle.current?.resetView();
-    } else if (/\badd rest\b/.test(t)) {
-      const slot = defaultSlot();
-      setPending({ kind: "create", slot, step: "form", category: "rest", title: "Rest", start: slot.start, end: slot.end, importance: "protected" });
-      say("Rest. Choose the day and time, then confirm.");
-    } else if (/\bmute\b/.test(t)) toggleMute(true);
-  };
-  const commandRef = useRef(command);
-  commandRef.current = command;
-
-  function toggleMute(m?: boolean) {
-    const next = m ?? !muted;
-    setMuted(next);
-    speaker.current?.setMuted(next);
-  }
-
   /* ---------- lifecycle ---------- */
   useEffect(() => {
-    const sp = speaker.current;
     return () => {
       tracker.current?.stop();
       tracker.current = null;
-      try {
-        rec.current?.stop();
-      } catch {}
-      rec.current = null;
-      sp?.stop();
     };
   }, []);
 
@@ -601,17 +435,11 @@ export default function Immersive({ onExit, weekAnchor, now, onOpenAsk }: { onEx
           <button className="btn small neutral" onClick={() => handle.current?.resetView()}>
             Reset view
           </button>
-          <button className={`btn small ${cameraOn ? "" : "neutral"}`} onClick={() => (cameraOn ? disableCamera() : sessionStorage.getItem("offshift-camera-consent") ? enableCamera() : setConsent("camera"))}>
+          <button className={`btn small ${cameraOn ? "" : "neutral"}`} onClick={() => (cameraOn ? disableCamera() : sessionStorage.getItem("offshift-camera-consent") ? enableCamera() : setConsent(true))}>
             {cameraOn ? "Camera off" : "Camera on"}
-          </button>
-          <button className={`btn small ${voiceOn ? "" : "neutral"}`} onClick={() => (voiceOn ? disableVoice() : setConsent("mic"))}>
-            {voiceOn ? "Voice off" : "Voice on"}
           </button>
           <button className={`btn small ${touch ? "" : "neutral"}`} aria-pressed={touch} onClick={() => setTouch((v) => !v)}>
             Use touch controls
-          </button>
-          <button className={`btn small ${muted ? "" : "neutral"}`} aria-pressed={muted} onClick={() => toggleMute()}>
-            {muted ? "Unmute" : "Mute"}
           </button>
           <button className="btn small" onClick={onExit}>
             Exit
@@ -660,16 +488,6 @@ export default function Immersive({ onExit, weekAnchor, now, onOpenAsk }: { onEx
           </ul>
           <div className="cam">
             <video ref={videoRef} className={cameraOn ? "" : "off"} aria-label="Camera preview, mirrored" />
-            {cameraOn && face && (
-              <div className={`face-box${scanning ? " scanning" : ""}`} style={{ left: `${face.x * 100}%`, top: `${face.y * 100}%`, width: `${face.w * 100}%`, height: `${face.h * 100}%` }} aria-hidden="true">
-                <i className="c tl" />
-                <i className="c tr" />
-                <i className="c bl" />
-                <i className="c br" />
-                <i className="sweep" />
-              </div>
-            )}
-            {cameraOn && <span className="presence">{face ? "someone's here · presence only" : "looking for you"}</span>}
             {!cameraOn && <span>Camera is optional. Video stays in this browser and nothing is saved.</span>}
           </div>
           <div className="k">Without a camera</div>
@@ -782,23 +600,11 @@ export default function Immersive({ onExit, weekAnchor, now, onOpenAsk }: { onEx
         </aside>
 
         <div className="imm-bottom">
-          <div className={`caption${muted ? " muted" : ""}`} aria-live="polite">
+          <div className="caption" aria-live="polite">
             {caption || "Offshift"}
             {pending && <span className="hint-gest">{pending.kind === "create" && pending.step === "ask" ? "raise 1–4 fingers" : "👍 confirm · 👎 cancel"}</span>}
-            {!pending && question && <span className="hint-gest">👍 yes · 👎 no</span>}
-            {voiceOn && heard && <span className="heard">heard: “{heard}”</span>}
           </div>
           <div className="imm-actions">
-            {!pending && question && (
-              <>
-                <button className="btn small" onClick={() => answerQuestion("up")}>
-                  Yes
-                </button>
-                <button className="btn small neutral" onClick={() => answerQuestion("down")}>
-                  No
-                </button>
-              </>
-            )}
             {pending && (
               <>
                 <button className="btn small" onClick={confirmPending} disabled={pending.kind === "create" && pending.step === "ask"}>
@@ -813,29 +619,21 @@ export default function Immersive({ onExit, weekAnchor, now, onOpenAsk }: { onEx
         </div>
 
         {consent && (
-          <div className="consent" role="dialog" aria-modal="true" aria-label={consent === "camera" ? "Camera" : "Microphone"}>
+          <div className="consent" role="dialog" aria-modal="true" aria-label="Camera">
             <div className="consent-box">
-              <h2>{consent === "camera" ? "Use the camera for hand gestures?" : "Use the microphone for voice commands?"}</h2>
-              {consent === "camera" ? (
-                <ul>
-                  <li>Optional. Everything works with mouse, touch and keyboard.</li>
-                  <li>Video is processed in this browser and never leaves it.</li>
-                  <li>No images or video are saved.</li>
-                  <li>Hand positions steer the calendar. A face detector only notices that someone is there, to say hello.</li>
-                  <li>No identity, no expressions, no emotion analysis.</li>
-                </ul>
-              ) : (
-                <ul>
-                  <li>Optional. Every command has a button.</li>
-                  <li>Listens only while Voice is on. Turn it off any time.</li>
-                  <li>Commands: confirm, cancel, undo, expand calendar, show full week, add rest.</li>
-                </ul>
-              )}
+              <h2>Use the camera for hand gestures?</h2>
+              <ul>
+                <li>Optional. Everything works with mouse, touch and keyboard.</li>
+                <li>Video is processed in this browser and never leaves it.</li>
+                <li>No images or video are saved.</li>
+                <li>Only hand positions are read, to steer the calendar.</li>
+                <li>No faces, identity, expressions or emotion analysis.</li>
+              </ul>
               <div className="btn-row">
-                <button className="btn" onClick={() => (consent === "camera" ? enableCamera() : enableVoice())}>
-                  {consent === "camera" ? "Turn camera on" : "Turn voice on"}
+                <button className="btn" onClick={() => enableCamera()}>
+                  Turn camera on
                 </button>
-                <button className="btn neutral" onClick={() => setConsent(null)}>
+                <button className="btn neutral" onClick={() => setConsent(false)}>
                   Not now
                 </button>
               </div>

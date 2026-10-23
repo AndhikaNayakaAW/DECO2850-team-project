@@ -72,6 +72,5 @@ Before field testing on Vercel:
 
 - **Connect an Upstash Redis database** to the project. The integration sets `KV_REST_API_URL` and `KV_REST_API_TOKEN`. Without it, `/api/state` keeps the week only in one server instance's memory, so the calendar and the watch can drift apart and lose it on a restart.
 - **Set `OFFSHIFT_ACCESS_CODE`.** The site is public, and participants' weeks shouldn't be.
-- **`ANTHROPIC_API_KEY`** is optional. Without it, the assistant uses its scripted voice.
 
 See [offshift-phone/README.md](offshift-phone/README.md) for both.

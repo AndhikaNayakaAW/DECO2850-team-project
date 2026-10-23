@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Assistant from "./Assistant";
 import AskPanel from "./AskPanel";
 import BodyCard from "./BodyCard";
 import Immersive from "./Immersive";
@@ -377,8 +376,6 @@ export default function CalendarBoard() {
           )}
         </aside>
       </div>
-
-      <Assistant onShowDay={(date) => goToDate(date)} onShowOffer={(id) => (id ? openAsk(id) : setOfferId(null))} onOpenAsk={(id, decision) => openAsk(id, decision)} />
 
       {undo && (
         <div className="undo" role="status">

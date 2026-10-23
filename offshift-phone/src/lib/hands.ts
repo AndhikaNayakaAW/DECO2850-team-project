@@ -1,6 +1,6 @@
 "use client";
 
-import type { FaceBox, HandFrame, HandInfo } from "./gestures";
+import type { HandFrame, HandInfo } from "./gestures";
 
 /**
  * Webcam hand tracking with MediaPipe Hand Landmarker, served from /public/mediapipe so it works offline.
@@ -62,7 +62,7 @@ export async function startHandTracking(video: HTMLVideoElement, onFrame: (f: Ha
   video.playsInline = true;
   await video.play();
   onStatus?.("Loading hand tracking…");
-  const { FilesetResolver, HandLandmarker, FaceDetector } = await import("@mediapipe/tasks-vision");
+  const { FilesetResolver, HandLandmarker } = await import("@mediapipe/tasks-vision");
   const vision = await FilesetResolver.forVisionTasks("/mediapipe/wasm");
   const make = (delegate: "GPU" | "CPU") =>
     HandLandmarker.createFromOptions(vision, {
@@ -79,25 +79,12 @@ export async function startHandTracking(video: HTMLVideoElement, onFrame: (f: Ha
   } catch {
     landmarker = await make("CPU");
   }
-  // presence only: a bounding box that says someone is there. No landmarks, no identity, no expression.
-  let faces: Awaited<ReturnType<typeof FaceDetector.createFromOptions>> | null = null;
-  try {
-    faces = await FaceDetector.createFromOptions(vision, { baseOptions: { modelAssetPath: "/mediapipe/blaze_face_short_range.tflite", delegate: "GPU" }, runningMode: "VIDEO", minDetectionConfidence: 0.5 });
-  } catch {
-    try {
-      faces = await FaceDetector.createFromOptions(vision, { baseOptions: { modelAssetPath: "/mediapipe/blaze_face_short_range.tflite", delegate: "CPU" }, runningMode: "VIDEO", minDetectionConfidence: 0.5 });
-    } catch {
-      faces = null;
-    }
-  }
   onStatus?.("Camera on");
   let running = true;
   let raf = 0;
   let lastTime = -1;
   let avgMs = 0;
   let skip = false;
-  let frameNo = 0;
-  let face: FaceBox | null = null;
   const loop = () => {
     if (!running) return;
     raf = requestAnimationFrame(loop);
@@ -112,18 +99,6 @@ export async function startHandTracking(video: HTMLVideoElement, onFrame: (f: Ha
       return;
     }
     avgMs = avgMs * 0.9 + (performance.now() - t0) * 0.1;
-    frameNo += 1;
-    if (faces && frameNo % 6 === 0) {
-      try {
-        const fr = faces.detectForVideo(video, t0 + 0.5);
-        const d = fr.detections?.[0]?.boundingBox;
-        const vw = video.videoWidth || 640;
-        const vh = video.videoHeight || 480;
-        face = d ? { x: 1 - (d.originX + d.width) / vw, y: d.originY / vh, w: d.width / vw, h: d.height / vh } : null;
-      } catch {
-        face = null;
-      }
-    }
     const hands: HandInfo[] = [];
     const lms = res.landmarks || [];
     for (let i = 0; i < lms.length; i++) {
@@ -131,7 +106,7 @@ export async function startHandTracking(video: HTMLVideoElement, onFrame: (f: Ha
       hands.push(landmarksToHand(lms[i] as Pt3[], label));
     }
     hands.sort((a, b) => a.center.x - b.center.x);
-    onFrame({ t: t0, hands, face });
+    onFrame({ t: t0, hands });
   };
   raf = requestAnimationFrame(loop);
   return {
@@ -140,9 +115,6 @@ export async function startHandTracking(video: HTMLVideoElement, onFrame: (f: Ha
       cancelAnimationFrame(raf);
       try {
         landmarker.close();
-      } catch {}
-      try {
-        faces?.close();
       } catch {}
       stream.getTracks().forEach((tr) => tr.stop());
       video.srcObject = null;
