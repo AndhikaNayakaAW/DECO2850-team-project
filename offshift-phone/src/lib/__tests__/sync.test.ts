@@ -36,11 +36,12 @@ const run = { id: "p-run", date: "2026-10-21", start: "07:00", end: "08:00", tit
 const withoutAsks = (d: DataSlice): DataSlice => ({ ...d, offers: [], messages: [] });
 
 /** Opens the calendar on a device holding `local` (and optionally its last agreed week), against a server holding `server`. */
-async function open(opts: { server: Saved; local: DataSlice; meta?: { version: number; base: DataSlice }; slowGet?: number }) {
+async function open(opts: { server: Saved; local: DataSlice; meta?: { version: number; base: DataSlice }; slowGet?: number; saved?: Record<string, string> }) {
   vi.resetModules();
   disk.clear();
   disk.set("offshift-calendar-v2", JSON.stringify({ state: opts.local, version: 0 }));
   if (opts.meta) disk.set("offshift-sync-v2", JSON.stringify(opts.meta));
+  for (const [k, v] of Object.entries(opts.saved ?? {})) disk.set(k, v);
   g.__offshiftState = structuredClone(opts.server);
   const route = await import("@/app/api/state/route");
   const requests: string[] = [];
@@ -64,6 +65,14 @@ afterEach(() => {
 });
 
 describe("opening the calendar", () => {
+  it("wipes the reflections and imported heart rate the removed watch preview kept in this browser", async () => {
+    const shared = week();
+    const leftover = JSON.stringify({ state: { session: shared.sessionStartedAt, reflections: { "2026-10-21": "tired after close" }, readings: [{ bpm: 88 }] }, version: 0 });
+    await open({ server: { version: 5, client: "team", data: shared }, local: shared, saved: { "offshift-private-watch-v1": leftover } });
+    await sleep(300);
+    expect(disk.has("offshift-private-watch-v1")).toBe(false);
+  });
+
   it("takes the shared week instead of overwriting it with the device's saved copy, even when the server is slow", async () => {
     const shared = week();
     const app = await open({ server: { version: 5, client: "team", data: shared }, local: withoutAsks(shared), slowGet: 400 });
