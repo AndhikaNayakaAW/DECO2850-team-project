@@ -7,6 +7,8 @@ export type DateKey = string;
 export type Decision = "accept" | "decline" | "later";
 export type OfferStatus = "pending" | "deferred" | "accepted" | "declined";
 export type BodyRating = "fine" | "tired" | "wiped";
+/** How the work on a finished shift was, in work words, lowest to highest. Separate from the body rating. */
+export type Effort = "light" | "steady" | "busy" | "hard";
 export type CheckState = "ok" | "warn" | "bad";
 
 /** A rostered shift at a workplace the worker named themselves. */
@@ -17,6 +19,10 @@ export interface Shift {
   end: string;
   workplace: string;
   rated?: BodyRating;
+  /** How the work was, from the watch's check-in after the shift or from the calendar. */
+  effort?: Effort;
+  /** The worker skipped the check-in: never read as a rating, and never asked again. */
+  effortSkipped?: boolean;
   viaOffer?: string;
   note?: string;
 }
@@ -113,6 +119,8 @@ export interface DayItem {
   offerId?: string;
   /** An ask the worker kept for later: drawn see-through until they press it and decide. */
   later?: boolean;
+  /** A shift's work rating, which colours its block. */
+  effort?: Effort;
   warn?: string;
   category?: PlanCategory;
   importance?: Importance;

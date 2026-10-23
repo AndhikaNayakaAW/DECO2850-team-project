@@ -3,7 +3,7 @@ import { createJSONStorage, persist, type StateStorage } from "zustand/middlewar
 import { applyResponse, sendAsk, unanswer, type AskInput } from "./actions";
 import { uid } from "./ids";
 import { emptyData, exampleWeek } from "./session";
-import type { BodyRating, DataSlice, Decision, PersonalEvent, Settings, Shift, UniEvent } from "./types";
+import type { BodyRating, DataSlice, Decision, Effort, PersonalEvent, Settings, Shift, UniEvent } from "./types";
 import { LOG_LIMIT, MESSAGE_LIMIT, cleanData } from "./validate";
 
 export type { DataSlice } from "./types";
@@ -30,6 +30,8 @@ export interface Actions {
   restore: (kind: "shift" | "uni" | "personal", item: Shift | UniEvent | PersonalEvent) => void;
   setProtected: (id: string, on: boolean) => void;
   rateShift: (id: string, rating: BodyRating | null) => void;
+  /** How the work was, set or changed on the calendar; null clears it. */
+  setEffort: (id: string, effort: Effort | null) => void;
   /** Accept, decline or keep for later. Nothing is sent to the manager. */
   respondToOffer: (offerId: string, decision: Decision) => void;
   /** Undo for an answer: the ask waits again and its shift comes off the week. */
@@ -137,6 +139,8 @@ export const useStore = create<Store>()(
             return { settings: { ...s.settings, protectedIds: [...ids] }, personal: on ? s.personal : s.personal.map((p) => (p.id === id && p.importance === "protected" ? { ...p, importance: "important" } : p)) };
           }),
         rateShift: (id, rating) => set((s) => ({ shifts: s.shifts.map((x) => (x.id === id ? { ...x, rated: rating ?? undefined } : x)) })),
+        setEffort: (id, effort) =>
+          set((s) => ({ shifts: s.shifts.map((x) => (x.id === id && x.effort !== (effort ?? undefined) ? { ...x, effort: effort ?? undefined, effortSkipped: effort ? undefined : x.effortSkipped } : x)) })),
         respondToOffer: (offerId, decision) =>
           set((s) => {
             const r = applyResponse(pickData(s), offerId, decision);

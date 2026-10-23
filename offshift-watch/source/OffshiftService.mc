@@ -5,7 +5,7 @@ import Toybox.Lang;
 import Toybox.System;
 
 //! Every five minutes, even with the app closed: share the body if the worker allows it,
-//! and look for a new ask. A new ask offers to open the app; nothing is answered from here.
+//! and look for a new ask or a shift that just finished. Either offers to open the app; nothing is answered from here.
 (:background)
 class OffshiftService extends System.ServiceDelegate {
 
@@ -43,6 +43,15 @@ class OffshiftService extends System.ServiceDelegate {
                 }
             } else {
                 Application.Storage.setValue("glance", "Nothing waiting");
+                // No new ask: a shift that just finished asks how the work was, once.
+                var checkIn = data["checkIn"];
+                if (checkIn instanceof Dictionary) {
+                    var shift = checkIn["id"] as String;
+                    if (!shift.equals(Application.Storage.getValue("wokeCheckIn"))) {
+                        Application.Storage.setValue("wokeCheckIn", shift);
+                        Background.requestApplicationWake("How was the work? " + (checkIn["title"] as String));
+                    }
+                }
             }
         }
         Background.exit(code);

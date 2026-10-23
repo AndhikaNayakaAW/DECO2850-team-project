@@ -65,6 +65,8 @@ Use **Settings → Glance Launch Mode → Launch in Normal Mode** for the full a
 
 Up/Down or a swipe moves between Ask, Around it/Today, Body and Calendar. Select on the first two pages opens the three answers: Accept and Decline each ask for confirmation, and Decide later keeps the ask, marked "Saved for later". No answer sends the manager a message. Select on Body or Calendar opens reading details, sources and the sharing switch.
 
+About 15 minutes after a rostered shift ends, the watch buzzes once and asks how the work was: **Light**, **Steady**, **Busy** or **Hard**, or **Skip**. One press saves it on that shift; backing out counts as a skip. It never asks twice about the same shift, and it stops asking 12 hours after the end. The rating colours the shift on the calendar, where it can be changed. Why it works this way: [design rationale](../docs/design/2026-10-23-shift-check-in.md).
+
 The calendar page shows the last successful sync and sharing choice. A failed answer retains the ask for retry. A successful answer clears an old offline status. An access-code error is shown without exposing the private endpoint.
 
 ## Cloud connection
@@ -97,11 +99,11 @@ Every reader looks back for the most recent real sample, because samples are bla
 - The watch asks once, on first open. Sharing can be changed any time on Your body.
 - Only a level (0 to 3) per signal and the time leave the watch, never a number. The calendar shows words.
 - Turning sharing off makes the calendar forget the last reading.
-- Body readings never go to an employer.
+- Body readings never go to an employer, and neither do shift ratings.
 
 ## Every five minutes
 
-While the app is closed, a background check shares the body (if allowed), updates the glance, and offers to open Offshift when a new ask arrives. It never answers anything.
+While the app is closed, a background check shares the body (if allowed), updates the glance, and offers to open Offshift when a new ask arrives or a shift has just finished. It never answers anything.
 
 ## If the watch says Phone not connected
 

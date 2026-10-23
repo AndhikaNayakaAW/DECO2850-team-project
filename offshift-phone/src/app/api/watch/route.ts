@@ -1,6 +1,7 @@
 import { currentData, loadState, noWeek, noteWatchSeen, retrying, saveState } from "@/lib/server-state";
 import { capLogs, cleanData } from "@/lib/validate";
 import type { Decision } from "@/lib/types";
+import { applyEffort, isEffort } from "@/lib/effort";
 import { WATCH_DECISIONS, applyWatchAnswer, applyWatchBody, applyWatchHealth, parseHealth, stopWatchHealth, watchSummary } from "@/lib/garmin";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +17,7 @@ export async function GET() {
 
 /** An answer from the wrist, a health reading as levels from 0 to 3, or sharing turned off. */
 export async function POST(req: Request) {
-  let input: { answer?: { offerId?: unknown; decision?: unknown }; health?: unknown; body?: { level?: unknown } };
+  let input: { answer?: { offerId?: unknown; decision?: unknown }; effort?: { shiftId?: unknown; level?: unknown }; health?: unknown; body?: { level?: unknown } };
   try {
     input = await req.json();
   } catch {
@@ -36,6 +37,22 @@ export async function POST(req: Request) {
       if (!data.offers.some((o) => o.id === offerId)) return Response.json({ error: "No such ask" }, { status: 404, headers });
       const r = applyWatchAnswer(data, offerId, decision as Decision);
       if (!r) return Response.json({ error: "Already answered", v: s.version, ...watchSummary(data) }, { status: 409, headers });
+      if (!cleanData(capLogs(r.data))) return Response.json({ error: "That would break the week" }, { status: 400, headers });
+      await saveState(s, r.data, "watch");
+      return Response.json({ v: s.version, toast: r.toast, ...watchSummary(r.data) }, { headers });
+    });
+  }
+
+  // How the work was on a finished shift: one of four words, or a skip. It stays with the worker.
+  if (input.effort) {
+    const { shiftId, level } = input.effort;
+    if (typeof shiftId !== "string" || !(isEffort(level) || level === "skip")) return Response.json({ error: "Unknown rating" }, { status: 400, headers });
+    return retrying(async () => {
+      const s = await loadState();
+      const data = currentData(s);
+      if (!data.shifts.some((x) => x.id === shiftId)) return Response.json({ error: "No such shift" }, { status: 404, headers });
+      const r = applyEffort(data, shiftId, level);
+      if (!r) return Response.json({ error: "That shift hasn't finished" }, { status: 409, headers });
       if (!cleanData(capLogs(r.data))) return Response.json({ error: "That would break the week" }, { status: 400, headers });
       await saveState(s, r.data, "watch");
       return Response.json({ v: s.version, toast: r.toast, ...watchSummary(r.data) }, { headers });

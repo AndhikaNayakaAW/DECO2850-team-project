@@ -21,6 +21,7 @@ class OffshiftModel {
     private var _sentKey as String = "";
     private var _sentAt as Number = 0;
     private var _lastAskId as String?;
+    private var _started as Boolean = false;
 
     function initialize(api as OffshiftApi) {
         _api = api;
@@ -30,6 +31,7 @@ class OffshiftModel {
         if (_timer != null) {
             return;
         }
+        _started = true;
         refresh();
         _timer = new Timer.Timer();
         _timer.start(method(:refresh), 5000, true);
@@ -116,6 +118,33 @@ class OffshiftModel {
             _lastAskId = null;
             Application.Storage.setValue("glance", "Nothing waiting");
         }
+        promptCheckIn(data);
+    }
+
+    //! A shift just finished: buzz and ask how the work was, once for that shift.
+    private function promptCheckIn(data as Dictionary) as Void {
+        var checkIn = data["checkIn"];
+        if (!_started || !(checkIn instanceof Dictionary)) {
+            return;
+        }
+        var id = checkIn["id"] as String;
+        if (id.equals(Application.Storage.getValue("promptedCheckIn"))) {
+            return;
+        }
+        Application.Storage.setValue("promptedCheckIn", id);
+        if (Attention has :vibrate) {
+            Attention.vibrate([new Attention.VibeProfile(40, 300)]);
+        }
+        pushCheckInMenu(self, checkIn);
+    }
+
+    //! Saves how the work was on the shift that just finished. Nothing goes to the manager.
+    function rate(level as String) as Void {
+        var checkIn = self.checkIn();
+        if (checkIn == null) {
+            return;
+        }
+        _api.rate(checkIn["id"] as String, level, method(:onAnswered));
     }
 
     function answer(decision as String) as Void {
@@ -162,6 +191,15 @@ class OffshiftModel {
         }
         var ask = _summary["ask"];
         return (ask instanceof Dictionary) ? ask : null;
+    }
+
+    //! The shift that just finished, if the calendar wants to know how the work was.
+    function checkIn() as Dictionary? {
+        if (_summary == null) {
+            return null;
+        }
+        var checkIn = _summary["checkIn"];
+        return (checkIn instanceof Dictionary) ? checkIn : null;
     }
 
     function summary() as Dictionary? {

@@ -2,6 +2,7 @@
 import { applyResponse } from "./actions";
 import { BODY_SIGNALS, OVERALL_WORDS, overallLevel } from "./body";
 import { dayItems, eventsFor, isRestDay, offerImpact, waitingAsks } from "./checks";
+import { checkInDue } from "./effort";
 import { uid } from "./ids";
 import { clock12, minutes, range12 } from "./logic";
 import { addDays, nowIn, weekdayOf, whenWord } from "./time";
@@ -42,6 +43,8 @@ export interface WatchSummary {
   today: string[];
   waiting: number;
   replied: { from: string; time: string; status: string } | null;
+  /** A shift that just finished, for the watch to ask how the work was. Older builds ignore it. */
+  checkIn: { id: string; title: string } | null;
 }
 
 /** Letters that don't split into a plain letter and an accent. */
@@ -128,9 +131,11 @@ export function watchSummary(data: DataSlice, atTime: Date = new Date()): WatchS
     .filter((x) => x.status !== "pending" && x.status !== "deferred")
     .sort((a, b) => (a.repliedAt ?? "").localeCompare(b.repliedAt ?? ""))
     .at(-1);
+  const due = checkInDue(data, atTime);
   return {
     clock: now.time,
     ask,
+    checkIn: due ? { id: due.id, title: ascii(`${due.workplace || "Work"}, ${watchRange(due.start, due.end)}`) } : null,
     today: todayLines(data, now.date),
     waiting: open.length,
     replied: last ? { from: ascii(last.from) || "Your manager", time: ascii(range12(last.start, last.end)), status: STATUS_WORDS[last.status] } : null,

@@ -61,6 +61,7 @@ The Garmin app in [`offshift-watch`](../offshift-watch/README.md) runs on a fēn
 
 - it fetches the waiting ask with its week lines and today's plans;
 - it sends the worker's answer;
+- about 15 minutes after a shift ends, it asks how the work was (Light, Steady, Busy, Hard or Skip), once, and the answer colours that shift on the calendar from pale to dark violet, with the word on the block and a legend. A finished shift can also be rated or changed by tapping it on the calendar. The rating is separate from the body rating (Fine, Tired, Wiped) and never reaches `/api/team`. Rationale and sources: [docs/design/2026-10-23-shift-check-in.md](../docs/design/2026-10-23-shift-check-in.md);
 - only after the worker agrees on the watch, it sends body readings as words, one level from 0 to 3 per signal and never a number.
 
 The calendar shows those words in the Body card and in the ask's body check. Turning sharing off on the watch clears them. Nothing about the body reaches `/api/team` or an employer.

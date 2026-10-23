@@ -78,7 +78,7 @@ function list(item: Clean, max = 1000): Clean {
   };
 }
 
-const shift = object({ id, date, start: clock, end: clock, workplace: text(80, true), rated: optional(oneOf(["fine", "tired", "wiped"])), viaOffer: optional(id), note: optional(text(500)) });
+const shift = object({ id, date, start: clock, end: clock, workplace: text(80, true), rated: optional(oneOf(["fine", "tired", "wiped"])), effort: optional(oneOf(["light", "steady", "busy", "hard"])), effortSkipped: optional(check((v) => typeof v === "boolean")), viaOffer: optional(id), note: optional(text(500)) });
 const uni = object({ id, date, start: clock, end: clock, title: text(80, true), type: oneOf(["class", "due"]) });
 const plan = object({
   id,

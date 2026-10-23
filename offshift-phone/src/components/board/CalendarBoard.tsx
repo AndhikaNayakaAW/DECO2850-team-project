@@ -10,6 +10,7 @@ import TestOfferForm from "./TestOfferForm";
 import { Sheet } from "./Sheet";
 import Week3D, { type DropTarget } from "./Week3D";
 import { buildWeek, clashes, waitingAsks } from "@/lib/checks";
+import { EFFORTS, EFFORT_COLOUR, EFFORT_WORD } from "@/lib/effort";
 import { DAY_NAMES, clock12, dayIndex } from "@/lib/logic";
 import { useStore } from "@/lib/store";
 import { useSynced } from "@/lib/sync";
@@ -298,6 +299,17 @@ export default function CalendarBoard() {
             editable
             hint="hold a block to pick it up · move plans between days · bin to remove · pinch to zoom"
           />
+          {week.some((d) => d.items.some((it) => it.effort)) && (
+            <div className="effort-legend" aria-label="How the work was, lightest to hardest">
+              <span>How the work was</span>
+              {EFFORTS.map((e) => (
+                <span key={e}>
+                  <i className="swatch" style={{ background: EFFORT_COLOUR[e] }} aria-hidden="true" />
+                  {EFFORT_WORD[e]}
+                </span>
+              ))}
+            </div>
+          )}
           {weekIsEmpty && (
             <div className="empty-week" role="region" aria-label="Get started">
               <h2>{nothingAtAll ? "Start with this week." : "Nothing on this week."}</h2>
@@ -439,7 +451,7 @@ function ListRow({ it, clash, onOpen }: { it: DayItem; clash?: string; onOpen: (
   const cls = it.kind === "shift" && (it.workplaceIndex ?? 0) % 2 === 1 ? "mcd" : it.kind;
   const time = it.kind === "due" ? `Due\n${clock12(it.start)}` : `${clock12(it.start)}\n${clock12(it.end)}`;
   return (
-    <button className={`cal-ev ${cls}${it.later ? " later" : ""}`} onClick={onOpen} aria-label={`${it.label}, ${it.kind === "due" ? `due ${clock12(it.start)}` : `${clock12(it.start)} to ${clock12(it.end)}`}${it.kind === "offer" ? ". Open the ask" : ". Change it"}`}>
+    <button className={`cal-ev ${cls}${it.later ? " later" : ""}`} style={it.effort ? { borderLeftColor: EFFORT_COLOUR[it.effort] } : undefined} onClick={onOpen} aria-label={`${it.label}, ${it.kind === "due" ? `due ${clock12(it.start)}` : `${clock12(it.start)} to ${clock12(it.end)}`}${it.kind === "offer" ? ". Open the ask" : ". Change it"}`}>
       <span className="tm">{time}</span>
       <span className="ev-body">
         <b>{it.label}</b>

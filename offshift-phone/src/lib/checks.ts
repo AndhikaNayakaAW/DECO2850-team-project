@@ -1,4 +1,5 @@
 import { bodyNotes, bodySentence, bodyState } from "./body";
+import { EFFORT_WORD } from "./effort";
 import { clock12, elapsedMinutes, minutes, range12, shiftImpact, spanMinutes } from "./logic";
 import { addDays, dayNumber, daysBetween, nowIn, stamp, weekDates, weekdayName, weekdayOf, whenWord, type Now } from "./time";
 import type {
@@ -152,7 +153,8 @@ export function dayItems(state: DataState, date: DateKey): DayItem[] {
         workplaceIndex: workplaceIndex(state, s.workplace),
         warn: s.rated && s.rated !== "fine" ? `rated ${RATED_WORD[s.rated]}` : undefined,
         protected: protectedIds.includes(s.id),
-        status: protectedIds.includes(s.id) ? "Rostered · Protected by you" : s.viaOffer ? "Rostered · from an ask" : "Rostered",
+        effort: s.effort,
+        status: `${protectedIds.includes(s.id) ? "Rostered · Protected by you" : s.viaOffer ? "Rostered · from an ask" : "Rostered"}${s.effort ? ` · ${EFFORT_WORD[s.effort]}` : ""}`,
       }),
     );
   state.offers

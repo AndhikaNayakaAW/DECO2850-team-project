@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { throwSpeed } from "@/lib/gestures";
 import { DAYS, elapsedMinutes, fromMinutes, minutes } from "@/lib/logic";
+import { EFFORT_COLOUR, EFFORT_WORD } from "@/lib/effort";
 import type { Day, DayItem, DayView } from "@/lib/types";
 
 const H0 = 6;
@@ -279,8 +280,9 @@ class WeekScene {
       if (this.grab && this.grab.block === b) return;
       const key = (b.mesh.userData.key as MatKey) || "shift";
       const src = this.mats[key];
+      if (b.item?.kind === "shift" && b.item.effort) b.mesh.material.color.set(EFFORT_COLOUR[b.item.effort]);
+      else if (src) b.mesh.material.color.copy(src.color);
       if (src) {
-        b.mesh.material.color.copy(src.color);
         b.mesh.material.emissive.copy(src.emissive);
       }
     });
@@ -352,6 +354,8 @@ class WeekScene {
         const geo = new THREE.BoxGeometry(w, h, w);
         geo.translate(0, h / 2, 0);
         const m = this.mats[key]!.clone();
+        // A shift rated after it finished takes its work colour: pale violet for Light, dark for Hard.
+        if (it.kind === "shift" && it.effort) m.color.set(EFFORT_COLOUR[it.effort]);
         // An ask kept for later stays on the week, see-through, until the worker presses it and decides.
         if (it.later) {
           m.opacity = 0.3;
@@ -362,6 +366,8 @@ class WeekScene {
         mesh.position.set(x + (slim ? 0.12 : 0), this.yOf(s), slim ? 0.14 : 0);
         this.group.add(mesh);
         const entry: Block = { mesh, day, s, e, label: `${it.label}${it.source && !it.label.includes(it.source) ? ` · ${it.source}` : ""}`, offerId: it.offerId, item: it, delay: known(it.id) ? -10 : di * 0.09 + ii * 0.07, home: mesh.position.clone(), layer: this.layerFor(it.kind), kind: it.kind };
+        // Colour is never the only cue: the word goes on the label too.
+        if (it.kind === "shift" && it.effort) entry.label = `${entry.label} · ${EFFORT_WORD[it.effort]}`;
         if (it.kind === "offer") {
           const edges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.0, h + 0.06, 1.0)), this.edge);
           edges.position.set(0, h / 2, 0);

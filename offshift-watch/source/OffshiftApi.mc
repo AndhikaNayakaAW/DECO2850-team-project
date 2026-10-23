@@ -43,6 +43,11 @@ class OffshiftApi {
         enqueue(new PendingRequest(Communications.HTTP_REQUEST_METHOD_POST, { "answer" => { "offerId" => offerId, "decision" => decision } }, callback));
     }
 
+    //! How the work was on a finished shift: light, steady, busy, hard, or skip.
+    function rate(shiftId as String, level as String, callback as ResponseCallback) as Void {
+        enqueue(new PendingRequest(Communications.HTTP_REQUEST_METHOD_POST, { "effort" => { "shiftId" => shiftId, "level" => level } }, callback));
+    }
+
     //! Shares the body as a level from 0 to 3 per signal, never the raw numbers.
     function sendHealth(payload as Dictionary, callback as ResponseCallback) as Void {
         enqueue(new PendingRequest(Communications.HTTP_REQUEST_METHOD_POST, { "health" => payload }, callback));

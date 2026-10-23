@@ -5,7 +5,8 @@ import { workplacesOf } from "@/lib/checks";
 import { useStore } from "@/lib/store";
 import { minutes } from "@/lib/logic";
 import { isClock, isDateKey, type Now } from "@/lib/time";
-import type { BodyRating, DateKey, Importance, PersonalEvent, Shift, UniEvent } from "@/lib/types";
+import { EFFORTS, EFFORT_COLOUR, EFFORT_WORD } from "@/lib/effort";
+import type { BodyRating, DateKey, Effort, Importance, PersonalEvent, Shift, UniEvent } from "@/lib/types";
 
 export type ItemKindChoice = "shift" | "uni" | "due" | "personal";
 
@@ -48,6 +49,7 @@ export default function ItemForm({ target, now, onDone, onRemoved }: { target: I
     end: existing?.end ?? target.end ?? DEFAULTS[target.kind].end,
     importance: (existing && "importance" in existing ? existing.importance : undefined) ?? ("flexible" as Importance),
     rated: (existing && "rated" in existing ? existing.rated : undefined) as BodyRating | undefined,
+    effort: (existing && "effort" in existing ? existing.effort : undefined) as Effort | undefined,
   }));
   const [problem, setProblem] = useState<string | null>(null);
   const [timesTouched, setTimesTouched] = useState(false);
@@ -79,6 +81,7 @@ export default function ItemForm({ target, now, onDone, onRemoved }: { target: I
       if (editing) {
         s.updateShift(existing!.id, data);
         s.rateShift(existing!.id, form.rated ?? null);
+        s.setEffort(existing!.id, form.effort ?? null);
       } else s.addShift(data);
     } else if (kind === "personal") {
       const data = { date: form.date, start: form.start, end, title, importance: form.importance };
@@ -185,6 +188,19 @@ export default function ItemForm({ target, now, onDone, onRemoved }: { target: I
             {(["flexible", "important", "protected"] as Importance[]).map((imp) => (
               <button type="button" key={imp} role="radio" aria-checked={form.importance === imp} className={form.importance === imp ? "on" : ""} onClick={() => set({ importance: imp })}>
                 {imp === "flexible" ? "Flexible" : imp === "important" ? "Important" : "Protected"}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {past && (
+        <div className="field full">
+          <span className="label">How was the work?</span>
+          <div className="seg effort" role="radiogroup" aria-label="How was the work?">
+            {([undefined, ...EFFORTS] as (Effort | undefined)[]).map((r) => (
+              <button type="button" key={r ?? "none"} role="radio" aria-checked={form.effort === r} className={form.effort === r ? "on" : ""} onClick={() => set({ effort: r })}>
+                {r && <i className="swatch" style={{ background: EFFORT_COLOUR[r] }} aria-hidden="true" />}
+                {r ? EFFORT_WORD[r] : "Not rated"}
               </button>
             ))}
           </div>
