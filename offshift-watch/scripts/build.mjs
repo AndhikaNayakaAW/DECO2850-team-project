@@ -32,9 +32,10 @@ try {
   const source = path.join(temporary, 'source');
   await cp(path.join(root, 'source'), source, { recursive: true });
   await writeFile(path.join(source, 'Deployment.mc'), `(:background)\nmodule Deployment { const BASE_URL = ${JSON.stringify(config.baseUrl)}; }\n`, { mode: 0o600 });
+  await cp(path.join(root, 'manifest.xml'), path.join(temporary, 'manifest.xml'));
   const jungle = path.join(temporary, 'build.jungle');
-  // Jungle values can contain spaces; the compiler parses the whole value to the right of '='.
-  await writeFile(jungle, `project.manifest = ${path.join(root, 'manifest.xml')}\nbase.sourcePath = ${source}\nbase.resourcePath = ${resources}\n`, { mode: 0o600 });
+  // The compiler drops every space from a jungle value, so name each path relative to the jungle, never absolute.
+  await writeFile(jungle, 'project.manifest = manifest.xml\nbase.sourcePath = source\nbase.resourcePath = resources\n', { mode: 0o600 });
   await mkdir(path.dirname(output), { recursive: true });
   const compiled = path.join(temporary, 'compiled', path.basename(output));
   await mkdir(path.dirname(compiled), { recursive: true });
