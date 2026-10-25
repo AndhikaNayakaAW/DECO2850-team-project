@@ -80,14 +80,16 @@ class OffshiftService extends System.ServiceDelegate {
         if (key.equals(Application.Storage.getValue("sentShiftBody"))) {
             return false;
         }
-        var payload = ShiftBody.payload(due);
-        ShiftBody.remember(due, payload);
+        var l = ShiftBody.levelsFor(due);
+        var payload = ShiftBody.payload(due, l);
+        ShiftBody.remember(due, l);
         _sending = key;
         Communications.makeWebRequest(Server.baseUrl() + "/api/watch", { "shiftBody" => payload }, options(Communications.HTTP_REQUEST_METHOD_POST), method(:onSent));
         return true;
     }
 
     function onSent(code as Number, data as Dictionary or String or Null) as Void {
+        Application.Storage.setValue("lastSend", code);
         if (_sending != null && ShiftBody.settled(code)) {
             Application.Storage.setValue("sentShiftBody", _sending);
         }

@@ -11,6 +11,7 @@ function pushBodyMenu(model as OffshiftModel) as Void {
         var detail = (levels instanceof Array) ? ShiftBody.summary(levels as Array<Number?>, signals[i]) : "No shift read yet";
         menu.addItem(new WatchUi.MenuItem(ShiftBody.label(signals[i]), detail, signals[i], null));
     }
+    menu.addItem(new WatchUi.MenuItem("Calendar", ShiftBody.sendNote(), "calendar", null));
     menu.addItem(new WatchUi.ToggleMenuItem("Share with calendar", { :enabled => "Shifts, as words only", :disabled => "Off: shifts aren't read" }, "share", Sharing.isOn(), null));
     WatchUi.pushView(menu, new BodyMenuDelegate(model), WatchUi.SLIDE_UP);
 }
@@ -29,7 +30,7 @@ class BodyMenuDelegate extends WatchUi.Menu2InputDelegate {
             _model.setSharing((item as ToggleMenuItem).isEnabled());
             return;
         }
-        _model.note(ShiftBody.source(id));
+        _model.note("calendar".equals(id) ? ShiftBody.sendNote() : ShiftBody.source(id));
     }
 
     function onBack() as Void {

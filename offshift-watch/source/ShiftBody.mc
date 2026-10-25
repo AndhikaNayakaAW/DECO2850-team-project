@@ -99,8 +99,8 @@ module ShiftBody {
         return { "stress" => s, "heart" => h };
     }
 
-    //! What the watch sends for the shift the calendar named: its id and one level per block for each signal.
-    function payload(due as Dictionary) as Dictionary {
+    //! The shift's levels, block by block, read from the watch's own history for exactly the window the calendar named.
+    function levelsFor(due as Dictionary) as Dictionary {
         var from = due["from"] as Number;
         var to = due["to"] as Number;
         var stress = null as SensorHistory.SensorHistoryIterator?;
@@ -114,9 +114,32 @@ module ShiftBody {
                 heart = SensorHistory.getHeartRateHistory({ :period => period, :order => SensorHistory.ORDER_OLDEST_FIRST });
             }
         }
-        var l = levels(averages(stress, from, to, 0, 100), averages(heart, from, to, 30, 220), resting(), maximum());
-        // The window goes back too, so readings never land on a shift whose times changed since.
-        return { "shiftId" => due["id"], "from" => from, "to" => to, "stress" => l["stress"], "heart" => l["heart"] };
+        return levels(averages(stress, from, to, 0, 100), averages(heart, from, to, 30, 220), resting(), maximum());
+    }
+
+    //! What the watch sends: the shift, the window it read (so readings never land on a shift whose times changed),
+    //! and each signal as text, one character per 15 minutes. A request body can't be relied on to carry lists or nulls.
+    function payload(due as Dictionary, l as Dictionary) as Dictionary {
+        return { "shiftId" => due["id"], "from" => due["from"], "to" => due["to"], "stress" => wire(l["stress"] as Array<Number?>), "heart" => wire(l["heart"] as Array<Number?>) };
+    }
+
+    //! "1-30": a digit 0 to 3 per block, - where the watch had no reading.
+    function wire(levels as Array<Number?>) as String {
+        var text = "";
+        for (var i = 0; i < levels.size(); i++) {
+            var v = levels[i];
+            text += (v == null) ? "-" : v.toString();
+        }
+        return text;
+    }
+
+    //! Whether the last shift reached the calendar, for the watch's own menu.
+    function sendNote() as String {
+        var code = Application.Storage.getValue("lastSend");
+        if (!(code instanceof Number)) {
+            return "Not sent yet";
+        }
+        return (code == 200) ? "Saved on your calendar" : "Not saved yet (" + code.toString() + ")";
     }
 
     //! Stored (200), or refused for good (the shift moved, ended differently or is gone): either way this window is done.
@@ -131,15 +154,16 @@ module ShiftBody {
         return !Sharing.isOn() && held instanceof Number && held > 0;
     }
 
-    //! Each shift is read once: its id with the window it ran in, so a shift whose times change is read again.
+    //! Each shift is read once: the format, its id and the window it ran in, so a shift whose times change is read again,
+    //! and so is one that failed under the earlier list format (25 Oct 2026).
     function key(due as Dictionary) as String {
-        return (due["id"] as String) + "@" + (due["from"] as Number).toString() + "-" + (due["to"] as Number).toString();
+        return "2:" + (due["id"] as String) + "@" + (due["from"] as Number).toString() + "-" + (due["to"] as Number).toString();
     }
 
-    //! Keeps the last shift read for the Body page and the glance. It stays on the watch.
-    function remember(due as Dictionary, payload as Dictionary) as Void {
-        Application.Storage.setValue("lastShift", { "title" => due["title"], "stress" => payload["stress"], "heart" => payload["heart"] });
-        Application.Storage.setValue("lastLine", "Last shift: stress " + summary(payload["stress"] as Array<Number?>, "stress").toLower());
+    //! Keeps the last shift read for the Last shift page and the glance. It stays on the watch.
+    function remember(due as Dictionary, l as Dictionary) as Void {
+        Application.Storage.setValue("lastShift", { "title" => due["title"], "stress" => l["stress"], "heart" => l["heart"] });
+        Application.Storage.setValue("lastLine", "Last shift: stress " + summary(l["stress"] as Array<Number?>, "stress").toLower());
     }
 
     function words(signal as String) as Array<String> {

@@ -134,14 +134,16 @@ class OffshiftModel {
         if (_retryBodyAt != null && System.getTimer() < _retryBodyAt) {
             return;
         }
-        var payload = ShiftBody.payload(due);
-        ShiftBody.remember(due, payload);
+        var l = ShiftBody.levelsFor(due);
+        var payload = ShiftBody.payload(due, l);
+        ShiftBody.remember(due, l);
         _lastShift = null;
         _pendingBody = key;
         _api.sendShiftBody(payload, method(:onShiftBodySent));
     }
 
     function onShiftBodySent(code as Number, data as Dictionary or String or Null) as Void {
+        Application.Storage.setValue("lastSend", code);
         if (_pendingBody != null) {
             if (ShiftBody.settled(code)) {
                 Application.Storage.setValue("sentShiftBody", _pendingBody);
