@@ -79,9 +79,33 @@ export interface ShiftBodyInput {
   heart: (Load | null)[];
 }
 
+/**
+ * One level per block. The watch sends them as text, one character per 15 minutes ("21-3": 0 to 3, or - for no
+ * reading), because a watch request body can't be relied on to carry lists or nulls. A list is accepted too.
+ */
 function loads(v: unknown): (Load | null)[] | null {
+  if (typeof v === "string") {
+    if (!/^[0-3-]{1,96}$/.test(v)) return null;
+    return [...v].map((c) => (c === "-" ? null : (Number(c) as Load)));
+  }
   if (!Array.isArray(v) || v.length < 1 || v.length > MAX_BLOCKS) return null;
   return v.every((x) => x === null || (Number.isInteger(x) && x >= 0 && x <= 3)) ? (v as (Load | null)[]) : null;
+}
+
+/** Why a reading wasn't stored, for the worker's own log. */
+export const REFUSED: Record<"parse" | "missing" | "unfinished" | "moved" | "length", string> = {
+  parse: "it wasn't in a form the calendar reads",
+  missing: "that shift isn't on the calendar",
+  unfinished: "that shift hadn't finished",
+  moved: "the shift's times changed after the watch read it",
+  length: "it didn't fit the shift's length",
+};
+
+/** A private line saying a reading wasn't stored, added once in a row so a watch that keeps trying doesn't fill the log. */
+export function noteRefused(data: DataSlice, why: keyof typeof REFUSED, at: Date = new Date()): DataSlice {
+  const text = `A reading from the watch wasn't stored: ${REFUSED[why]}.`;
+  if (data.sync.at(-1)?.text === text) return data;
+  return { ...data, sync: [...data.sync, { id: uid("y"), at: at.toISOString(), from: "Watch", to: "Only you", text }] };
 }
 
 /** Keeps only what the watch is allowed to send: the window it read, and a level from 0 to 3, or no reading, per block, for both signals. */

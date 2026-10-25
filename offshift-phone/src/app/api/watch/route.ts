@@ -3,7 +3,7 @@ import { capLogs, cleanData } from "@/lib/validate";
 import type { Decision } from "@/lib/types";
 import { applyEffort, isEffort } from "@/lib/effort";
 import { WATCH_DECISIONS, applyWatchAnswer, watchSummary } from "@/lib/garmin";
-import { applyShiftBody, forgetShiftBodies, parseShiftBody } from "@/lib/shift-body";
+import { REFUSED, applyShiftBody, forgetShiftBodies, noteRefused, parseShiftBody } from "@/lib/shift-body";
 
 export const dynamic = "force-dynamic";
 
@@ -63,16 +63,17 @@ export async function POST(req: Request) {
   // Heart rate and stress during a shift that just finished, 15 minutes at a time. It stays with the worker.
   if (input.shiftBody !== undefined) {
     const body = parseShiftBody(input.shiftBody);
-    if (!body) return Response.json({ error: "No reading the calendar can use" }, { status: 400, headers });
     return retrying(async () => {
       const s = await loadState();
       if (noWeek(s)) return Response.json({ error: "No session yet. Open the calendar first." }, { status: 409, headers });
       const data = currentData(s);
-      const r = applyShiftBody(data, body);
+      const r = body ? applyShiftBody(data, body) : ({ problem: "parse" } as const);
       if ("problem" in r) {
-        const [status, error]: [number, string] =
-          r.problem === "missing" ? [404, "No such shift"] : r.problem === "unfinished" ? [409, "That shift hasn't finished"] : r.problem === "moved" ? [409, "That shift has changed since"] : [400, "Those readings don't fit that shift"];
-        return Response.json({ error }, { status, headers });
+        // Say so in the worker's own log, so a reading that never arrives can be told from one never sent.
+        const noted = noteRefused(data, r.problem);
+        if (noted !== data && cleanData(capLogs(noted))) await saveState(s, noted, "watch");
+        const status = r.problem === "missing" ? 404 : r.problem === "parse" || r.problem === "length" ? 400 : 409;
+        return Response.json({ error: `Not stored: ${REFUSED[r.problem]}` }, { status, headers });
       }
       if (!cleanData(capLogs(r.data))) return Response.json({ error: "That would break the week" }, { status: 400, headers });
       await saveState(s, r.data, "watch");
