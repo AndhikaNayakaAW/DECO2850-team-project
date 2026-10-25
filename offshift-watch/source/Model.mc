@@ -18,6 +18,8 @@ class OffshiftModel {
     private var _lastShift as Dictionary?;
     private var _shown as Boolean = false;
     private var _pendingBody as String?;
+    //! After a failed send, when to try that shift again (System.getTimer), so the history isn't re-read every 5 seconds.
+    private var _retryBodyAt as Number?;
     private var _lastAskId as String?;
     private var _started as Boolean = false;
 
@@ -55,20 +57,33 @@ class OffshiftModel {
     function setSharing(on as Boolean) as Void {
         Sharing.set(on);
         if (!on) {
-            // The calendar forgets every shift's readings; turned on again, an unexpired shift is read again.
+            // The calendar must forget every shift's readings; this is sent until it answers.
+            // Turned on again, an unexpired shift is read again.
             Application.Storage.deleteValue("sentShiftBody");
-            _api.stopSharing(method(:onSummary));
+            Application.Storage.setValue("forgetPending", true);
         }
-        note(on ? "Shift readings go to your calendar" : "Shift readings stay on your watch");
+        note(on ? "Shift readings go to your calendar" : "Off: your shifts aren't read");
         refresh();
     }
 
-    //! Fetch the latest ask and the shift, if any, that just finished.
+    //! Ask the calendar to forget, while that is still owed; otherwise fetch the latest ask and the shift, if any, that just finished.
     function refresh() as Void {
         if (!_api.isIdle()) {
             return;
         }
+        if (Application.Storage.getValue("forgetPending") == true) {
+            _api.stopSharing(method(:onForgotten));
+            return;
+        }
         _api.getSummary(method(:onSummary));
+    }
+
+    //! The calendar answered "sharing off": it has forgotten every shift's readings.
+    function onForgotten(code as Number, data as Dictionary or String or Null) as Void {
+        if (code == 200) {
+            Application.Storage.deleteValue("forgetPending");
+        }
+        onSummary(code, data);
     }
 
     function onSummary(code as Number, data as Dictionary or String or Null) as Void {
@@ -101,6 +116,9 @@ class OffshiftModel {
         }
         promptCheckIn(data);
         readShift(data);
+        if (ShiftBody.stillHeld(data)) {
+            Application.Storage.setValue("forgetPending", true);
+        }
     }
 
     //! A shift that just finished: read its heart rate and stress from the watch's history and send the levels, once.
@@ -113,6 +131,9 @@ class OffshiftModel {
         if (key.equals(Application.Storage.getValue("sentShiftBody")) || key.equals(_pendingBody)) {
             return;
         }
+        if (_retryBodyAt != null && System.getTimer() < _retryBodyAt) {
+            return;
+        }
         var payload = ShiftBody.payload(due);
         ShiftBody.remember(due, payload);
         _lastShift = null;
@@ -121,8 +142,13 @@ class OffshiftModel {
     }
 
     function onShiftBodySent(code as Number, data as Dictionary or String or Null) as Void {
-        if (code == 200 && _pendingBody != null) {
-            Application.Storage.setValue("sentShiftBody", _pendingBody);
+        if (_pendingBody != null) {
+            if (ShiftBody.settled(code)) {
+                Application.Storage.setValue("sentShiftBody", _pendingBody);
+                _retryBodyAt = null;
+            } else {
+                _retryBodyAt = System.getTimer() + 60000;
+            }
         }
         _pendingBody = null;
         if (code == 200 && data instanceof Dictionary) {

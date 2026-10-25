@@ -11,7 +11,7 @@ function pushBodyMenu(model as OffshiftModel) as Void {
         var detail = (levels instanceof Array) ? ShiftBody.summary(levels as Array<Number?>, signals[i]) : "No shift read yet";
         menu.addItem(new WatchUi.MenuItem(ShiftBody.label(signals[i]), detail, signals[i], null));
     }
-    menu.addItem(new WatchUi.ToggleMenuItem("Share with calendar", { :enabled => "Shifts, as words only", :disabled => "Stays on watch" }, "share", Sharing.isOn(), null));
+    menu.addItem(new WatchUi.ToggleMenuItem("Share with calendar", { :enabled => "Shifts, as words only", :disabled => "Off: shifts aren't read" }, "share", Sharing.isOn(), null));
     WatchUi.pushView(menu, new BodyMenuDelegate(model), WatchUi.SLIDE_UP);
 }
 

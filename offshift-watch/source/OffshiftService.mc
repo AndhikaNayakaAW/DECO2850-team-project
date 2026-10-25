@@ -5,8 +5,8 @@ import Toybox.Lang;
 import Toybox.System;
 
 //! Every five minutes, even with the app closed: look for a new ask or a shift that just finished.
-//! A new ask or a check-in offers to open the app; a finished shift is read and, if the worker shares, sent as levels.
-//! Nothing is answered from here.
+//! A new ask or a check-in offers to open the app. If the worker shares, a finished shift is read and sent as levels;
+//! if they turned sharing off, the calendar is asked to forget until it does. Nothing is answered from here.
 (:background)
 class OffshiftService extends System.ServiceDelegate {
     private var _sending as String?;
@@ -16,7 +16,18 @@ class OffshiftService extends System.ServiceDelegate {
     }
 
     function onTemporalEvent() as Void {
+        if (Application.Storage.getValue("forgetPending") == true) {
+            Communications.makeWebRequest(Server.baseUrl() + "/api/watch", { "health" => { "share" => false } }, options(Communications.HTTP_REQUEST_METHOD_POST), method(:onForgotten));
+            return;
+        }
         Communications.makeWebRequest(Server.baseUrl() + "/api/watch", null, options(Communications.HTTP_REQUEST_METHOD_GET), method(:onReply));
+    }
+
+    function onForgotten(code as Number, data as Dictionary or String or Null) as Void {
+        if (code == 200) {
+            Application.Storage.deleteValue("forgetPending");
+        }
+        Background.exit(code);
     }
 
     function options(httpMethod as Communications.HttpRequestMethod) as Dictionary {
@@ -49,6 +60,9 @@ class OffshiftService extends System.ServiceDelegate {
                     }
                 }
             }
+            if (ShiftBody.stillHeld(data)) {
+                Application.Storage.setValue("forgetPending", true);
+            }
             if (readShift(data)) {
                 return;
             }
@@ -74,7 +88,7 @@ class OffshiftService extends System.ServiceDelegate {
     }
 
     function onSent(code as Number, data as Dictionary or String or Null) as Void {
-        if (code == 200 && _sending != null) {
+        if (_sending != null && ShiftBody.settled(code)) {
             Application.Storage.setValue("sentShiftBody", _sending);
         }
         Background.exit(code);

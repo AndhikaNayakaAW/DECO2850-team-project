@@ -115,7 +115,20 @@ module ShiftBody {
             }
         }
         var l = levels(averages(stress, from, to, 0, 100), averages(heart, from, to, 30, 220), resting(), maximum());
-        return { "shiftId" => due["id"], "stress" => l["stress"], "heart" => l["heart"] };
+        // The window goes back too, so readings never land on a shift whose times changed since.
+        return { "shiftId" => due["id"], "from" => from, "to" => to, "stress" => l["stress"], "heart" => l["heart"] };
+    }
+
+    //! Stored (200), or refused for good (the shift moved, ended differently or is gone): either way this window is done.
+    //! An access problem (401, 403) or a failed connection is worth trying again.
+    function settled(code as Number) as Boolean {
+        return code == 200 || (code >= 400 && code < 500 && code != 401 && code != 403);
+    }
+
+    //! Sharing is off, yet the calendar still holds readings: a forget that failed, or a send that crossed it.
+    function stillHeld(data as Dictionary) as Boolean {
+        var held = data["readings"];
+        return !Sharing.isOn() && held instanceof Number && held > 0;
     }
 
     //! Each shift is read once: its id with the window it ran in, so a shift whose times change is read again.

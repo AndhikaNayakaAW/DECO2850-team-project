@@ -262,7 +262,7 @@ class CalendarPage extends Page {
         if (waiting instanceof Number) {
             rows.add(line(waiting == 0 ? "Nothing waiting" : waiting.toString() + (waiting == 1 ? " ask waiting" : " asks waiting"), WatchStyle.at(32), Palette.MUTED, 1, 6));
         }
-        rows.add(line(Sharing.isOn() ? "Shifts: words only" : "Shifts stay on watch", WatchStyle.at(32), Palette.INK, 1, 0));
+        rows.add(line(Sharing.isOn() ? "Shifts: words only" : "Shifts aren't read", WatchStyle.at(32), Palette.INK, 1, 0));
         return rows;
     }
 
