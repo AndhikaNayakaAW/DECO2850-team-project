@@ -74,7 +74,9 @@ function aShiftsPayloadHasOneLevelPerBlockAndNothingElse(logger as Test.Logger) 
     var now = Time.now().value();
     var p = ShiftBody.payload({ "id" => "s-thu-am", "from" => now - 4 * 3600, "to" => now - 3600 }) as Dictionary;
     Test.assertEqual(p["shiftId"], "s-thu-am");
-    Test.assertEqual(p.keys().size(), 3);
+    Test.assertEqual(p["from"], now - 4 * 3600);
+    Test.assertEqual(p["to"], now - 3600);
+    Test.assertEqual(p.keys().size(), 5);
     var signals = ["stress", "heart"] as Array<String>;
     for (var s = 0; s < 2; s++) {
         var levels = p[signals[s]] as Array;
@@ -159,5 +161,89 @@ function theAskShowsHowTheLastShiftsThereWent(logger as Test.Logger) as Boolean 
     model.show(summary, null);
     var rows = Pages.make(model, Pages.WEEK).rows();
     Test.assertEqual(rows[0].text, "Last 2 at Pandora: Hard, Busy");
+    return true;
+}
+
+(:test)
+class SharingSpy extends OffshiftApi {
+    var stops as Number = 0;
+    var summaries as Number = 0;
+    function initialize() { OffshiftApi.initialize(); }
+    function stopSharing(callback as ResponseCallback) as Void { stops += 1; }
+    function getSummary(callback as ResponseCallback) as Void { summaries += 1; }
+}
+
+function nothingHeld() as Dictionary {
+    return { "ask" => null, "waiting" => 0, "today" => [], "replied" => null, "readings" => 0 };
+}
+
+//! Turning sharing off must reach the calendar: until it answers, the watch keeps asking it to forget.
+(:test)
+function turningSharingOffIsSentAgainUntilTheCalendarForgets(logger as Test.Logger) as Boolean {
+    var was = Sharing.choice();
+    Application.Storage.deleteValue("forgetPending");
+    var api = new SharingSpy();
+    var model = new QuietModel(api);
+    model.setSharing(false);
+    Test.assertEqual(api.stops, 1);
+    model.onForgotten(503, null);
+    model.refresh();
+    Test.assertEqual(api.stops, 2);
+    model.onForgotten(200, nothingHeld());
+    model.refresh();
+    Test.assertEqual(api.stops, 2);
+    Test.assertEqual(api.summaries, 1);
+    restoreSharing(was);
+    Application.Storage.deleteValue("forgetPending");
+    return true;
+}
+
+//! A send that crossed the "sharing off", or a forget that failed: the calendar still holds readings, so forget again.
+(:test)
+function readingsStillOnTheCalendarWhileSharingIsOffAreForgottenAgain(logger as Test.Logger) as Boolean {
+    var was = Sharing.choice();
+    Sharing.set(false);
+    Application.Storage.deleteValue("forgetPending");
+    var api = new SharingSpy();
+    var model = new QuietModel(api);
+    var held = nothingHeld();
+    held["readings"] = 2;
+    model.onSummary(200, held);
+    model.refresh();
+    Test.assertEqual(api.stops, 1);
+    restoreSharing(was);
+    Application.Storage.deleteValue("forgetPending");
+    return true;
+}
+
+(:test)
+function aShiftTheCalendarRefusesIsNotSentAgain(logger as Test.Logger) as Boolean {
+    var was = Sharing.choice();
+    Sharing.set(true);
+    Application.Storage.deleteValue("sentShiftBody");
+    var api = new BodySpy();
+    var model = new QuietModel(api);
+    var summary = shiftToRead(Time.now().value() - 5 * 3600);
+    model.readShift(summary);
+    model.onShiftBodySent(409, null);
+    model.readShift(summary);
+    Test.assertEqual(api.sent, 1);
+    restoreSharing(was);
+    return true;
+}
+
+(:test)
+function aFailedSendWaitsBeforeTryingAgain(logger as Test.Logger) as Boolean {
+    var was = Sharing.choice();
+    Sharing.set(true);
+    Application.Storage.deleteValue("sentShiftBody");
+    var api = new BodySpy();
+    var model = new QuietModel(api);
+    var summary = shiftToRead(Time.now().value() - 5 * 3600);
+    model.readShift(summary);
+    model.onShiftBodySent(503, null);
+    model.readShift(summary);
+    Test.assertEqual(api.sent, 1);
+    restoreSharing(was);
     return true;
 }
