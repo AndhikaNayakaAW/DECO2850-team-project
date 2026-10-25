@@ -36,7 +36,7 @@ function aFinishedShiftOffersFourWorkWordsThenSkip(logger as Test.Logger) as Boo
 function pickingAWordSendsItForThatShift(logger as Test.Logger) as Boolean {
     var api = new RateSpy();
     var model = new QuietModel(api);
-    model.show(finishedShift(), allLevels());
+    model.show(finishedShift(), shiftRead());
     Test.assertEqual((model.checkIn() as Dictionary)["id"], "s-thu-am");
     model.rate("busy");
     Test.assertEqual(api.sent, 1);
@@ -49,7 +49,7 @@ function pickingAWordSendsItForThatShift(logger as Test.Logger) as Boolean {
 function nothingIsSentWithoutAFinishedShift(logger as Test.Logger) as Boolean {
     var api = new RateSpy();
     var model = new QuietModel(api);
-    model.show(ask(false), allLevels());
+    model.show(ask(false), shiftRead());
     Test.assert(model.checkIn() == null);
     model.rate("hard");
     Test.assertEqual(api.sent, 0);

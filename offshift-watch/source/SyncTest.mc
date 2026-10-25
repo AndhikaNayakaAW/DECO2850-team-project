@@ -43,7 +43,7 @@ function accessFailureExplainsHowToReconnect(logger as Test.Logger) as Boolean {
 (:test)
 function failedReplyKeepsTheAskAndLastSync(logger as Test.Logger) as Boolean {
     var model = new QuietModel(new OffshiftApi());
-    model.show(ask(false), allLevels());
+    model.show(ask(false), shiftRead());
     var before = model.syncedAt();
     model.onAnswered(503, null);
     Test.assertEqual((model.ask() as Dictionary)["id"], "o-jess-thu");
@@ -56,7 +56,7 @@ function failedReplyKeepsTheAskAndLastSync(logger as Test.Logger) as Boolean {
 function cancellingAReplySendsNothing(logger as Test.Logger) as Boolean {
     var api = new AnswerSpy();
     var model = new QuietModel(api);
-    model.show(ask(false), allLevels());
+    model.show(ask(false), shiftRead());
     new SendConfirmDelegate(model, "accept").onResponse(WatchUi.CONFIRM_NO);
     Test.assertEqual(api.sent, 0);
     return true;
@@ -66,7 +66,7 @@ function cancellingAReplySendsNothing(logger as Test.Logger) as Boolean {
 function confirmingAReplySendsTheChosenAnswer(logger as Test.Logger) as Boolean {
     var api = new AnswerSpy();
     var model = new QuietModel(api);
-    model.show(ask(false), allLevels());
+    model.show(ask(false), shiftRead());
     new SendConfirmDelegate(model, "accept").onResponse(WatchUi.CONFIRM_YES);
     Test.assertEqual(api.sent, 1);
     Test.assertEqual(api.lastDecision, "accept");

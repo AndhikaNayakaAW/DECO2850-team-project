@@ -1,0 +1,163 @@
+import Toybox.Application;
+import Toybox.Lang;
+import Toybox.Test;
+import Toybox.Time;
+
+//! The watch reads heart rate and stress during a shift only, 15 minutes at a time,
+//! and sends a level from 0 to 3 per block, never a number.
+
+(:test)
+function stressUsesGarminsBandsAsLoad(logger as Test.Logger) as Boolean {
+    Test.assertEqual(ShiftBody.stressLoad(10), 0);
+    Test.assertEqual(ShiftBody.stressLoad(25), 0);
+    Test.assertEqual(ShiftBody.stressLoad(26), 1);
+    Test.assertEqual(ShiftBody.stressLoad(50), 1);
+    Test.assertEqual(ShiftBody.stressLoad(51), 2);
+    Test.assertEqual(ShiftBody.stressLoad(75), 2);
+    Test.assertEqual(ShiftBody.stressLoad(76), 3);
+    Test.assert(ShiftBody.stressLoad(null) == null);
+    Test.assert(ShiftBody.stressLoad(-1) == null);
+    return true;
+}
+
+//! Resting 60 and maximum 190 leave a reserve of 130 beats a minute.
+(:test)
+function heartUsesTheShareOfHeartRateReserve(logger as Test.Logger) as Boolean {
+    Test.assertEqual(ShiftBody.heartLoad(90, 60, 190), 0);
+    Test.assertEqual(ShiftBody.heartLoad(99, 60, 190), 1);
+    Test.assertEqual(ShiftBody.heartLoad(112, 60, 190), 2);
+    Test.assertEqual(ShiftBody.heartLoad(138, 60, 190), 3);
+    Test.assertEqual(ShiftBody.heartLoad(55, 60, 190), 0);
+    Test.assert(ShiftBody.heartLoad(100, null, 190) == null);
+    Test.assert(ShiftBody.heartLoad(100, 60, null) == null);
+    Test.assert(ShiftBody.heartLoad(null, 60, 190) == null);
+    return true;
+}
+
+(:test)
+function samplesAverageIntoQuarterHoursOfTheShift(logger as Test.Logger) as Boolean {
+    var from = 1000000;
+    var blocks = new Blocks(from, from + 3600);
+    Test.assertEqual(blocks.count(), 4);
+    blocks.add(from + 60, 20);
+    blocks.add(from + 400, 30);
+    blocks.add(from + 910, 80);
+    blocks.add(from + 1800, 50);
+    blocks.add(from + 1900, 52);
+    blocks.add(from - 5, 99);
+    blocks.add(from + 3600, 99);
+    var avg = blocks.averages(2);
+    Test.assertEqual(avg[0], 25);
+    Test.assert(avg[1] == null);
+    Test.assertEqual(avg[2], 51);
+    Test.assert(avg[3] == null);
+    Test.assertEqual(new Blocks(0, 4200).count(), 5);
+    return true;
+}
+
+(:test)
+function onlyLevelsLeaveTheWatch(logger as Test.Logger) as Boolean {
+    var levels = ShiftBody.levels([10, 30, 60, 90, null] as Array<Number?>, [90, 99, 112, 138, null] as Array<Number?>, 60, 190);
+    var stress = levels["stress"] as Array;
+    var heart = levels["heart"] as Array;
+    for (var i = 0; i < 4; i++) {
+        Test.assertEqual(stress[i], i);
+        Test.assertEqual(heart[i], i);
+    }
+    Test.assert(stress[4] == null);
+    Test.assert(heart[4] == null);
+    return true;
+}
+
+(:test)
+function aShiftsPayloadHasOneLevelPerBlockAndNothingElse(logger as Test.Logger) as Boolean {
+    var now = Time.now().value();
+    var p = ShiftBody.payload({ "id" => "s-thu-am", "from" => now - 4 * 3600, "to" => now - 3600 }) as Dictionary;
+    Test.assertEqual(p["shiftId"], "s-thu-am");
+    Test.assertEqual(p.keys().size(), 3);
+    var signals = ["stress", "heart"] as Array<String>;
+    for (var s = 0; s < 2; s++) {
+        var levels = p[signals[s]] as Array;
+        Test.assertEqual(levels.size(), 12);
+        for (var i = 0; i < levels.size(); i++) {
+            var v = levels[i];
+            Test.assert(v == null || ((v as Number) >= 0 && (v as Number) <= 3));
+        }
+    }
+    return true;
+}
+
+(:test)
+function aShiftReadsInPlainWords(logger as Test.Logger) as Boolean {
+    Test.assertEqual(ShiftBody.summary([1, 1, 1, 3, 3, 1] as Array<Number?>, "stress"), "Mostly low, high 30 min");
+    Test.assertEqual(ShiftBody.summary([0, 0, null] as Array<Number?>, "heart"), "Mostly very light");
+    Test.assertEqual(ShiftBody.summary([null, null] as Array<Number?>, "stress"), "No reading");
+    return true;
+}
+
+(:test)
+class BodySpy extends OffshiftApi {
+    var sent as Number = 0;
+    var last as Dictionary? = null;
+    function initialize() { OffshiftApi.initialize(); }
+    function sendShiftBody(payload as Dictionary, callback as ResponseCallback) as Void {
+        sent += 1;
+        last = payload;
+    }
+}
+
+function shiftToRead(from as Number) as Dictionary {
+    return { "ask" => null, "waiting" => 0, "today" => [], "replied" => null, "checkIn" => null, "shiftBody" => { "id" => "s-thu-am", "title" => "Cafe, 8 am - 12:45 pm", "from" => from, "to" => from + 4 * 3600 + 45 * 60 } };
+}
+
+function restoreSharing(was as Boolean?) as Void {
+    if (was == null) {
+        Application.Storage.deleteValue("share");
+    } else {
+        Sharing.set(was);
+    }
+    Application.Storage.deleteValue("sentShiftBody");
+}
+
+(:test)
+function aFinishedShiftIsReadAndSentOnceWhileSharing(logger as Test.Logger) as Boolean {
+    var was = Sharing.choice();
+    Sharing.set(true);
+    Application.Storage.deleteValue("sentShiftBody");
+    var api = new BodySpy();
+    var model = new QuietModel(api);
+    var summary = shiftToRead(Time.now().value() - 5 * 3600);
+    model.readShift(summary);
+    Test.assertEqual(api.sent, 1);
+    Test.assertEqual((api.last as Dictionary)["shiftId"], "s-thu-am");
+    Test.assertEqual(((api.last as Dictionary)["stress"] as Array).size(), 19);
+    model.onShiftBodySent(200, summary);
+    model.readShift(summary);
+    Test.assertEqual(api.sent, 1);
+    restoreSharing(was);
+    return true;
+}
+
+(:test)
+function nothingIsReadWithoutSharing(logger as Test.Logger) as Boolean {
+    var was = Sharing.choice();
+    Sharing.set(false);
+    var api = new BodySpy();
+    var model = new QuietModel(api);
+    model.readShift(shiftToRead(Time.now().value() - 5 * 3600));
+    Test.assertEqual(api.sent, 0);
+    restoreSharing(was);
+    return true;
+}
+
+(:test)
+function theAskShowsHowTheLastShiftsThereWent(logger as Test.Logger) as Boolean {
+    var summary = ask(false);
+    var a = summary["ask"] as Dictionary;
+    a["past"] = "Last 2 at Pandora: Hard, Busy";
+    var model = new OffshiftModel(new OffshiftApi());
+    model.show(summary, null);
+    var rows = Pages.make(model, Pages.WEEK).rows();
+    Test.assertEqual(rows[0].text, "Last 2 at Pandora: Hard, Busy");
+    return true;
+}

@@ -15,7 +15,7 @@ function watchUsesCalendarGround(logger as Test.Logger) as Boolean {
 (:test)
 function everyWatchPageIdentifiesOffshift(logger as Test.Logger) as Boolean {
     var model = new OffshiftModel(new OffshiftApi());
-    model.show(ask(false), allLevels());
+    model.show(ask(false), shiftRead());
     var bitmap = Graphics.createBufferedBitmap({ :width => 454, :height => 454 }).get() as Graphics.BufferedBitmap;
     for (var i = 0; i < 4; i++) {
         var rows = Pages.make(model, i).layout(bitmap.getDc());
@@ -29,7 +29,7 @@ function everyWatchPageIdentifiesOffshift(logger as Test.Logger) as Boolean {
 (:test)
 function watchTextHasReadableContrastOnCream(logger as Test.Logger) as Boolean {
     var model = new OffshiftModel(new OffshiftApi());
-    model.show(ask(false), allLevels());
+    model.show(ask(false), shiftRead());
     var bitmap = Graphics.createBufferedBitmap({ :width => 454, :height => 454 }).get() as Graphics.BufferedBitmap;
     for (var i = 0; i < 4; i++) {
         var rows = Pages.make(model, i).layout(bitmap.getDc());
@@ -37,10 +37,11 @@ function watchTextHasReadableContrastOnCream(logger as Test.Logger) as Boolean {
             Test.assertMessage(contrastOnCream(rows[j].colour) >= 4.5, rows[j].text + " needs 4.5:1 contrast");
         }
     }
-    for (var level = 0; level < 4; level++) {
-        Test.assert(contrastOnCream(BodyWords.colour(level)) >= 4.5);
+    model.show(null, null);
+    var empty = Pages.make(model, Pages.BODY).layout(bitmap.getDc());
+    for (var k = 0; k < empty.size(); k++) {
+        Test.assertMessage(contrastOnCream(empty[k].colour) >= 4.5, empty[k].text + " needs 4.5:1 contrast");
     }
-    Test.assert(contrastOnCream(BodyWords.colour(null)) >= 4.5);
     return true;
 }
 

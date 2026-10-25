@@ -7,12 +7,12 @@ import Toybox.Test;
 
 (:test)
 function everyPageFitsWithAnAsk(logger as Test.Logger) as Boolean {
-    return pagesFit(logger, ask(false), allLevels());
+    return pagesFit(logger, ask(false), shiftRead());
 }
 
 (:test)
 function everyPageFitsWhileDecidingLater(logger as Test.Logger) as Boolean {
-    return pagesFit(logger, ask(true), allLevels());
+    return pagesFit(logger, ask(true), shiftRead());
 }
 
 (:test)
@@ -23,17 +23,25 @@ function everyPageFitsWithNothingWaiting(logger as Test.Logger) as Boolean {
         "today" => ["1pm Tute - INFS2200", "7:30pm Dinner with Ayu"],
         "replied" => { "from" => "Jess", "time" => "4-9 pm", "status" => "Taken" }
     };
-    return pagesFit(logger, summary, {} as Dictionary<String, Number or Null>);
+    return pagesFit(logger, summary, null);
 }
 
 (:test)
 function everyPageFitsBeforeTheCalendarAnswers(logger as Test.Logger) as Boolean {
-    return pagesFit(logger, null, {} as Dictionary<String, Number or Null>);
+    return pagesFit(logger, null, null);
+}
+
+(:test)
+function everyPageFitsWithTheLastShiftsAtThatWorkplace(logger as Test.Logger) as Boolean {
+    var summary = longAsk();
+    var a = summary["ask"] as Dictionary;
+    a["past"] = "Last 4 at McDonald's: Hard, Busy, not rated, Steady";
+    return pagesFit(logger, summary, shiftRead());
 }
 
 (:test)
 function longWordsWrapInsteadOfSpilling(logger as Test.Logger) as Boolean {
-    return pagesFit(logger, longAsk(), allLevels());
+    return pagesFit(logger, longAsk(), shiftRead());
 }
 
 function longAsk() as Dictionary {
@@ -61,13 +69,14 @@ function ask(deferred as Boolean) as Dictionary {
     };
 }
 
-function allLevels() as Dictionary<String, Number or Null> {
-    return { "energy" => 1, "sleep" => 0, "stress" => 1, "heart" => 1, "breathing" => 2, "pulseOx" => 3, "recovery" => 1 } as Dictionary<String, Number or Null>;
+//! A shift the watch read: stress and heart in 15-minute blocks, as the calendar keeps them.
+function shiftRead() as Dictionary {
+    return { "title" => "McDonald's, 10:30 am - 12:45 pm", "stress" => [1, 1, 2, 3, 3, 1, null, 1, 2], "heart" => [1, 1, 1, 2, 2, 1, null, 0, 0] };
 }
 
-function pagesFit(logger as Test.Logger, summary as Dictionary?, levels as Dictionary<String, Number or Null>) as Boolean {
+function pagesFit(logger as Test.Logger, summary as Dictionary?, lastShift as Dictionary?) as Boolean {
     var model = new OffshiftModel(new OffshiftApi());
-    model.show(summary, levels);
+    model.show(summary, lastShift);
     var bitmap = Graphics.createBufferedBitmap({ :width => 454, :height => 454, :palette => [Graphics.COLOR_BLACK, Graphics.COLOR_WHITE] }).get() as Graphics.BufferedBitmap;
     var dc = bitmap.getDc();
     logger.debug("fonts xtiny " + dc.getFontHeight(Graphics.FONT_XTINY) + ", tiny " + dc.getFontHeight(Graphics.FONT_TINY) + ", small " + dc.getFontHeight(Graphics.FONT_SMALL) + ", medium " + dc.getFontHeight(Graphics.FONT_MEDIUM) + ", large " + dc.getFontHeight(Graphics.FONT_LARGE));
@@ -101,7 +110,7 @@ function dumpPagesForReview(logger as Test.Logger) as Boolean {
     var dc = bitmap.getDc();
     for (var c = 0; c < cases.size(); c++) {
         var model = new OffshiftModel(new OffshiftApi());
-        model.show(cases[c], allLevels());
+        model.show(cases[c], shiftRead());
         for (var i = 0; i < 4; i++) {
             var page = Pages.make(model, i);
             var rows = page.layout(dc);
