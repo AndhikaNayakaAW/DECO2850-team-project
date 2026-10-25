@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ShiftBodyChart } from "./BodyStrip";
 import { workplacesOf } from "@/lib/checks";
 import { useStore } from "@/lib/store";
 import { minutes } from "@/lib/logic";
 import { isClock, isDateKey, type Now } from "@/lib/time";
 import { EFFORTS, EFFORT_COLOUR, EFFORT_WORD } from "@/lib/effort";
-import type { BodyRating, DateKey, Effort, Importance, PersonalEvent, Shift, UniEvent } from "@/lib/types";
+import type { DateKey, Effort, Importance, PersonalEvent, Shift, UniEvent } from "@/lib/types";
 
 export type ItemKindChoice = "shift" | "uni" | "due" | "personal";
 
@@ -48,7 +49,6 @@ export default function ItemForm({ target, now, onDone, onRemoved }: { target: I
     start: existing?.start ?? target.start ?? DEFAULTS[target.kind].start,
     end: existing?.end ?? target.end ?? DEFAULTS[target.kind].end,
     importance: (existing && "importance" in existing ? existing.importance : undefined) ?? ("flexible" as Importance),
-    rated: (existing && "rated" in existing ? existing.rated : undefined) as BodyRating | undefined,
     effort: (existing && "effort" in existing ? existing.effort : undefined) as Effort | undefined,
   }));
   const [problem, setProblem] = useState<string | null>(null);
@@ -80,7 +80,6 @@ export default function ItemForm({ target, now, onDone, onRemoved }: { target: I
       const data = { date: form.date, start: form.start, end, workplace: title };
       if (editing) {
         s.updateShift(existing!.id, data);
-        s.rateShift(existing!.id, form.rated ?? null);
         s.setEffort(existing!.id, form.effort ?? null);
       } else s.addShift(data);
     } else if (kind === "personal") {
@@ -193,6 +192,12 @@ export default function ItemForm({ target, now, onDone, onRemoved }: { target: I
           </div>
         </div>
       )}
+      {past && existing && "body" in existing && existing.body && (
+        <div className="field full">
+          <span className="label">Your watch during this shift</span>
+          <ShiftBodyChart shift={existing as Shift} />
+        </div>
+      )}
       {past && (
         <div className="field full">
           <span className="label">How was the work?</span>
@@ -201,18 +206,6 @@ export default function ItemForm({ target, now, onDone, onRemoved }: { target: I
               <button type="button" key={r ?? "none"} role="radio" aria-checked={form.effort === r} className={form.effort === r ? "on" : ""} onClick={() => set({ effort: r })}>
                 {r && <i className="swatch" style={{ background: EFFORT_COLOUR[r] }} aria-hidden="true" />}
                 {r ? EFFORT_WORD[r] : "Not rated"}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      {past && (
-        <div className="field full">
-          <span className="label">How did it feel?</span>
-          <div className="seg" role="radiogroup" aria-label="How did it feel?">
-            {([undefined, "fine", "tired", "wiped"] as (BodyRating | undefined)[]).map((r) => (
-              <button type="button" key={r ?? "none"} role="radio" aria-checked={form.rated === r} className={form.rated === r ? "on" : ""} onClick={() => set({ rated: r })}>
-                {r === undefined ? "Not rated" : r === "fine" ? "Fine" : r === "tired" ? "Tired" : "Wiped"}
               </button>
             ))}
           </div>

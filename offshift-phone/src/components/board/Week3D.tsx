@@ -4,9 +4,9 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { throwSpeed } from "@/lib/gestures";
 import { DAYS, elapsedMinutes, fromMinutes, minutes } from "@/lib/logic";
-import { BAND_COLOUR } from "@/lib/body-week";
 import { EFFORT_COLOUR, EFFORT_WORD } from "@/lib/effort";
-import type { Day, DayItem, DayView } from "@/lib/types";
+import { LOAD_COLOUR, describeSignal } from "@/lib/shift-body";
+import type { Day, DayItem, DayView, Load, ShiftSignal } from "@/lib/types";
 
 const H0 = 6;
 const H1 = 24;
@@ -45,8 +45,6 @@ export interface SceneHandle {
   zoomBy: (factor: number) => void;
   nudgeOrbit: (dTheta: number, dPhi: number) => void;
   resetView: () => void;
-  /** Straight down from above, so the floor band reads as a flat calendar without perspective. Off returns to the usual view. */
-  setFlat: (on: boolean) => void;
   hoverAt: (nx: number, ny: number, visible: boolean) => void;
 }
 
@@ -72,6 +70,8 @@ interface Block {
   /** The label's measured size at each level of detail, read once. */
   sizes?: Partial<Record<"full" | "mid" | "compact", { w: number; h: number }>>;
   kind: DayItem["kind"];
+  /** What the watch read during a shift, for the tooltip. */
+  note?: string;
 }
 
 interface Grab {
@@ -142,11 +142,11 @@ class WeekScene {
   target = new THREE.Vector3(0, 1.8, 0);
   orbit = { theta: 0.4, phi: 1.2, r: 24 };
   baseTheta = 0.4;
-  /** Looking straight down: the idle sway stays still so the band can be read. */
-  flat = false;
-  bandMats = new Map<string, THREE.MeshBasicMaterial>();
+  /** Which of the watch's readings the shifts carry, chosen by the worker; null draws none. */
+  bodySignal: ShiftSignal | null = "stress";
+  ribbonMats = new Map<string, THREE.MeshBasicMaterial>();
   hatch: THREE.CanvasTexture | null = null;
-  bandEdge = new THREE.LineBasicMaterial({ color: 0x374938 });
+  ribbonEdge = new THREE.LineBasicMaterial({ color: 0x374938 });
   zoom = 1;
   pointers = new Map<number, { x: number; y: number }>();
   pinchDist = 0;
@@ -338,7 +338,6 @@ class WeekScene {
       base.position.set(x, -0.035, 0);
       this.group.add(base);
       this.bases.push({ mesh: base, day });
-      if (day.body) this.addBand(day, di, x);
       if (day.rest) {
         const g = new THREE.BoxGeometry(0.96, this.yOf(H1), 0.96);
         g.translate(0, this.yOf(H1) / 2, 0);
@@ -377,6 +376,10 @@ class WeekScene {
         const entry: Block = { mesh, day, s, e, label: `${it.label}${it.source && !it.label.includes(it.source) ? ` · ${it.source}` : ""}`, offerId: it.offerId, item: it, delay: known(it.id) ? -10 : di * 0.09 + ii * 0.07, home: mesh.position.clone(), layer: this.layerFor(it.kind), kind: it.kind };
         // Colour is never the only cue: the word goes on the label too.
         if (it.kind === "shift" && it.effort) entry.label = `${entry.label} · ${EFFORT_WORD[it.effort]}`;
+        if (it.kind === "shift" && it.body && this.bodySignal) {
+          this.addRibbon(mesh, it.body[this.bodySignal], it, s, e, w);
+          entry.note = describeSignal(it.body[this.bodySignal], this.bodySignal) ?? undefined;
+        }
         if (it.kind === "offer") {
           const edges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.0, h + 0.06, 1.0)), this.edge);
           edges.position.set(0, h / 2, 0);
@@ -394,8 +397,7 @@ class WeekScene {
       dn.textContent = day.day;
       lab.append(dn, String(day.dayNum));
       this.labels.appendChild(lab);
-      // With a body band in front of the tile, the day's name moves forward so it never sits on the band.
-      this.dayLabels.push({ el: lab, pos: new THREE.Vector3(x, -0.42, day.body ? 1.08 : 0.6) });
+      this.dayLabels.push({ el: lab, pos: new THREE.Vector3(x, -0.42, 0.6) });
     });
     const hourLines = this.detail ? [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24] : [12, 18, 24];
     const hourText = this.detail ? [8, 10, 12, 14, 16, 18, 20, 22, 24] : [12, 18, 24];
@@ -734,32 +736,43 @@ class WeekScene {
   }
 
   /**
-   * The body band: a flat strip in front of the day's tile, unlit so its grey steps keep their values,
-   * hatched where there is no reading (and over a stale one), with last night's recharge bridging the gap from the day before.
+   * What the watch read during a shift, down the front of its block: one cell per 15 minutes from the shift's start,
+   * darker for more of the signal the worker picked, hatched where the watch had no reading. Height already means time,
+   * so each cell sits exactly where its quarter hour is. Unlit, so the greys keep their values; outlined so the palest
+   * still stands off the violet of a rated shift.
    */
-  addBand(day: DayView, di: number, x: number) {
-    const body = day.body!;
-    // Just in front of the tile (which ends at 0.56), deep enough to read from the usual angle.
-    const depth = 0.3;
-    const z = 0.6 + depth / 2;
-    const strip = (w: number, cx: number, mat: THREE.MeshBasicMaterial) => {
-      const geo = new THREE.PlaneGeometry(w, depth);
-      geo.rotateX(-Math.PI / 2);
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.set(cx, 0.004, z);
-      const edge = new THREE.LineSegments(new THREE.EdgesGeometry(geo), this.bandEdge);
-      mesh.add(edge);
-      this.group.add(mesh);
-    };
-    strip(1.12, x, this.bandMat(body.state === "none" ? undefined : body.shade, body.state !== "reading"));
-    if (body.overnight && di > 0) strip(SPACING - 1.12 - 0.04, x - SPACING / 2, this.bandMat(body.overnight.shade, false));
+  addRibbon(mesh: THREE.Mesh, levels: (Load | null)[], it: DayItem, s: number, e: number, w: number) {
+    const start = hours(it.start);
+    const length = elapsedMinutes(it.start, it.end) / 60;
+    const width = Math.min(0.34, w * 0.4);
+    const z = w / 2 + 0.004;
+    const ribbon = new THREE.Group();
+    let top = 0;
+    let bottom = Infinity;
+    levels.forEach((v, i) => {
+      const a = Math.max(s, start + i * 0.25);
+      const b = Math.min(e, start + Math.min((i + 1) * 0.25, length));
+      if (b <= a) return;
+      const h = (b - a) * UNIT;
+      const y = (a - s) * UNIT;
+      const cell = new THREE.Mesh(new THREE.PlaneGeometry(width, Math.max(0.002, h - 0.006)), this.ribbonMat(v));
+      cell.position.set(0, y + h / 2, z);
+      ribbon.add(cell);
+      bottom = Math.min(bottom, y);
+      top = Math.max(top, y + h);
+    });
+    if (!ribbon.children.length) return;
+    const outline = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(width + 0.02, top - bottom + 0.012)), this.ribbonEdge);
+    outline.position.set(0, (top + bottom) / 2, z + 0.001);
+    ribbon.add(outline);
+    mesh.add(ribbon);
   }
 
-  bandMat(shade: number | undefined, hatched: boolean) {
-    const key = `${shade ?? "none"}-${hatched}`;
-    let m = this.bandMats.get(key);
+  ribbonMat(level: Load | null) {
+    const key = String(level);
+    let m = this.ribbonMats.get(key);
     if (!m) {
-      if (hatched && !this.hatch) {
+      if (level === null && !this.hatch) {
         const c = document.createElement("canvas");
         c.width = c.height = 32;
         const g = c.getContext("2d")!;
@@ -775,22 +788,12 @@ class WeekScene {
         }
         this.hatch = new THREE.CanvasTexture(c);
         this.hatch.wrapS = this.hatch.wrapT = THREE.RepeatWrapping;
-        this.hatch.repeat.set(4, 0.6);
+        this.hatch.repeat.set(1.2, 0.25);
       }
-      m = new THREE.MeshBasicMaterial({ color: shade === undefined ? "#F5F2ED" : BAND_COLOUR[shade], map: hatched ? this.hatch : null });
-      this.bandMats.set(key, m);
+      m = new THREE.MeshBasicMaterial({ color: level === null ? "#F5F2ED" : LOAD_COLOUR[level], map: level === null ? this.hatch : null });
+      this.ribbonMats.set(key, m);
     }
     return m;
-  }
-
-  setFlat(on: boolean) {
-    this.flat = on;
-    if (!on) return this.resetView();
-    this.orbit.theta = this.thetaTarget = this.baseTheta = 0;
-    this.orbit.phi = this.phiTarget = 0.06;
-    // Closer, so the week fills the stage from above.
-    this.zoom = this.zoomTarget = 0.62;
-    this.start();
   }
 
   baseMat(day: DayView) {
@@ -839,7 +842,6 @@ class WeekScene {
   }
 
   resetView() {
-    this.flat = false;
     this.baseTheta = 0.4;
     this.orbit.theta = 0.4;
     this.thetaTarget = 0.4;
@@ -879,7 +881,7 @@ class WeekScene {
     this.tip.className = `tip${b.offer ? " offer" : ""}`;
     const head = document.createElement("b");
     head.textContent = `${b.day.day} ${b.day.dayNum} · ${b.rest || !b.item ? `${fmt(b.s)}–${fmt(b.e)}` : timeText(b.item)}`;
-    this.tip.replaceChildren(head, b.label);
+    this.tip.replaceChildren(head, b.label, ...(b.note ? [document.createElement("br"), b.note] : []));
     this.tip.style.left = `${this.pointer.x}px`;
     this.tip.style.top = `${this.pointer.y}px`;
     this.tip.hidden = false;
@@ -1311,7 +1313,7 @@ class WeekScene {
         this.phiTarget = this.orbit.phi;
       }
       this.zoom += (this.zoomTarget - this.zoom) * k;
-    } else if (!this.reduced && !this.flat && !this.dragging && !busy && t - this.lastInteract > 3) {
+    } else if (!this.reduced && !this.dragging && !busy && t - this.lastInteract > 3) {
       const sway = this.baseTheta + Math.sin((t - this.lastInteract - 3) * 0.22) * 0.15;
       this.orbit.theta += (sway - this.orbit.theta) * 0.05;
     }
@@ -1384,8 +1386,6 @@ class WeekScene {
     this.hourLabels.forEach((l) => {
       this.placeLabel(l);
       if (sparse && l.hour !== undefined && l.hour % 6 !== 0) l.el.style.opacity = "0";
-      // From straight above, hours have no height to label.
-      if (this.flat) l.el.style.opacity = "0";
     });
     if (this.detail) this.placeBlockLabels();
     const t1 = performance.now();
@@ -1446,9 +1446,9 @@ class WeekScene {
     this.clearPreview();
     this.clearCreateGhost();
     this.connectors.forEach((l) => l.geometry.dispose());
-    this.bandMats.forEach((m) => m.dispose());
+    this.ribbonMats.forEach((m) => m.dispose());
     this.hatch?.dispose();
-    this.bandEdge.dispose();
+    this.ribbonEdge.dispose();
     this.dashMat.dispose();
     Object.values(this.mats).forEach((m) => m?.dispose());
     this.guide?.dispose();
@@ -1505,6 +1505,7 @@ export default function Week3D({
   detail = false,
   immersive = false,
   selectedId = null,
+  bodySignal = null,
   onSelect,
   onPreviewEnd,
   onReady,
@@ -1522,6 +1523,8 @@ export default function Week3D({
   detail?: boolean;
   immersive?: boolean;
   selectedId?: string | null;
+  /** Which of the watch's readings to draw along each shift, or none. */
+  bodySignal?: ShiftSignal | null;
   onSelect?: (id: string | null) => void;
   onPreviewEnd?: (target: SlotTarget, itemId: string) => void;
   onReady?: (handle: SceneHandle) => void;
@@ -1548,7 +1551,7 @@ export default function Week3D({
   readyRef.current = onReady;
   const daysRef = useRef(days);
   daysRef.current = days;
-  const key = JSON.stringify(days.map((d) => [d.date, d.rest, d.today, d.items.map((i) => [i.id, i.kind, i.start, i.end, i.label, i.offerId, i.workplaceIndex, i.protected, i.status]), d.body ? [d.body.state, d.body.shade, d.body.overnight?.shade] : null]));
+  const key = JSON.stringify([bodySignal, days.map((d) => [d.date, d.rest, d.today, d.items.map((i) => [i.id, i.kind, i.start, i.end, i.label, i.offerId, i.workplaceIndex, i.protected, i.status, bodySignal && i.body ? i.body[bodySignal] : null])])]);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -1578,6 +1581,7 @@ export default function Week3D({
       scene.onSelect = (id) => selectRef.current?.(id);
       scene.onPreviewEnd = (t, id) => previewRef.current?.(t, id);
       scene.selectedId = selectedId;
+      scene.bodySignal = bodySignal;
       if (immersive) {
         scene.zoom = 0.85;
         scene.zoomTarget = 0.85;
@@ -1600,7 +1604,6 @@ export default function Week3D({
         zoomBy: (f) => scene.zoomBy(f),
         nudgeOrbit: (a, b) => scene.nudgeOrbit(a, b),
         resetView: () => scene.resetView(),
-        setFlat: (on) => scene.setFlat(on),
         hoverAt: (nx, ny, v) => scene.hoverAt(nx, ny, v),
       });
       scene.selected = selectedDay ?? null;
@@ -1630,7 +1633,10 @@ export default function Week3D({
   }, [editable]);
 
   useEffect(() => {
-    if (sceneRef.current) sceneRef.current.setDays(days);
+    if (sceneRef.current) {
+      sceneRef.current.bodySignal = bodySignal;
+      sceneRef.current.setDays(days);
+    }
     else if (fbRef.current && !fbRef.current.hidden) fbRef.current.innerHTML = fallbackHtml(days);
   }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
 

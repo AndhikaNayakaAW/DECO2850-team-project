@@ -3,7 +3,7 @@ import { createJSONStorage, persist, type StateStorage } from "zustand/middlewar
 import { applyResponse, sendAsk, unanswer, type AskInput } from "./actions";
 import { uid } from "./ids";
 import { emptyData, exampleWeek } from "./session";
-import type { BodyRating, DataSlice, Decision, Effort, PersonalEvent, Settings, Shift, UniEvent } from "./types";
+import type { DataSlice, Decision, Effort, PersonalEvent, Settings, Shift, UniEvent } from "./types";
 import { LOG_LIMIT, MESSAGE_LIMIT, cleanData } from "./validate";
 
 export type { DataSlice } from "./types";
@@ -29,7 +29,6 @@ export interface Actions {
   removePersonal: (id: string) => void;
   restore: (kind: "shift" | "uni" | "personal", item: Shift | UniEvent | PersonalEvent) => void;
   setProtected: (id: string, on: boolean) => void;
-  rateShift: (id: string, rating: BodyRating | null) => void;
   /** How the work was, set or changed on the calendar; null clears it. */
   setEffort: (id: string, effort: Effort | null) => void;
   /** Accept, decline or keep for later. Nothing is sent to the manager. */
@@ -64,7 +63,7 @@ function safeStorage(): StateStorage {
   };
 }
 
-export const DATA_KEYS: (keyof DataSlice)[] = ["schema", "sessionStartedAt", "shifts", "uni", "personal", "offers", "messages", "sync", "settings", "wearable", "bodyDays"];
+export const DATA_KEYS: (keyof DataSlice)[] = ["schema", "sessionStartedAt", "shifts", "uni", "personal", "offers", "messages", "sync", "settings"];
 
 export function pickData(s: DataSlice): DataSlice {
   return Object.fromEntries(DATA_KEYS.map((k) => [k, s[k]])) as unknown as DataSlice;
@@ -108,7 +107,15 @@ export const useStore = create<Store>()(
           set((s) => ({ shifts: [...s.shifts, { ...input, workplace: input.workplace.trim(), id }] }));
           return id;
         },
-        updateShift: (id, patch) => set((s) => ({ shifts: s.shifts.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
+        // The watch read a shift's own hours: if the worker changes when it ran, those readings no longer fit it.
+        updateShift: (id, patch) =>
+          set((s) => ({
+            shifts: s.shifts.map((x) => {
+              if (x.id !== id) return x;
+              const next = { ...x, ...patch };
+              return next.date !== x.date || next.start !== x.start || next.end !== x.end ? { ...next, body: undefined } : next;
+            }),
+          })),
         removeShift: (id) => set((s) => ({ shifts: s.shifts.filter((x) => x.id !== id) })),
         addUni: (input) => {
           const id = uid("u");
@@ -138,7 +145,6 @@ export const useStore = create<Store>()(
             else ids.delete(id);
             return { settings: { ...s.settings, protectedIds: [...ids] }, personal: on ? s.personal : s.personal.map((p) => (p.id === id && p.importance === "protected" ? { ...p, importance: "important" } : p)) };
           }),
-        rateShift: (id, rating) => set((s) => ({ shifts: s.shifts.map((x) => (x.id === id ? { ...x, rated: rating ?? undefined } : x)) })),
         setEffort: (id, effort) =>
           set((s) => ({ shifts: s.shifts.map((x) => (x.id === id && x.effort !== (effort ?? undefined) ? { ...x, effort: effort ?? undefined, effortSkipped: effort ? undefined : x.effortSkipped } : x)) })),
         respondToOffer: (offerId, decision) =>

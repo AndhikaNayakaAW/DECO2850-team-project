@@ -2,23 +2,22 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AskPanel from "./AskPanel";
-import BodyCard from "./BodyCard";
+import { BodyStrip } from "./BodyStrip";
 import Immersive from "./Immersive";
 import ItemForm, { type ItemKindChoice, type ItemTarget, type Removed } from "./ItemForm";
 import SettingsForm from "./SettingsForm";
 import TestOfferForm from "./TestOfferForm";
 import { Sheet } from "./Sheet";
 import Week3D, { type DropTarget, type SceneHandle } from "./Week3D";
-import { BAND_COLOUR, BAND_MEANING, BAND_SIGNALS, bodyBand, type BandSignal } from "@/lib/body-week";
-import { SIGNAL_LABELS } from "@/lib/body";
 import { buildWeek, clashes, waitingAsks } from "@/lib/checks";
 import { EFFORTS, EFFORT_COLOUR, EFFORT_WORD } from "@/lib/effort";
 import { DAY_NAMES, clock12, dayIndex } from "@/lib/logic";
+import { LOAD_COLOUR, LOAD_WORDS, SHIFT_SIGNALS, SIGNAL_MEANING, SIGNAL_NAME, describeSignal } from "@/lib/shift-body";
 import { useStore } from "@/lib/store";
 import { useSynced } from "@/lib/sync";
 import { useNow } from "@/lib/use-now";
 import { addDays, daysBetween, longDate, weekDates, weekLabel, weekStart, weekdayName } from "@/lib/time";
-import type { DateKey, Day, DayItem, Decision } from "@/lib/types";
+import type { DateKey, Day, DayItem, Decision, ShiftSignal } from "@/lib/types";
 
 const KINDS: { kind: string; label: string; cls: string }[] = [
   { kind: "shift", label: "Work", cls: "shift" },
@@ -62,16 +61,15 @@ export default function CalendarBoard() {
   const [sheet, setSheet] = useState<SheetState>(null);
   const [undo, setUndo] = useState<Undo | null>(null);
   const [immersive, setImmersive] = useState(false);
-  /** Which reading the floor band shows: the worker's choice, remembered on this device. */
-  const [bandSignal, setBandSignal] = useState<BandSignal>(() => {
+  /** Which of the watch's readings the shifts carry: the worker's choice, remembered on this device. One at a time, so the week stays readable. */
+  const [bodySignal, setBodySignal] = useState<ShiftSignal>(() => {
     try {
-      const saved = localStorage.getItem("offshift-band-signal");
-      return (BAND_SIGNALS as readonly string[]).includes(saved ?? "") ? (saved as BandSignal) : "energy";
+      const saved = localStorage.getItem("offshift-body-signal");
+      return (SHIFT_SIGNALS as string[]).includes(saved ?? "") ? (saved as ShiftSignal) : "stress";
     } catch {
-      return "energy";
+      return "stress";
     }
   });
-  const [flat, setFlat] = useState(false);
   const scene = useRef<SceneHandle | null>(null);
   const immersiveRef = useRef(false);
   immersiveRef.current = immersive;
@@ -101,20 +99,13 @@ export default function CalendarBoard() {
   }, [undo]);
 
   const week = useMemo(() => buildWeek(state, weekAnchor, now), [state.shifts, state.uni, state.personal, state.offers, state.settings, weekAnchor, now.date]); // eslint-disable-line react-hooks/exhaustive-deps
-  const band = useMemo(() => bodyBand(state, dates, bandSignal), [state.bodyDays, state.settings.timeZone, dates, bandSignal, now.date]); // eslint-disable-line react-hooks/exhaustive-deps
-  const days = useMemo(
-    () => week.map((d) => ({ ...d, items: d.items.filter((it) => !hidden.has(it.kind === "due" ? "uni" : it.kind)), body: band.find((b) => b.date === d.date) })),
-    [week, hidden, band],
-  );
-  function chooseBand(sig: BandSignal) {
-    setBandSignal(sig);
+  const days = useMemo(() => week.map((d) => ({ ...d, items: d.items.filter((it) => !hidden.has(it.kind === "due" ? "uni" : it.kind)) })), [week, hidden]);
+  const anyBody = week.some((d) => d.items.some((it) => it.body));
+  function chooseSignal(sig: ShiftSignal) {
+    setBodySignal(sig);
     try {
-      localStorage.setItem("offshift-band-signal", sig);
+      localStorage.setItem("offshift-body-signal", sig);
     } catch {}
-  }
-  function toggleFlat() {
-    scene.current?.setFlat(!flat);
-    setFlat(!flat);
   }
   const view = week.find((d) => d.date === selected)!;
   const clash = useMemo(() => clashes(state), [state.shifts, state.personal, state.uni]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -324,32 +315,29 @@ export default function CalendarBoard() {
             onOfferTap={openAsk}
             onRemove={handleRemove}
             onMove={handleMove}
+            bodySignal={bodySignal}
             editable
             hint="hold a block to pick it up · move plans between days · bin to remove · pinch to zoom"
           />
           <div className="stage-legends">
-          {band.length > 0 && (
-            <div className="effort-legend band-legend" role="group" aria-label="Your body, from your watch, along the floor of each day">
-              <span>Floor: your watch</span>
-              {BAND_SIGNALS.map((sig) => (
-                <button key={sig} type="button" aria-pressed={bandSignal === sig} className={bandSignal === sig ? "on" : ""} onClick={() => chooseBand(sig)}>
-                  {SIGNAL_LABELS[sig]}
+          {anyBody && (
+            <div className="effort-legend band-legend" role="group" aria-label="Your watch during each shift">
+              <span>Down each shift: your watch</span>
+              {SHIFT_SIGNALS.map((sig) => (
+                <button key={sig} type="button" aria-pressed={bodySignal === sig} className={bodySignal === sig ? "on" : ""} onClick={() => chooseSignal(sig)}>
+                  {SIGNAL_NAME[sig]}
                 </button>
               ))}
-              <span className="band-scale" title={`Darker means ${BAND_MEANING[bandSignal]}`}>
-                {BAND_COLOUR.map((c) => (
-                  <i key={c} className="swatch" style={{ background: c }} aria-hidden="true" />
+              <span className="band-scale" title={`Darker means ${SIGNAL_MEANING[bodySignal]}`}>
+                {LOAD_COLOUR.map((c, i) => (
+                  <i key={c} className="swatch" style={{ background: c }} aria-hidden="true" title={LOAD_WORDS[bodySignal][i]} />
                 ))}
-                darker: {BAND_MEANING[bandSignal]}
+                {LOAD_WORDS[bodySignal][0].toLowerCase()} to {LOAD_WORDS[bodySignal][3].toLowerCase()}
               </span>
               <span>
                 <i className="swatch hatch" aria-hidden="true" />
                 no reading
               </span>
-              <span>between days: last night&apos;s recharge</span>
-              <button type="button" aria-pressed={flat} className={flat ? "on" : ""} onClick={toggleFlat}>
-                {flat ? "Back to 3D" : "Read flat"}
-              </button>
             </div>
           )}
           {week.some((d) => d.items.some((it) => it.effort)) && (
@@ -414,7 +402,6 @@ export default function CalendarBoard() {
                   </button>
                 </div>
               </div>
-              {view.today && <BodyCard />}
               {view.rest && all.length > 0 && <p className="rest-note">{DAY_NAMES[view.day]} is a rest day you set aside.</p>}
               <div className="cal-list">
                 {list.length === 0 && all.length === 0 && <p className="quiet">{view.rest ? "A rest day you keep clear." : "Nothing on."}</p>}
@@ -424,7 +411,7 @@ export default function CalendarBoard() {
                   </p>
                 )}
                 {list.map((it) => (
-                  <ListRow key={it.id} it={it} clash={clash[it.id]} onOpen={() => editItem(it, view.date)} />
+                  <ListRow key={it.id} it={it} clash={clash[it.id]} signal={bodySignal} onOpen={() => editItem(it, view.date)} />
                 ))}
               </div>
               <button className="btn ghost add-day" onClick={() => addItem("shift", view.date)}>
@@ -501,7 +488,7 @@ export default function CalendarBoard() {
   );
 }
 
-function ListRow({ it, clash, onOpen }: { it: DayItem; clash?: string; onOpen: () => void }) {
+function ListRow({ it, clash, signal, onOpen }: { it: DayItem; clash?: string; signal: ShiftSignal; onOpen: () => void }) {
   const cls = it.kind === "shift" && (it.workplaceIndex ?? 0) % 2 === 1 ? "mcd" : it.kind;
   const time = it.kind === "due" ? `Due\n${clock12(it.start)}` : `${clock12(it.start)}\n${clock12(it.end)}`;
   return (
@@ -510,6 +497,12 @@ function ListRow({ it, clash, onOpen }: { it: DayItem; clash?: string; onOpen: (
       <span className="ev-body">
         <b>{it.label}</b>
         <span className="src">{it.kind === "offer" ? (it.later ? "Kept for later · press to decide" : "Ask · open it") : it.status || it.source}</span>
+        {it.body && (
+          <span className="ev-body-reading">
+            <BodyStrip levels={it.body[signal]} signal={signal} shift={it} />
+            <span>{describeSignal(it.body[signal], signal)}</span>
+          </span>
+        )}
         {it.warn && <span className="warn-tag">{it.warn}</span>}
         {clash && <span className="clash">Clashes with {clash}</span>}
       </span>

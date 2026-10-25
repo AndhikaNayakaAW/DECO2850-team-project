@@ -103,3 +103,15 @@ export function stamp(date: DateKey, time: string): number {
   const [h, m] = time.split(":").map(Number);
   return toUtc(date).getTime() / 60_000 + h * 60 + (m || 0);
 }
+
+/** The real instant (ms since 1970) a local date and clock happen in a time zone, daylight time included. */
+export function instantOf(date: DateKey, time: string, timeZone: string = DEFAULT_TIME_ZONE): number {
+  const wall = stamp(date, time) * 60_000;
+  let guess = wall;
+  // Two passes settle any zone offset, including one that changes between the guess and the answer.
+  for (let i = 0; i < 2; i++) {
+    const seen = nowIn(timeZone, new Date(guess));
+    guess -= stamp(seen.date, seen.time) * 60_000 - wall;
+  }
+  return guess;
+}

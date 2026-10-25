@@ -6,8 +6,7 @@ export type DateKey = string;
 /** How a worker answers an ask: take the shift, turn it down, or keep it on the week to decide later. */
 export type Decision = "accept" | "decline" | "later";
 export type OfferStatus = "pending" | "deferred" | "accepted" | "declined";
-export type BodyRating = "fine" | "tired" | "wiped";
-/** How the work on a finished shift was, in work words, lowest to highest. Separate from the body rating. */
+/** How the work on a finished shift was, in work words, lowest to highest. The only rating a shift has. */
 export type Effort = "light" | "steady" | "busy" | "hard";
 export type CheckState = "ok" | "warn" | "bad";
 
@@ -18,13 +17,14 @@ export interface Shift {
   start: string;
   end: string;
   workplace: string;
-  rated?: BodyRating;
   /** How the work was, from the watch's check-in after the shift or from the calendar. */
   effort?: Effort;
   /** The worker skipped the check-in: never read as a rating, and never asked again. */
   effortSkipped?: boolean;
   viaOffer?: string;
   note?: string;
+  /** Heart rate and stress during this shift, from the watch, while the worker shares. */
+  body?: ShiftBody;
 }
 
 /** A class, or something due. */
@@ -98,8 +98,9 @@ export interface Settings {
 }
 
 export interface Check {
-  key: "body" | "week";
-  state: CheckState;
+  key: "body" | "week" | "past";
+  /** "info" carries no judgement: the past shifts are shown, never graded. */
+  state: CheckState | "info";
   text: string;
 }
 
@@ -121,6 +122,8 @@ export interface DayItem {
   later?: boolean;
   /** A shift's work rating, which colours its block. */
   effort?: Effort;
+  /** A shift's heart rate and stress, 15 minutes at a time, drawn along its block. */
+  body?: ShiftBody;
   warn?: string;
   category?: PlanCategory;
   importance?: Importance;
@@ -135,53 +138,31 @@ export interface DayView {
   today: boolean;
   rest: boolean;
   items: DayItem[];
-  /** The body band for this day, when the worker has shared readings. */
-  body?: BandDay;
 }
 
-/** 0 reads low, 3 reads well. */
-export type BodyLevel = 0 | 1 | 2 | 3;
+/** How much of a signal there was in one 15-minute block of a shift: 0 the least, 3 the most. */
+export type Load = 0 | 1 | 2 | 3;
 
-/** What the watch reads: Body Battery, sleep, stress, resting heart rate, breathing, pulse ox and recovery time. */
-export type BodySignal = "energy" | "sleep" | "stress" | "heart" | "breathing" | "pulseOx" | "recovery";
+/** The two signals Offshift reads during a shift. */
+export type ShiftSignal = "stress" | "heart";
 
-export type BodySignals = Partial<Record<BodySignal, BodyLevel>>;
-
-/** A body reading from the worker's own watch, kept as levels and words so no raw number travels. */
-export interface Wearable {
-  level: BodyLevel;
-  word: string;
-  at: string;
-  source: string;
-  /** When the server got it (ISO). An old reading stops counting. */
-  receivedAt?: string;
-  signals?: BodySignals;
+/**
+ * What the watch read during one shift, 15 minutes at a time from its start, as levels and never numbers.
+ * Null where the watch had no reading (off the wrist, or moving too much to read stress).
+ */
+export interface ShiftBody {
+  /** When the server got it (ISO). */
+  receivedAt: string;
+  /** Garmin stress, in Garmin's own bands: 0 resting, 1 low, 2 medium, 3 high. */
+  stress: (Load | null)[];
+  /** Heart rate against the worker's own resting and maximum (heart-rate reserve): 0 very light, 1 light, 2 moderate, 3 vigorous. */
+  heart: (Load | null)[];
 }
 
 /** Bumped whenever the shape changes, so old saved weeks are never read as new ones. */
 export const SCHEMA = 2;
 
 /** Everything that syncs between the calendar, the team API, the watch and the server. */
-/** The latest reading the worker shared on one day, kept so the week can show days side by side. */
-export interface BodyDay {
-  date: DateKey;
-  /** The watch's clock time of the reading. */
-  at: string;
-  /** When the server got it (ISO). */
-  receivedAt: string;
-  signals: BodySignals;
-}
-
-/** One day's piece of the floor band: a shade from 0 (lightest) to 3 (darkest), or no reading. */
-export interface BandDay {
-  date: DateKey;
-  state: "reading" | "stale" | "none";
-  shade?: BodyLevel;
-  word?: string;
-  /** Last night's recharge, drawn between the day before and this one. */
-  overnight?: { shade: BodyLevel; word: string };
-}
-
 export interface DataSlice {
   schema: number;
   sessionStartedAt: string;
@@ -192,7 +173,4 @@ export interface DataSlice {
   messages: Message[];
   sync: SyncEntry[];
   settings: Settings;
-  wearable?: Wearable | null;
-  /** Day by day, only while sharing is on; private to the worker. */
-  bodyDays?: BodyDay[];
 }

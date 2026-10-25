@@ -1,7 +1,6 @@
-import { BODY_SIGNALS } from "./body";
 import { DAYS } from "./logic";
 import { isClock, isDateKey } from "./time";
-import { SCHEMA, type BodyDay, type DataSlice } from "./types";
+import { SCHEMA, type DataSlice } from "./types";
 
 /**
  * Checks a week that arrived over the network or from storage, field by field, and returns a clean copy
@@ -34,7 +33,8 @@ const id = text(80, true);
 const date = check(isDateKey);
 const clock = check(isClock);
 const iso = check((v) => typeof v === "string" && v.length <= 40 && Number.isFinite(Date.parse(v)));
-const level = oneOf([0, 1, 2, 3]);
+/** Up to a day of 15-minute blocks, each a level from 0 to 3 or no reading. */
+const loads = check((v) => Array.isArray(v) && v.length >= 1 && v.length <= 96 && v.every((x) => x === null || [0, 1, 2, 3].includes(x as number)));
 const zone = check((v) => {
   if (typeof v !== "string" || !v || v.length > 64) return false;
   try {
@@ -78,7 +78,13 @@ function list(item: Clean, max = 1000): Clean {
   };
 }
 
-const shift = object({ id, date, start: clock, end: clock, workplace: text(80, true), rated: optional(oneOf(["fine", "tired", "wiped"])), effort: optional(oneOf(["light", "steady", "busy", "hard"])), effortSkipped: optional(check((v) => typeof v === "boolean")), viaOffer: optional(id), note: optional(text(500)) });
+/** A shift's heart rate and stress from the watch: the same number of blocks for both. */
+const shiftBody: Clean = (v) => {
+  const c = object({ receivedAt: iso, stress: loads, heart: loads })(v);
+  return c !== BAD && (c as { stress: unknown[] }).stress.length === (c as { heart: unknown[] }).heart.length ? c : BAD;
+};
+// A Fine, Tired or Wiped rating saved before 25 Oct 2026 isn't a field any more, so it drops out here.
+const shift = object({ id, date, start: clock, end: clock, workplace: text(80, true), effort: optional(oneOf(["light", "steady", "busy", "hard"])), effortSkipped: optional(check((v) => typeof v === "boolean")), viaOffer: optional(id), note: optional(text(500)), body: optional(shiftBody) });
 const uni = object({ id, date, start: clock, end: clock, title: text(80, true), type: oneOf(["class", "due"]) });
 const plan = object({
   id,
@@ -116,22 +122,6 @@ const settings = object({
   lateFinishesBeforeFlag: check((v) => Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 7),
   timeZone: zone,
 });
-const wearable = object({
-  level,
-  word: text(40),
-  at: clock,
-  source: text(40),
-  receivedAt: optional(iso),
-  signals: optional(object(Object.fromEntries(BODY_SIGNALS.map((k) => [k, optional(level)])))),
-});
-
-const bodyDay = object({
-  date,
-  at: clock,
-  receivedAt: iso,
-  signals: object(Object.fromEntries(BODY_SIGNALS.map((k) => [k, optional(level)]))),
-});
-
 const week = object({
   schema: oneOf([SCHEMA]),
   sessionStartedAt: iso,
@@ -142,19 +132,16 @@ const week = object({
   messages: list(message, 2000),
   sync: list(entry, 2000),
   settings,
-  wearable: optional(wearable),
-  bodyDays: optional(check((v) => Array.isArray(v) && v.length <= 60)),
 });
 
-/** The week in the current shape, cleaned, or null if anything in it is malformed or from an older version. */
+/**
+ * The week in the current shape, cleaned, or null if anything in it is malformed or from an older version.
+ * The all-day readings an older version kept (wearable, bodyDays) aren't fields any more, so they drop out.
+ * The keys always come back in the same order: devices compare weeks as JSON.
+ */
 export function cleanData(input: unknown): DataSlice | null {
   const c = week(input);
-  if (c === BAD) return null;
-  const { wearable, bodyDays = [], ...rest } = c as DataSlice;
-  const days = bodyDays.map((d) => bodyDay(d));
-  if (days.includes(BAD)) return null;
-  // Always the same key order: devices compare weeks as JSON, so order matters.
-  return { ...rest, wearable: wearable ?? null, bodyDays: days as BodyDay[] };
+  return c === BAD ? null : (c as DataSlice);
 }
 
 /** How long the shared log and the conversation get before the oldest entries go: well inside what a week may hold. */

@@ -72,6 +72,6 @@ describe("the past shifts check on an ask", () => {
   it("puts the same comparison on the watch, in plain text", () => {
     expect(watchSummary(history(), AT).ask?.past).toBe("Last 2 at Cafe: Hard, Busy");
     expect(watchSummary(week(), AT).ask?.past).toBe("Last at Cafe: Hard");
-    expect(watchSummary(shifts({ "s-tue": {} }), AT).ask?.past).toBeNull();
+    expect(watchSummary(shifts({ "s-tue": { effort: undefined } }), AT).ask?.past).toBeNull();
   });
 });

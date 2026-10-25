@@ -53,8 +53,6 @@ export function mergeData(base: DataSlice, server: DataSlice, client: DataSlice)
   const out: DataSlice = { ...server };
   for (const key of LISTS) (out as unknown as Record<string, unknown>)[key] = mergeList<{ id: string }>(base[key], server[key], client[key]);
   out.settings = mergeSettings(base.settings, server.settings, client.settings);
-  out.wearable = same(client.wearable, base.wearable) ? server.wearable : client.wearable;
-  out.bodyDays = same(client.bodyDays, base.bodyDays) ? server.bodyDays : client.bodyDays;
 
   const baseOffers = new Map(base.offers.map((o) => [o.id, o]));
   const serverOffers = new Map(server.offers.map((o) => [o.id, o]));

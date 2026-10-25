@@ -1,17 +1,14 @@
-/** What the Garmin watch app receives and sends through /api/watch: the waiting ask, answers and body readings. */
+/** What the Garmin watch app receives and sends through /api/watch: the waiting ask, answers, the shift check-in and each shift's readings. */
 import { applyResponse } from "./actions";
-import { BODY_SIGNALS, OVERALL_WORDS, overallLevel } from "./body";
 import { dayItems, eventsFor, isRestDay, offerImpact, waitingAsks } from "./checks";
-import { checkInDue } from "./effort";
-import { uid } from "./ids";
+import { EFFORT_WORD, checkInDue } from "./effort";
 import { clock12, minutes, range12 } from "./logic";
-import { addDays, nowIn, weekdayOf, whenWord } from "./time";
-import { recordBodyDay } from "./body-week";
-import type { BodyLevel, BodySignals, DataSlice, Decision, Offer, OfferStatus, Wearable } from "./types";
+import { pastShifts } from "./past-shifts";
+import { shiftBodyDue, shiftWindow } from "./shift-body";
+import { addDays, nowIn, weekdayOf, whenWord, type Now } from "./time";
+import type { DataSlice, Decision, Offer, OfferStatus } from "./types";
 
 export const WATCH_DECISIONS: Decision[] = ["accept", "decline", "later"];
-
-export const WEARABLE_WORDS: Record<Wearable["level"], string> = OVERALL_WORDS;
 
 const STATUS_WORDS: Record<OfferStatus, string> = {
   pending: "Waiting",
@@ -30,6 +27,8 @@ export interface WatchAsk {
   time: string;
   note: string;
   week: string[];
+  /** How the last shifts at this workplace went, in one line: "Last 2 at Cafe: Hard, Busy". Older builds ignore it. */
+  past: string | null;
   /** Only for watch builds from before 23 Oct 2026, whose menu still lists another time and a swap. */
   alt: string;
   swap: string;
@@ -46,6 +45,8 @@ export interface WatchSummary {
   replied: { from: string; time: string; status: string } | null;
   /** A shift that just finished, for the watch to ask how the work was. Older builds ignore it. */
   checkIn: { id: string; title: string } | null;
+  /** A shift that just finished, for the watch to read its heart rate and stress during: from and to in seconds since 1970. */
+  shiftBody: { id: string; title: string; from: number; to: number } | null;
 }
 
 /** Letters that don't split into a plain letter and an accent. */
@@ -99,6 +100,14 @@ function weekLines(offer: Offer, data: DataSlice): string[] {
   return lines.slice(0, 3).map(ascii);
 }
 
+/** The ask's past shifts at the same workplace, as the watch shows them. */
+function pastLine(offer: Offer, data: DataSlice, now: Pick<Now, "date" | "time">): string | null {
+  const shifts = pastShifts(offer, data, now);
+  if (!shifts.length) return null;
+  const words = shifts.map((s) => (s.effort ? EFFORT_WORD[s.effort] : "not rated"));
+  return ascii(`Last${shifts.length > 1 ? ` ${shifts.length}` : ""} at ${offer.workplace.trim()}: ${words.join(", ")}`);
+}
+
 /** Today's plans for the watch's week page: start time and title, in order, without asks or rest. */
 function todayLines(data: DataSlice, today: string): string[] {
   return dayItems(data, today)
@@ -122,6 +131,7 @@ export function watchSummary(data: DataSlice, atTime: Date = new Date()): WatchS
         time: watchRange(o.start, o.end),
         note: ascii(o.note),
         week: weekLines(o, data),
+        past: pastLine(o, data, now),
         alt: "Not offered",
         swap: "No one",
         status: o.status as "pending" | "deferred",
@@ -133,10 +143,13 @@ export function watchSummary(data: DataSlice, atTime: Date = new Date()): WatchS
     .sort((a, b) => (a.repliedAt ?? "").localeCompare(b.repliedAt ?? ""))
     .at(-1);
   const due = checkInDue(data, atTime);
+  const read = shiftBodyDue(data, atTime);
+  const title = (s: { workplace: string; start: string; end: string }) => ascii(`${s.workplace || "Work"}, ${watchRange(s.start, s.end)}`);
   return {
     clock: now.time,
     ask,
-    checkIn: due ? { id: due.id, title: ascii(`${due.workplace || "Work"}, ${watchRange(due.start, due.end)}`) } : null,
+    checkIn: due ? { id: due.id, title: title(due) } : null,
+    shiftBody: read ? { id: read.id, title: title(read), ...shiftWindow(read, data.settings.timeZone) } : null,
     today: todayLines(data, now.date),
     waiting: open.length,
     replied: last ? { from: ascii(last.from) || "Your manager", time: ascii(range12(last.start, last.end)), status: STATUS_WORDS[last.status] } : null,
@@ -146,71 +159,4 @@ export function watchSummary(data: DataSlice, atTime: Date = new Date()): WatchS
 /** An answer chosen on the wrist changes the week exactly as the same answer on the calendar would. */
 export function applyWatchAnswer(data: DataSlice, offerId: string, decision: Decision, atTime: Date = new Date()): { data: DataSlice; toast: string } | null {
   return applyResponse(data, offerId, decision, atTime);
-}
-
-/** Keeps an older watch build's single reading as a word, and logs it only when it changes. */
-export function applyWatchBody(data: DataSlice, level: number, atTime: Date = new Date()): DataSlice {
-  if (!Number.isInteger(level) || level < 0 || level > 3) return data;
-  const lv = level as Wearable["level"];
-  if (data.wearable && data.wearable.level === lv && !stale(data.wearable, atTime)) return data;
-  const word = WEARABLE_WORDS[lv];
-  const now = nowIn(data.settings.timeZone, atTime);
-  if (data.wearable && data.wearable.level === lv) return { ...data, wearable: { ...data.wearable, at: now.time, receivedAt: atTime.toISOString() } };
-  return {
-    ...data,
-    wearable: { level: lv, word, at: now.time, source: "Garmin", receivedAt: atTime.toISOString() },
-    sync: [...data.sync, { id: uid("y"), at: atTime.toISOString(), from: "Watch", to: "Only you", text: `Body reading: ${word.toLowerCase()}. Kept private.` }],
-  };
-}
-
-export type HealthInput = { signals: BodySignals; at: string | null } | { share: false };
-
-/** Keeps only what the watch is allowed to send: known signals as whole levels from 0 to 3, and a clock time. */
-export function parseHealth(input: unknown): HealthInput | null {
-  if (!input || typeof input !== "object" || Array.isArray(input)) return null;
-  const o = input as Record<string, unknown>;
-  if (o.share === false) return { share: false };
-  const signals: BodySignals = {};
-  for (const k of BODY_SIGNALS) {
-    const v = o[k];
-    if (typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 3) signals[k] = v as BodyLevel;
-  }
-  if (!Object.keys(signals).length) return null;
-  const at = typeof o.at === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(o.at) ? o.at : null;
-  return { signals, at };
-}
-
-/** Stores the watch's levels and overall word. Logs only when the overall word changes. */
-export function applyWatchHealth(data: DataSlice, signals: BodySignals, at: string | null, atTime: Date = new Date()): DataSlice {
-  const level = overallLevel(signals);
-  if (level === null) return data;
-  const ordered: BodySignals = {};
-  for (const k of BODY_SIGNALS) if (signals[k] !== undefined) ordered[k] = signals[k];
-  const prev = data.wearable;
-  const now = nowIn(data.settings.timeZone, atTime);
-  const clock = at ?? now.time;
-  const bodyDays = recordBodyDay(data.bodyDays ?? [], now.date, clock, atTime, ordered);
-  const unchanged = !!prev && prev.level === level && JSON.stringify(prev.signals ?? {}) === JSON.stringify(ordered);
-  // The same reading again only needs storing now and then, to show it's still current; a new day always gets its own.
-  if (unchanged && !stale(prev, atTime) && bodyDays.length === (data.bodyDays ?? []).length) return data;
-  const word = OVERALL_WORDS[level];
-  const wearable: Wearable = { level, word, at: clock, source: "Garmin", receivedAt: atTime.toISOString(), signals: ordered };
-  const sync = prev?.word === word ? data.sync : [...data.sync, { id: uid("y"), at: atTime.toISOString(), from: "Watch", to: "Only you", text: `Body reading: ${word.toLowerCase()}. Kept private.` }];
-  return { ...data, wearable, sync, bodyDays };
-}
-
-/** Sharing turned off on the watch: the calendar forgets the last reading and every day before it, and the log forgets the readings too. */
-export function stopWatchHealth(data: DataSlice, atTime: Date = new Date()): DataSlice {
-  if (!data.wearable && !data.bodyDays?.length) return data;
-  return {
-    ...data,
-    wearable: null,
-    bodyDays: [],
-    sync: [...data.sync.filter((e) => !(e.from === "Watch" && e.text.startsWith("Body reading"))), { id: uid("y"), at: atTime.toISOString(), from: "Watch", to: "Only you", text: "Body sharing turned off on the watch. The calendar forgot the readings." }],
-  };
-}
-
-/** A stored reading older than half an hour is refreshed even when the watch reads the same. */
-function stale(w: Wearable, atTime: Date): boolean {
-  return !w.receivedAt || atTime.getTime() - Date.parse(w.receivedAt) > 30 * 60_000;
 }

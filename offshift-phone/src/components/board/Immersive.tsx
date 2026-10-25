@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Week3D, { type SceneHandle, type SlotTarget } from "@/components/board/Week3D";
 import { buildWeek, type DataState } from "@/lib/checks";
 import { GestureEngine, type GestureEvent, type HandFrame } from "@/lib/gestures";
-import BodyCard from "./BodyCard";
+import { ShiftBodyChart } from "./BodyStrip";
 import { startHandTracking, type HandTracker } from "@/lib/hands";
 import { DAYS, DAY_NAMES, clock12, dayIndex, minutes, range12 } from "@/lib/logic";
 import { useStore } from "@/lib/store";
@@ -503,6 +503,7 @@ export default function Immersive({ onExit, weekAnchor, now, onOpenAsk }: { onEx
             days={days}
             immersive
             detail
+            bodySignal="stress"
             selectedId={selectedId}
             height="100%"
             className="big imm-stage"
@@ -574,6 +575,7 @@ export default function Immersive({ onExit, weekAnchor, now, onOpenAsk }: { onEx
                   </div>
                 ))}
               </div>
+              {selected.item.kind === "shift" && selected.item.body && <ShiftBodyChart shift={selected.item} />}
               <div className="sel-actions">
                 {selected.item.kind !== "boundary" && selected.item.kind !== "travel" && selected.item.kind !== "rest" && (
                   <button className="btn small neutral" onClick={() => askProtect(selected.item.id)}>
@@ -592,7 +594,6 @@ export default function Immersive({ onExit, weekAnchor, now, onOpenAsk }: { onEx
             </div>
           ) : (
             <div className="sel empty">
-              <BodyCard />
               <div className="eyebrow">Selection</div>
               <p>Pinch or click a block to see it here.</p>
             </div>

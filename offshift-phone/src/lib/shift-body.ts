@@ -1,0 +1,183 @@
+/**
+ * Heart rate and stress during each shift, from the worker's own watch, 15 minutes at a time.
+ * Only the shift's own hours are read, only as levels from 0 to 3, and only while the worker shares.
+ * Rationale and sources: docs/design/2026-10-25-biometrics-during-shifts.md.
+ */
+import { minutesSinceEnd } from "./effort";
+import { uid } from "./ids";
+import { elapsedMinutes, fromMinutes, minutes, range12 } from "./logic";
+import { addDays, instantOf, shortDate } from "./time";
+import type { DataSlice, Load, Shift, ShiftBody, ShiftSignal } from "./types";
+
+export const BLOCK_MINUTES = 15;
+/** A day's worth of blocks: the most any shift can have. */
+const MAX_BLOCKS = 96;
+/** Read about 15 minutes after the rostered end, like the check-in; after 12 hours the moment has passed. */
+const READ_AFTER = 15;
+const READ_UNTIL = 12 * 60;
+
+export const SHIFT_SIGNALS: ShiftSignal[] = ["stress", "heart"];
+
+export const SIGNAL_NAME: Record<ShiftSignal, string> = { stress: "Stress", heart: "Heart" };
+
+/**
+ * One word per level, 0 to 3. Stress uses Garmin's own bands (0–25 resting, 26–50 low, 51–75 medium, 76–100 high).
+ * Heart uses the share of the worker's heart-rate reserve, between their resting and maximum rate, in the bands
+ * exercise science uses for intensity (under 30% very light, 30–39% light, 40–59% moderate, 60% and over vigorous).
+ */
+export const LOAD_WORDS: Record<ShiftSignal, readonly [string, string, string, string]> = {
+  stress: ["Resting", "Low", "Medium", "High"],
+  heart: ["Very light", "Light", "Moderate", "Vigorous"],
+};
+
+/** Where each reading comes from, shown beside it. */
+export const SIGNAL_SOURCE: Record<ShiftSignal, string> = {
+  stress: "Garmin's stress level, from heart-rate variability while you're still",
+  heart: "Your heart rate between your own resting and maximum rate",
+};
+
+/** What darker means, for the key: "darker: more stress". */
+export const SIGNAL_MEANING: Record<ShiftSignal, string> = { stress: "more stress", heart: "harder heart work" };
+
+/** One neutral grey, evenly darker for more. No hue, so it never competes with the violet work ratings and reads the same with colour-blind vision. */
+export const LOAD_COLOUR = ["#E2E2DE", "#B9BAB4", "#8E908A", "#62645F"] as const;
+
+/** How many 15-minute blocks a shift has. A shift that ends before it starts runs past midnight. */
+export function blockCount(shift: Pick<Shift, "start" | "end">): number {
+  return Math.max(1, Math.ceil(elapsedMinutes(shift.start, shift.end) / BLOCK_MINUTES));
+}
+
+/** The clock times of each block, from the shift's start; the last one ends with the shift. */
+export function blockTimes(shift: Pick<Shift, "start" | "end">): { start: string; end: string }[] {
+  const total = elapsedMinutes(shift.start, shift.end);
+  const from = minutes(shift.start);
+  return Array.from({ length: blockCount(shift) }, (_, i) => ({ start: fromMinutes(from + i * BLOCK_MINUTES), end: fromMinutes(from + Math.min(total, (i + 1) * BLOCK_MINUTES)) }));
+}
+
+/** When the shift ran, as instants in seconds, so the watch can read exactly those hours without knowing the zone. */
+export function shiftWindow(shift: Pick<Shift, "date" | "start" | "end">, timeZone: string): { from: number; to: number } {
+  const endDate = minutes(shift.end) <= minutes(shift.start) ? addDays(shift.date, 1) : shift.date;
+  return { from: instantOf(shift.date, shift.start, timeZone) / 1000, to: instantOf(endDate, shift.end, timeZone) / 1000 };
+}
+
+/** The shift the watch should read now, if any: the latest one that ended in the window and has no readings yet. */
+export function shiftBodyDue(data: DataSlice, at: Date = new Date()): Shift | null {
+  const due = data.shifts
+    .filter((s) => !s.body)
+    .map((s) => ({ s, since: minutesSinceEnd(s, data.settings.timeZone, at) }))
+    .filter(({ since }) => since >= READ_AFTER && since <= READ_UNTIL)
+    .sort((a, b) => a.since - b.since);
+  return due[0]?.s ?? null;
+}
+
+export interface ShiftBodyInput {
+  shiftId: string;
+  stress: (Load | null)[];
+  heart: (Load | null)[];
+}
+
+function loads(v: unknown): (Load | null)[] | null {
+  if (!Array.isArray(v) || v.length < 1 || v.length > MAX_BLOCKS) return null;
+  return v.every((x) => x === null || (Number.isInteger(x) && x >= 0 && x <= 3)) ? (v as (Load | null)[]) : null;
+}
+
+/** Keeps only what the watch is allowed to send: a level from 0 to 3, or no reading, per block, for both signals. */
+export function parseShiftBody(input: unknown): ShiftBodyInput | null {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+  const o = input as Record<string, unknown>;
+  const stress = loads(o.stress);
+  const heart = loads(o.heart);
+  if (typeof o.shiftId !== "string" || !o.shiftId || o.shiftId.length > 80 || !stress || !heart || stress.length !== heart.length) return null;
+  return { shiftId: o.shiftId, stress, heart };
+}
+
+function logText(shift: Shift): string {
+  return `Read your ${shift.workplace} shift, ${shortDate(shift.date)} ${range12(shift.start, shift.end)}. Kept private.`;
+}
+
+/** Stores the watch's blocks on that shift. Nothing goes to anyone else. */
+export function applyShiftBody(data: DataSlice, input: ShiftBodyInput, at: Date = new Date()): { data: DataSlice } | { problem: "missing" | "unfinished" | "length" } {
+  const shift = data.shifts.find((s) => s.id === input.shiftId);
+  if (!shift) return { problem: "missing" };
+  if (minutesSinceEnd(shift, data.settings.timeZone, at) < 0) return { problem: "unfinished" };
+  if (input.stress.length !== blockCount(shift) || input.heart.length !== blockCount(shift)) return { problem: "length" };
+  const body: ShiftBody = { receivedAt: at.toISOString(), stress: input.stress, heart: input.heart };
+  return {
+    data: {
+      ...data,
+      shifts: data.shifts.map((s) => (s.id === shift.id ? { ...s, body } : s)),
+      sync: [...data.sync, { id: uid("y"), at: at.toISOString(), from: "Watch", to: "Only you", text: logText(shift) }],
+    },
+  };
+}
+
+/** Sharing turned off on the watch: every shift's readings go, and so do the log lines about them. */
+export function forgetShiftBodies(data: DataSlice, at: Date = new Date()): DataSlice {
+  if (!data.shifts.some((s) => s.body)) return data;
+  return {
+    ...data,
+    shifts: data.shifts.map((s) => (s.body ? { ...s, body: undefined } : s)),
+    sync: [...data.sync.filter((e) => !(e.from === "Watch" && e.text.startsWith("Read your"))), { id: uid("y"), at: at.toISOString(), from: "Watch", to: "Only you", text: "Sharing turned off on the watch. The calendar forgot the shift readings." }],
+  };
+}
+
+/** "45 min", "1 hour", "1 h 15 min". */
+export function spanText(min: number): string {
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m ? `${h} h ${m} min` : `${h} hour${h === 1 ? "" : "s"}`;
+}
+
+/** Where in a shift most of some blocks fall: "early on", "in the middle", "near the end", or nowhere in particular. */
+export function wherePhrase(positions: number[]): string {
+  if (!positions.length) return "";
+  const thirds = [0, 0, 0];
+  for (const p of positions) thirds[Math.min(2, Math.floor(p * 3))] += 1;
+  const most = thirds.indexOf(Math.max(...thirds));
+  if (thirds[most] * 3 < positions.length * 2) return "";
+  return ["early on", "in the middle", "near the end"][most];
+}
+
+/** Each block's middle, as a share of the shift: 0 at the start, 1 at the end. */
+export function positionsOf(levels: (Load | null)[], level: Load): number[] {
+  return levels.flatMap((v, i) => (v === level ? [(i + 0.5) / levels.length] : []));
+}
+
+/** The level most blocks read, the higher one on a tie. */
+function mostly(levels: Load[]): Load {
+  const counts = [0, 0, 0, 0];
+  for (const v of levels) counts[v] += 1;
+  let best = 0;
+  for (let l = 1; l <= 3; l++) if (counts[l] >= counts[best]) best = l;
+  return best as Load;
+}
+
+/**
+ * One plain sentence about a signal during a shift: what most of it read, the highest it went and when,
+ * and how long the watch had no reading. Never a cause, a verdict or advice.
+ */
+export function describeSignal(levels: (Load | null)[], signal: ShiftSignal): string | null {
+  const real = levels.filter((v): v is Load => v !== null);
+  if (!levels.length) return null;
+  if (!real.length) return `No ${signal} reading from your watch.`;
+  const words = LOAD_WORDS[signal];
+  const name = SIGNAL_NAME[signal];
+  const usual = mostly(real);
+  const top = Math.max(...real) as Load;
+  const missing = levels.length - real.length;
+  let text: string;
+  if (top === usual && !missing && real.every((v) => v === usual)) text = `${name} ${words[usual].toLowerCase()} throughout`;
+  else if (top === usual) text = `${name} mostly ${words[usual].toLowerCase()}`;
+  else {
+    const where = wherePhrase(positionsOf(levels, top));
+    text = `${name} mostly ${words[usual].toLowerCase()}, ${words[top].toLowerCase()} for ${spanText(real.filter((v) => v === top).length * BLOCK_MINUTES)}${where ? ` ${where}` : ""}`;
+  }
+  return `${text}.${missing >= 2 ? ` No reading for ${spanText(missing * BLOCK_MINUTES)}.` : ""}`;
+}
+
+/** Both signals for a shift, stress first, or null when the watch didn't read it. */
+export function shiftBodyLines(shift: Pick<Shift, "body">): string[] {
+  if (!shift.body) return [];
+  return SHIFT_SIGNALS.map((s) => describeSignal(shift.body![s], s)).filter((t): t is string => !!t);
+}

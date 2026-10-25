@@ -1,11 +1,9 @@
-import { bodyNotes, bodySentence, bodyState } from "./body";
 import { EFFORT_WORD } from "./effort";
 import { clock12, elapsedMinutes, minutes, range12, shiftImpact, spanMinutes } from "./logic";
-import { addDays, dayNumber, daysBetween, nowIn, stamp, weekDates, weekdayName, weekdayOf, whenWord, type Now } from "./time";
+import { pastCheck } from "./past-shifts";
+import { addDays, dayNumber, daysBetween, weekDates, weekdayName, weekdayOf, whenWord, type Now } from "./time";
 import type {
-  BodyRating,
   Check,
-  CheckState,
   DateKey,
   DayItem,
   DayView,
@@ -14,7 +12,6 @@ import type {
   Settings,
   Shift,
   UniEvent,
-  Wearable,
 } from "./types";
 
 export interface DataState {
@@ -23,7 +20,6 @@ export interface DataState {
   personal: PersonalEvent[];
   offers: Offer[];
   settings: Settings;
-  wearable?: Wearable | null;
 }
 
 /** Any moment Offshift reasons about: only the date and the clock matter. */
@@ -44,7 +40,6 @@ interface Ev {
   phrase: string;
 }
 
-const RATED_WORD: Record<BodyRating, string> = { fine: "Fine", tired: "Tired", wiped: "Wiped" };
 const ORD = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh"];
 const NUM = ["zero", "one", "two", "three", "four", "five", "six", "seven"];
 
@@ -151,9 +146,9 @@ export function dayItems(state: DataState, date: DateKey): DayItem[] {
         source: s.workplace,
         workplace: s.workplace,
         workplaceIndex: workplaceIndex(state, s.workplace),
-        warn: s.rated && s.rated !== "fine" ? `rated ${RATED_WORD[s.rated]}` : undefined,
         protected: protectedIds.includes(s.id),
         effort: s.effort,
+        body: s.body,
         status: `${protectedIds.includes(s.id) ? "Rostered · Protected by you" : s.viaOffer ? "Rostered · from an ask" : "Rostered"}${s.effort ? ` · ${EFFORT_WORD[s.effort]}` : ""}`,
       }),
     );
@@ -219,38 +214,6 @@ export function clashes(state: DataState): Record<string, string> {
   return out;
 }
 
-/* ---------- body tile ---------- */
-
-/** How long a watch reading keeps counting. An old one says nothing about how the worker is now. */
-const READING_HOURS = 12;
-
-/** The watch's reading if it's recent, else none. */
-export function currentWearable(state: DataState, now: When): Wearable | null {
-  const w = state.wearable;
-  if (!w) return null;
-  if (!w.receivedAt) return w;
-  const got = nowIn(state.settings.timeZone, new Date(w.receivedAt));
-  return stamp(now.date, now.time) - stamp(got.date, got.time) <= READING_HOURS * 60 ? w : null;
-}
-
-export function bodyTile(state: DataState, now: When): { state: CheckState; label: string; detail: string } {
-  const last = state.shifts.filter((s) => s.rated && s.date < now.date).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
-  const weekEnd = weekDates(now.date)[6];
-  const early = new Set(eventsFor(state).filter((e) => e.date > now.date && e.date <= weekEnd && minutes(e.start) <= 10 * 60).map((e) => e.date)).size;
-  const earlyLine = early ? ` ${cap(NUM[early] || String(early))} early start${early === 1 ? "" : "s"} ahead this week.` : "";
-  const rated = last ? ` ${weekdayName(last.date)}'s ${isLateFinish(last, state.settings) ? "late finish" : "shift"} rated ${RATED_WORD[last.rated!]}.` : "";
-  const w = currentWearable(state, now);
-  if (w) {
-    const notes = w.signals ? bodyNotes(w.signals) : "";
-    return { state: bodyState(w), label: w.word, detail: `From your watch at ${clock12(w.at)}.${notes ? ` ${cap(notes)}.` : ""}${rated}${earlyLine}` };
-  }
-  if (!last) return { state: "ok", label: "No readings yet", detail: `Pair the watch, or rate a shift after you finish it.${earlyLine}` };
-  const detail = `${rated.trim()}${earlyLine}`;
-  if (last.rated === "wiped") return { state: "bad", label: "Running on empty", detail };
-  if (last.rated === "tired") return { state: "warn", label: "Getting tired", detail };
-  return { state: "ok", label: "Doing okay", detail };
-}
-
 /* ---------- the checks ---------- */
 
 /** "tonight", "on Friday", "on Wed 28 Oct": a when-word that reads right mid-sentence. */
@@ -282,16 +245,8 @@ function nextDayLine(offer: Offer, state: DataState): string {
   return first ? `${weekdayName(nd)} starts at ${clock12(first.start)}` : "";
 }
 
+/** Recovery in the week around an ask: rest days, late finishes, long days, short nights, and how the worker rated a heavy shift just before. */
 export function bodyCheck(offer: Offer, state: DataState, now: When): Check {
-  const base = bodyCheckFromWeek(offer, state, now);
-  const w = currentWearable(state, now);
-  if (!w || isRestDay(offer.date, state.settings)) return base;
-  const rank: Record<CheckState, number> = { ok: 0, warn: 1, bad: 2 };
-  const fromWatch = bodyState(w);
-  return { ...base, state: rank[fromWatch] > rank[base.state] ? fromWatch : base.state, text: `${bodySentence(w)} ${base.text}` };
-}
-
-function bodyCheckFromWeek(offer: Offer, state: DataState, now: When): Check {
   const s = state.settings;
   if (isRestDay(offer.date, s)) {
     const busy = eventsFor(state).some((e) => e.date === offer.date && e.viaOffer !== offer.id);
@@ -302,11 +257,10 @@ function bodyCheckFromWeek(offer: Offer, state: DataState, now: When): Check {
   const recent = shifts.filter((sh) => sh.date >= from && sh.date <= offer.date);
   const recentLate = recent.filter((sh) => isLateFinish(sh, s)).sort((a, b) => (a.date < b.date ? -1 : 1));
   const lates = recentLate.length + (isLateFinish(offer, s) ? 1 : 0);
-  const last = shifts.filter((sh) => sh.rated && sh.date < offer.date).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
-  const heavy = recent.filter((sh) => sh.rated && sh.rated !== "fine" && sh.date < offer.date).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+  const heavy = recent.filter((sh) => (sh.effort === "busy" || sh.effort === "hard") && sh.date < offer.date).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
   const next = nextDayLine(offer, state);
   const span = recentLate.length ? daysBetween(recentLate[0].date, offer.date) + 1 : 1;
-  const legs = heavy ? `${weekdayName(heavy.date)}'s ${isLateFinish(heavy, s) ? "late finish" : "shift"} is still in your legs. You rated it ${RATED_WORD[heavy.rated!]}. ` : "";
+  const legs = heavy ? `You rated ${weekdayName(heavy.date)}'s ${isLateFinish(heavy, s) ? "late finish" : "shift"} ${EFFORT_WORD[heavy.effort!]}. ` : "";
   const word = dayWord(offer, now);
   if (lates >= s.lateFinishesBeforeFlag && isLateFinish(offer, s)) {
     const within = span === 1 ? "of the day" : `in ${NUM[span] || span} days`;
@@ -322,10 +276,7 @@ function bodyCheckFromWeek(offer: Offer, state: DataState, now: When): Check {
     const when = x.next.date === offer.date ? `at ${clock12(x.next.start)}` : `${onWhen(dayOf(x.next.date, now))} at ${clock12(x.next.start)}`;
     return { key: "body", state: "warn", text: `${legs}Leaves ${hoursPhrase(Math.round((x.restAfter / 60) * 2) / 2)} before your ${x.next.phrase} ${when}.` };
   }
-  if (last && last.rated === "wiped") {
-    return { key: "body", state: "warn", text: `You rated ${weekdayName(last.date)}'s shift Wiped. ${word} is not a late finish, but that is worth remembering${next ? `. ${cap(next)}` : ""}.` };
-  }
-  return { key: "body", state: "ok", text: `Nothing heavy in the days around this.${last ? ` ${weekdayName(last.date)}'s shift you rated ${RATED_WORD[last.rated!]}.` : ""}${next ? ` ${cap(next)}.` : ""}` };
+  return { key: "body", state: "ok", text: `${legs}${legs ? "Nothing else" : "Nothing"} heavy in the days around this.${next ? ` ${cap(next)}.` : ""}` };
 }
 
 export function weekCheck(offer: Offer, state: DataState, now: When): Check {
@@ -359,8 +310,9 @@ export function weekCheck(offer: Offer, state: DataState, now: When): Check {
   return { key: "week", state: due ? "warn" : "ok", text: `${x.previous ? gapSentence.trim() : `Nothing else ${onWhen(when)} before it.`}${dueLine}` };
 }
 
+/** Body, Week, and how the worker's last shifts at that workplace went. */
 export function offerChecks(offer: Offer, state: DataState, now: When): Check[] {
-  return [bodyCheck(offer, state, now), weekCheck(offer, state, now)];
+  return [bodyCheck(offer, state, now), weekCheck(offer, state, now), pastCheck(offer, state, now)];
 }
 
 export function offerWhen(offer: Offer, now: When): string {

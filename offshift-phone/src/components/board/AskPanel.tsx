@@ -1,14 +1,19 @@
 "use client";
 
+import { BodyStrip } from "./BodyStrip";
 import { offerChecks, offerWhen } from "@/lib/checks";
+import { EFFORT_COLOUR, EFFORT_WORD } from "@/lib/effort";
 import { clock12, range12 } from "@/lib/logic";
+import { pastShifts } from "@/lib/past-shifts";
 import { useStore } from "@/lib/store";
 import { nowIn, shortDate, weekdayName, type Now } from "@/lib/time";
 import { STATUS } from "@/lib/status";
-import type { Decision } from "@/lib/types";
+import type { Check, Decision, Shift } from "@/lib/types";
+
+const CHECK_LABEL: Record<Check["key"], string> = { body: "Body", week: "Week", past: "Past shifts" };
 
 /**
- * One ask: the facts Offshift can see and three answers. Accept puts the shift on the week, Decline takes the ask off it,
+ * One ask: the facts Offshift can see, how the last shifts at that workplace went, and three answers. Accept puts the shift on the week, Decline takes the ask off it,
  * and Later leaves it on the week, see-through, to press again. Nothing is sent to the manager.
  */
 export default function AskPanel({
@@ -33,6 +38,7 @@ export default function AskPanel({
   const when = offerWhen(offer, now);
   const open = offer.status === "pending" || offer.status === "deferred";
   const checks = offerChecks(offer, state, now);
+  const past = pastShifts(offer, state, now);
   const sentAt = clock12(nowIn(state.settings.timeZone, new Date(offer.sentAt)).time);
 
   function answer(d: Decision) {
@@ -63,8 +69,11 @@ export default function AskPanel({
       </div>
       {checks.map((c) => (
         <div key={c.key} className={`check ${c.state}`}>
-          <div className="ck">{c.key}</div>
-          <div>{c.text}</div>
+          <div className="ck">{CHECK_LABEL[c.key]}</div>
+          <div>
+            {c.text}
+            {c.key === "past" && <PastRows shifts={past} />}
+          </div>
         </div>
       ))}
 
@@ -94,5 +103,39 @@ export default function AskPanel({
 
       {!open && <div className={`status-pill big ${offer.status === "declined" ? "" : "ok"}`}>{STATUS[offer.status]}</div>}
     </div>
+  );
+}
+
+/** Small multiples of the last shifts at this workplace: when, the worker's word, and the watch's two strips. */
+function PastRows({ shifts }: { shifts: Shift[] }) {
+  if (!shifts.length) return null;
+  return (
+    <ul className="past-rows">
+      {shifts.map((s) => (
+        <li key={s.id}>
+          <span className="past-when">
+            {shortDate(s.date)} · {range12(s.start, s.end)}
+          </span>
+          <span className="past-rating">
+            {s.effort ? (
+              <>
+                <i className="swatch" style={{ background: EFFORT_COLOUR[s.effort] }} aria-hidden="true" />
+                {EFFORT_WORD[s.effort]}
+              </>
+            ) : (
+              "Not rated"
+            )}
+          </span>
+          {s.body ? (
+            <span className="past-body">
+              <BodyStrip levels={s.body.stress} signal="stress" shift={s} label />
+              <BodyStrip levels={s.body.heart} signal="heart" shift={s} label />
+            </span>
+          ) : (
+            <span className="past-body quiet">No watch reading</span>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }
