@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { dayItems } from "@/lib/checks";
 import { watchSummary } from "@/lib/garmin";
 import { mergeData } from "@/lib/merge";
+import { effortToSave } from "@/lib/effort";
 import { LOAD_COLOUR, LOAD_WORDS, applyShiftBody, blockCount, blockTimes, describeSignal, forgetShiftBodies, parseShiftBody, shiftBodyDue, shiftWindow } from "@/lib/shift-body";
 import { teamView } from "@/lib/team";
 import type { DataSlice, Load, Shift } from "@/lib/types";
@@ -18,8 +19,9 @@ const watchRoute = await import("@/app/api/watch/route");
 const morning: Shift = { id: "s-thu-am", date: "2026-10-22", start: "08:00", end: "12:45", workplace: "Café" };
 const withShift = (patch: Partial<Shift> = {}): DataSlice => ({ ...week(), shifts: [...week().shifts, { ...morning, ...patch }] });
 const levels = (n: number, v: Load | null): (Load | null)[] => Array.from({ length: n }, () => v);
-const reading = { shiftId: "s-thu-am", stress: levels(19, 2), heart: levels(19, 1) };
 const secs = (iso: string) => Date.parse(iso) / 1000;
+/** What the watch sends: the shift, the window it read, and one level per block. */
+const reading = { shiftId: "s-thu-am", from: secs("2026-10-21T22:00:00Z"), to: secs("2026-10-22T02:45:00Z"), stress: levels(19, 2), heart: levels(19, 1) };
 function stored(): DataSlice {
   const r = applyShiftBody(withShift(), reading, AT);
   if (!("data" in r)) throw new Error(`not stored: ${r.problem}`);
@@ -64,7 +66,9 @@ describe("the watch reads each shift, 15 minutes at a time", () => {
 
 describe("what the calendar keeps", () => {
   it("takes only a level from 0 to 3, or no reading, per block, the same number for both signals", () => {
-    expect(parseShiftBody({ shiftId: "s-thu-am", stress: [0, 3, null], heart: [1, null, 2] })).toEqual({ shiftId: "s-thu-am", stress: [0, 3, null], heart: [1, null, 2] });
+    expect(parseShiftBody({ shiftId: "s-thu-am", from: 100, to: 2800, stress: [0, 3, null], heart: [1, null, 2] })).toEqual({ shiftId: "s-thu-am", from: 100, to: 2800, stress: [0, 3, null], heart: [1, null, 2] });
+    expect(parseShiftBody({ shiftId: "s-thu-am", stress: [0], heart: [1] })).toBeNull();
+    expect(parseShiftBody({ shiftId: "s-thu-am", from: 1.5, to: 2800, stress: [0], heart: [1] })).toBeNull();
     const bad: unknown[] = [
       null,
       "stress",
@@ -185,5 +189,79 @@ describe("/api/watch and a shift's readings", () => {
     await post({ shiftBody: reading });
     expect((await post({ health: { share: false } })).status).toBe(200);
     expect(shift().body).toBeUndefined();
+  });
+});
+
+describe("a shift's readings stay right through edits and sharing off", () => {
+  const body = { receivedAt: AT.toISOString(), stress: reading.stress, heart: reading.heart };
+  const edit = (d: DataSlice, patch: Partial<Shift>) => ({ ...d, shifts: d.shifts.map((s) => (s.id === "s-thu-am" ? { ...s, ...patch } : s)) });
+
+  it("keeps readings the watch stored while the calendar was changing that shift's rating", () => {
+    const base = withShift();
+    const server = edit(base, { body });
+    const client = edit(base, { effort: "busy" });
+    const merged = mergeData(base, server, client).shifts.find((s) => s.id === "s-thu-am")!;
+    expect(merged.effort).toBe("busy");
+    expect(merged.body?.stress).toEqual(reading.stress);
+  });
+
+  it("keeps forgotten readings forgotten when the calendar edits a shift after sharing was turned off", () => {
+    const base = edit(withShift(), { body });
+    const server = edit(base, { body: undefined });
+    const client = edit(base, { workplace: "Café on George St" });
+    const merged = mergeData(base, server, client).shifts.find((s) => s.id === "s-thu-am")!;
+    expect(merged.workplace).toBe("Café on George St");
+    expect(merged.body).toBeUndefined();
+  });
+
+  it("drops readings taken for a shift's old times when the calendar moves it", () => {
+    const base = withShift();
+    const server = edit(base, { body });
+    const client = edit(base, { start: "07:00", end: "11:45" });
+    const merged = mergeData(base, server, client).shifts.find((s) => s.id === "s-thu-am")!;
+    expect(merged.start).toBe("07:00");
+    expect(merged.body).toBeUndefined();
+  });
+
+  it("refuses readings taken for a window the shift no longer has", () => {
+    const moved = withShift({ start: "07:00", end: "11:45" });
+    expect(applyShiftBody(moved, reading, AT)).toEqual({ problem: "moved" });
+  });
+
+  it("stores the same readings once, however many times they arrive", () => {
+    const once = stored();
+    const twice = applyShiftBody(once, reading, AT);
+    expect("data" in twice && twice.data).toBe(once);
+  });
+
+  it("forgets the log lines about readings even when no shift has readings left", () => {
+    const read = stored();
+    const gone = { ...read, shifts: read.shifts.filter((s) => s.id !== "s-thu-am") };
+    expect(forgetShiftBodies(gone, AT).sync.some((e) => e.text.startsWith("Read your"))).toBe(false);
+  });
+
+  it("tells the watch how many shifts still carry readings, so a lost 'sharing off' can be sent again", () => {
+    expect(watchSummary(stored(), AT).readings).toBe(1);
+    expect(watchSummary(withShift(), AT).readings).toBe(0);
+  });
+
+  it("only saves a rating from the edit form when the worker changed it there", () => {
+    expect(effortToSave("hard", "hard")).toBeUndefined();
+    expect(effortToSave(undefined, undefined)).toBeUndefined();
+    expect(effortToSave(undefined, "busy")).toBe("busy");
+    expect(effortToSave("busy", undefined)).toBeNull();
+  });
+
+  it("draws in immersive mode the signal the worker chose", () => {
+    expect(readFileSync(src("components/board/Immersive.tsx"), "utf8")).not.toMatch(/bodySignal="stress"/);
+  });
+});
+
+describe("/api/watch refuses readings for a shift that moved", () => {
+  const g = globalThis as { __offshiftState?: { version: number; client: string | null; data: DataSlice } };
+  it("answers 409 so the watch reads the new window instead", async () => {
+    g.__offshiftState = { version: 0, client: null, data: withShift({ start: "07:00", end: "11:45" }) };
+    const res = await watchRoute.POST(new Request("http://x/api/watch", { method: "POST", body: JSON.stringify({ shiftBody: reading }) }));
+    expect(res.status).toBe(409);
   });
 });
