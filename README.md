@@ -10,6 +10,10 @@ Explore the [Offshift wiki](https://github.com/AndhikaNayakaAW/DECO2850-team-pro
 - [docs/pleasure-framework-iteration.md](docs/pleasure-framework-iteration.md): experience brainstorm, persona (Dinda) built from the five interviews, Four Pleasures mapping with psycho-pleasure applied, and the prototype update.
 - [prototype/offshift.html](prototype/offshift.html): clickable prototype of Offshift with design notes beside each screen. Open it in a browser.
 
+## Iteration 5 · A reflective tool (25 Oct 2026)
+
+After the tutor's feedback, Offshift keeps three pieces and joins them: the **3D calendar**, a **one-press check-in** on the watch after each shift ("How was the work?": Light, Steady, Busy or Hard), and **heart rate and stress during each shift**, read by the watch for that shift's hours only and drawn down the shift as 15-minute grey cells. When a new ask arrives, a **Past shifts** check shows how the last shifts at that workplace went, in the worker's words and the watch's, with no advice. The all-day Body Battery reading, the daily floor band, the voice assistant and the second rating are gone. Rationale, storyboard, how this links to our interviews, the tutor's three questions and the user tests still to run: [docs/design/2026-10-25-biometrics-during-shifts.md](docs/design/2026-10-25-biometrics-during-shifts.md).
+
 ## Iteration 4 · Watch and calendar, ready for field testing
 
 The phone mock-up and its demo story are gone. Offshift is now a Garmin watch app and a dated 3D week calendar that real workers can use in field tests.

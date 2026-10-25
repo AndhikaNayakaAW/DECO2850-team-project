@@ -39,7 +39,7 @@ The intended deployed route is watch → Garmin Connect on the paired phone → 
 
 ## Body data
 
-Native body data belongs to the shared session as timestamped bands and is displayed by the calendar. Raw sensor values remain on the watch. The `/api/team` response omits body data and private plans. However, this is a shared-code prototype: it does not implement separate employer and worker API roles or separate accounts.
+Native body data belongs to the shared session as levels on each shift: one 0–3 level per 15 minutes for stress and for heart rate, read by the watch after the shift ends and only while the worker shares. Raw sensor values remain on the watch, and nothing outside a shift is read. The `/api/team` response omits body data and private plans. However, this is a shared-code prototype: it does not implement separate employer and worker API roles or separate accounts.
 
 The earlier `/watch` browser preview kept file-imported readings and reflections in private browser storage. It was removed on 23 Oct 2026, and the calendar now deletes that storage when it opens.
 

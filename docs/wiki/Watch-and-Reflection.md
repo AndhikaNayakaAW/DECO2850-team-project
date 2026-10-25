@@ -2,7 +2,7 @@
 
 # Watch and reflection
 
-**Proposed focus:** Offshift helps casual workers reflect on how work fits with their energy, rest and other commitments. This responds to tutor feedback and remains a direction to test with workers.
+**Focus:** Offshift is a reflective tool. The watch asks how the work was after each shift and reads heart rate and stress during it; the calendar shows both on the shift, and on every new ask at that workplace. This responds to the tutor's feedback (late October 2026) and remains a direction to test with workers. Rationale: [biometrics during shifts](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/design/2026-10-25-biometrics-during-shifts.md).
 
 **[Week calendar ↗](https://offshift-nine.vercel.app/calendar)**
 
@@ -17,19 +17,19 @@ The teammate's native Garmin app is now in the repository. This release extends 
 | Page | What the worker sees |
 | :--- | :--- |
 | Ask | Sender, workplace, date context and time; press to choose a reply. |
-| Around it / Today | Nearby commitments for an ask, or today's plans. |
-| Body | Available body words; press for values and sources on the watch. |
+| Around it / Today | How the last shifts at that workplace went, then nearby commitments for an ask; or today's plans. |
+| Last shift | The last shift the watch read: stress and heart in words. Press for where each comes from and the sharing switch. |
 | Calendar | Last successful sync, waiting asks and the current sharing choice. |
 
-Up/Down or a swipe moves between pages. Select opens the three answers (Accept, Decline, Decide later) on the first two pages and body details on the last two. Accept and Decline require confirmation; deciding later keeps the ask, marked "Saved for later". No answer sends the manager a message. Failed sends retain the ask. Successful answers clear any old offline message.
+Up/Down or a swipe moves between pages. Select opens the three answers (Accept, Decline, Decide later) on the first two pages and the last shift's details on the last two. Accept and Decline require confirmation; deciding later keeps the ask, marked "Saved for later". No answer sends the manager a message. Failed sends retain the ask. Successful answers clear any old offline message.
 
 ## Connection and privacy
 
 The private release targets the protected Vercel watch endpoint. Garmin Connect on the paired phone provides the communication bridge, and Redis holds the shared session. The laptop server and tunnel are no longer required by the deployed architecture.
 
-Sharing is a worker choice. The server receives timestamped bands encoded 0–3, not raw heart rate, Body Battery or other physiological values. Turning sharing off removes the shared wearable record. The team projection does not contain body readings or private plans; shared-code access is still a prototype limitation, not separate employer accounts.
+Sharing is a worker choice. The watch reads only the hours of a finished shift, and the server receives one level (0–3) per 15 minutes for stress and for heart rate, never a raw value and nothing from outside a shift. Turning sharing off removes every shift's readings. The team projection does not contain body readings or private plans; shared-code access is still a prototype limitation, not separate employer accounts.
 
-Body words are an interaction representation of available Garmin readings, not a diagnosis or evidence that work caused stress. “Sleep” is an overnight Body Battery recharge proxy, not Garmin's sleep score. Missing readings stay missing.
+The words are an interaction representation of Garmin readings, not a diagnosis or evidence that work caused stress. Stress uses Garmin's own bands; heart rate is a share of the worker's own heart-rate reserve. Missing readings stay missing (hatched), never low.
 
 ## Browser reflection removed
 

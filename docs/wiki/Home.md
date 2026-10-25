@@ -7,13 +7,15 @@
 
 ## Your week. Your call.
 
-Offshift explores how casual workers can reflect on work alongside their energy, rest and other commitments. The current prototype combines a dated 3D calendar with a native Garmin watch app. The worker chooses what to share and when to send a reply. The proposed care focus still needs worker evaluation.
+Offshift is a reflective tool for students who work casual shifts. A calendar shows when you work; a watch shows your body. Offshift joins them: after each shift the Garmin watch asks one question ("How was the work?") and reads your heart rate and stress during that shift, and the 3D week shows both on the shift itself. When a manager asks you to cover another shift, the ask shows how your last shifts at that workplace went, so you decide from what happened rather than from memory or guilt. Nothing is decided for you, and nothing reaches the employer. The focus still needs evaluation with workers.
 
 **[Open the calendar ↗](https://offshift-nine.vercel.app/calendar)**
 
-## Current release · 20 October 2026
+## Current release · 25 October 2026
 
-The fēnix 8 47mm has completed a physical request/reply round trip through the paired phone to Vercel and Redis, and available Garmin bands arrived. A missing-reading upload bug was reproduced and fixed with TDD; all 26 native, 200 web and nine build tests pass. The corrected watch transfer matches its readback hash.
+Following the tutor's feedback, Offshift has three pieces only: the calendar, the one-press check-in after a shift, and heart rate and stress during each shift, drawn on that shift. The all-day Body Battery reading, the daily floor band and the second (Fine/Tired/Wiped) rating are gone. All 212 web, 31 native and 10 build tests pass. The new watch build must be installed on the fēnix 8 before real shifts are read; see the [design rationale](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/design/2026-10-25-biometrics-during-shifts.md).
+
+Earlier: on 20 October the fēnix 8 47mm completed a physical request/reply round trip through the paired phone to Vercel and Redis.
 
 | Explore | What you will find |
 | :--- | :--- |
@@ -22,12 +24,12 @@ The fēnix 8 47mm has completed a physical request/reply round trip through the 
 | **[03 / Architecture](Architecture)** | Garmin Connect, Vercel, Redis and where body data goes. |
 | **[04 / Testing and TDD](Testing-and-TDD)** | Five observed red/green cycles and the verification limits. |
 | **[05 / Deployment](Deployment)** | Git deployment, free Redis, access protection and native builds. |
-| **[06 / Watch and reflection](Watch-and-Reflection)** | Four native pages, worker controls and the removed browser reflection. |
+| **[06 / Watch and reflection](Watch-and-Reflection)** | Four native pages, the shift check-in, what the watch reads during a shift, and privacy. |
 | **[07 / Weekly contribution](Weekly-Contribution)** | Dated changes, commits, screenshots, evidence and remaining hardware work. |
 
 ## One session, three answers
 
-The researcher starts a session and sends an ask. The worker sees it beside the week, inspects context, chooses **Accept**, **Decline** or **Later**. Accepting adds the shift, declining takes the ask off the week, and later keeps it there, see-through, until they decide. No message goes to the manager. Personal body readings do not become an employer explanation.
+The researcher starts a session and sends an ask. The worker sees it beside the week, with how their last shifts at that workplace went, and chooses **Accept**, **Decline** or **Later**. Accepting adds the shift, declining takes the ask off the week, and later keeps it there, see-through, until they decide. No message goes to the manager. Personal body readings do not become an employer explanation.
 
 The deployment holds one shared session at a time. The shared access code is supplied privately. The team API omits body data and plans, but the prototype does not have separate employer and worker accounts.
 

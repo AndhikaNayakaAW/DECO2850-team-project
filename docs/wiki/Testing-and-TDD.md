@@ -2,7 +2,7 @@
 
 # Testing and TDD
 
-The current web suite passes **200 tests across 20 files**. The native Garmin suite passes **26 tests** in the `fenix847mm` simulator. The release builder has **9 Node contract and artifact tests**, also run in GitHub Actions. Native simulator checks run separately on a Mac with Garmin's SDK and device profile.
+The current web suite passes **212 tests across 25 files**. The native Garmin suite passes **31 tests** in the `fenix847mm` simulator. The release builder has **10 Node contract and artifact tests**, also run in GitHub Actions. Native simulator checks run separately on a Mac with Garmin's SDK and device profile.
 
 ## Run the checks
 
@@ -25,7 +25,7 @@ node offshift-watch/scripts/build.mjs --test
 
 The simulator must be open. Inspect its final `PASSED (passed=26, failed=0, errors=0)` summary. On this SDK installation `monkeydo` returned status 1 even when that complete summary passed; the native result was checked from its output, not inferred from the exit status.
 
-## Six observed test-first cycles
+## Observed test-first cycles
 
 | Cycle | Red evidence | Green implementation |
 | :--- | :--- | :--- |
@@ -35,6 +35,8 @@ The simulator must be open. Inspect its final `PASSED (passed=26, failed=0, erro
 | Retained laptop settings | A targeted native regression fails after persisting a laptop URL. | Each build uses its compiled endpoint; all 24 native tests pass. |
 | Private build artifacts | Two new tests fail: MIR is published beside the release and compiler failure replaces a working binary. | Compile privately and publish program/symbol files after success; all nine build tests pass. |
 | Missing sensor history | `6e81a03`: 25 pass; one new assertion errors because a timestamp-only payload is produced. | `9465c22`: no health upload without a signal; foreground/background fetch the calendar, and band zero remains valid. All 26 pass. |
+| Biometrics during each shift (web, 25 Oct) | The past-shifts and shift-body suites can't load; 8 of 181 other tests fail. | The calendar keeps stress and heart levels per 15 minutes on each shift, draws them on the shift, adds a Past shifts check to every ask, and drops the all-day reading and the second rating. All 212 pass. |
+| Biometrics during each shift (watch, 25 Oct) | The native test build stops on undefined `ShiftBody`, `Blocks`, `readShift` and `onShiftBodySent`. | The watch reads its own stress and heart-rate history for a finished shift only, sends one level per quarter hour once, and shows the last shift. All 31 pass. |
 
 Each red test commit precedes its green implementation commit. The [current contribution record](Weekly-Contribution) links every commit. UI copy and glance polish were subsequent refinements, not represented as additional TDD cycles.
 

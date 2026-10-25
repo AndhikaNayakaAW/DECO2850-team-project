@@ -1,6 +1,6 @@
 # Offshift · Garmin watch app
 
-A native Monkey C app for the confirmed **fēnix 8 47mm** (`fenix847mm`), extending the teammate's watch implementation. Four round pages show the waiting ask, the surrounding week, available body words and calendar sync. The UI uses the calendar's cream, forest-green and warm accent theme.
+A native Monkey C app for the confirmed **fēnix 8 47mm** (`fenix847mm`), extending the teammate's watch implementation. Four round pages show the waiting ask, the week around it, the last shift the watch read, and calendar sync. The UI uses the calendar's cream, forest-green and warm accent theme.
 
 ## Build a protected release
 
@@ -49,7 +49,7 @@ node offshift-watch/scripts/build.mjs --test
 node --test offshift-watch/test/*.test.mjs
 ```
 
-There are 26 native tests and 9 Node build contracts/artifact checks. This SDK returned exit status 1 even for a complete native pass; inspect its final `PASSED (passed=26, failed=0, errors=0)` summary. The native tests use the real device profile's fonts, test round-screen bounds and contrast, and isolate replies from real network activity.
+There are 31 native tests and 10 Node build contracts/artifact checks. This SDK returned exit status 1 even for a complete native pass; inspect its final `PASSED (passed=31, failed=0, errors=0)` summary. The native tests use the real device profile's fonts, test round-screen bounds and contrast, and isolate replies from real network activity.
 
 For an isolated laptop simulation, run the web app with a separate `OFFSHIFT_STATE_FILE`, then build explicitly for loopback:
 
@@ -63,7 +63,7 @@ Use **Settings → Glance Launch Mode → Launch in Normal Mode** for the full a
 
 ## Pages and controls
 
-Up/Down or a swipe moves between Ask, Around it/Today, Body and Calendar. Select on the first two pages opens the three answers: Accept and Decline each ask for confirmation, and Decide later keeps the ask, marked "Saved for later". No answer sends the manager a message. Select on Body or Calendar opens reading details, sources and the sharing switch.
+Up/Down or a swipe moves between Ask, Around it/Today, Last shift and Calendar. Around it leads with how the last shifts at that workplace went ("Last 2 at Cafe: Hard, Busy"). Select on the first two pages opens the three answers: Accept and Decline each ask for confirmation, and Decide later keeps the ask, marked "Saved for later". No answer sends the manager a message. Select on Last shift or Calendar opens the shift's stress and heart in words, where each comes from, and the sharing switch.
 
 About 15 minutes after a rostered shift ends, the watch buzzes once and asks how the work was: **Light**, **Steady**, **Busy** or **Hard**, or **Skip**. One press saves it on that shift; backing out counts as a skip. It never asks twice about the same shift, and it stops asking 12 hours after the end. The rating colours the shift on the calendar, where it can be changed. Why it works this way: [design rationale](../docs/design/2026-10-23-shift-check-in.md).
 
@@ -73,37 +73,29 @@ The calendar page shows the last successful sync and sharing choice. A failed an
 
 The deployed route is watch → paired phone/Garmin Connect → internet → Vercel → Redis. Once installed it does not depend on a laptop server or tunnel. The app polls every five seconds while open and registers a five-minute background event; Garmin controls actual background scheduling. The public server uses `KV_REST_API_URL` and `KV_REST_API_TOKEN`. The prototype opens without an access code; older installed watch addresses remain compatible. `OFFSHIFT_ACCESS_CODE` is optional if access restriction is needed later.
 
-One deployment holds one participant session at a time. The `/team` response omits body readings and private plans, but the shared code does not implement separate employer and worker account roles. The `/watch` browser preview uses a separate import/reflection store and is not the native Garmin feed.
+One deployment holds one participant session at a time. The `/team` response omits shifts, ratings, readings and private plans, but the shared code does not implement separate employer and worker account roles.
 
 ## What it reads
 
-| Signal | From | Levels, best to lowest |
+Offshift reads the body **only during the worker's rostered shifts**, and only two signals. When the calendar names a shift that ended 15 minutes to 12 hours ago, the watch reads its own history for exactly those hours, averages each 15 minutes, and turns each average into a level from 0 to 3:
+
+| Signal | From | Levels, 0 to 3 |
 |---|---|---|
-| Energy | Body Battery | Plenty 70+, Steady 40+, Running low 20+, Very low |
-| Sleep | Body Battery regained last night (watch apps can't read Garmin's sleep score) | Good +50, Fair +30, Poor +15, Very poor |
-| Stress | Average of the last 3 hours, Garmin's bands | Resting 0–25, Low 26–50, Medium 51–75, High 76+ |
-| Heart | Last night's lowest half-hour heart rate against the watch's 7-day resting average | As usual, Slightly above (+3 to +5), Above (+6 to +9), Well above |
-| Breathing | Breaths a minute, latest | Calm to 16, Steady to 20, Fast to 25, Very fast |
-| Pulse ox | Latest Pulse Ox reading | Good 95+, Slightly low 90+, Low 85+, Very low |
-| Recovery | Garmin recovery time after the last workout | Recovered, Recovering (to 24 h), Still recovering (to 48 h), Long way off |
-| Steps | Steps today, intensity minutes this week | Shown on the watch only |
+| Stress | Garmin's stress score, which the watch works out from heart-rate variability while you are still | Resting 0–25, Low 26–50, Medium 51–75, High 76–100 (Garmin's own bands) |
+| Heart | Heart rate as a share of your heart-rate reserve: between your resting rate (the watch's 7-day average) and your maximum (the top of your heart-rate zones) | Very light under 30%, Light 30–39%, Moderate 40–59%, Vigorous 60% and over |
 
-The overall word is Body Battery, which Garmin already builds from sleep, stress, heart-rate variability and activity. When it is unavailable, the app does not invent a reading. Availability depends on the watch, permissions and recent sensor history. Breathing and pulse ox are single moments that change when you walk upstairs, so they show on the watch and the calendar but never colour the check on their own.
-
-If all readings are unavailable, foreground and background checks fetch the calendar without uploading a timestamp-only health object. A zero band is still valid and is shared when allowed. This avoids an HTTP 400 being shown as a calendar failure when the actual problem is simply missing sensor history.
-
-Every reader looks back for the most recent real sample, because samples are blank while the watch is off the wrist or on its cable. Sleep and resting heart come from last night only (10 pm to an hour after your usual wake time). They are worked out once a day and remembered, and only when the watch still holds the night from before 3 am. Otherwise they read "No reading", because a guess about someone's night is worse than none.
+A quarter hour needs at least two real samples, or it is "no reading": samples are blank while the watch is off the wrist, and Garmin doesn't measure stress while you are moving. A gap stays a gap; it never becomes a low reading. Body Battery, sleep, breathing, pulse ox, recovery time and steps are not read: they describe the whole day rather than the shift, Garmin keeps its sleep score from apps, and the tutor asked us not to model the body as a battery. Why: [design rationale](../docs/design/2026-10-25-biometrics-during-shifts.md).
 
 ## Privacy
 
-- The watch asks once, on first open. Sharing can be changed any time on Your body.
-- Only a level (0 to 3) per signal and the time leave the watch, never a number. The calendar shows words.
-- Turning sharing off makes the calendar forget the last reading.
-- Body readings never go to an employer, and neither do shift ratings.
+- The watch asks once, on first open: "Share stress and heart from shifts?" Sharing can be changed any time from Last shift.
+- Only one level (0 to 3) per 15 minutes of a shift leaves the watch, never a number, and never anything from outside a shift. The calendar shows words and grey cells.
+- Turning sharing off makes the calendar forget every shift's readings.
+- Readings never go to an employer, and neither do shift ratings.
 
 ## Every five minutes
 
-While the app is closed, a background check shares the body (if allowed), updates the glance, and offers to open Offshift when a new ask arrives or a shift has just finished. It never answers anything.
+While the app is closed, a background check updates the glance, offers to open Offshift when a new ask arrives or a shift has just finished, and, if the worker shares, reads and sends that shift once. It never answers anything.
 
 ## If the watch says Phone not connected
 

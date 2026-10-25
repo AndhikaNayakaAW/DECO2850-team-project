@@ -13,7 +13,7 @@ When a rostered shift finishes, the worker's Garmin watch asks once: **How was t
 
 ## 2. Why build it
 
-**The problem it serves.** Offshift exists for one moment: a manager asks "can you cover Friday close?" and the worker decides. Our interviews (P1 to P5) showed workers decide from memory and guilt. A record of how past shifts actually went gives them something firmer to stand on, without Offshift deciding for them.
+**The problem it serves.** Offshift exists for one moment: a manager asks "can you cover Friday close?" and the worker decides. Our interviews (P1 to P5) showed workers decide alone, under guilt and pressure (P2, P4). *(Corrected 25 Oct: the interview record supports guilt and pressure, not memory.)* A record of how past shifts actually went gives them something firmer to stand on, without Offshift deciding for them.
 
 **Evidence that work demands matter for this group.**
 
@@ -86,7 +86,9 @@ Li, Dey and Forlizzi (2010) separate short-term reflection, noticing right after
 
 ## 6. Body data on the calendar
 
-The second brief asked how the watch's readings could sit on the same 3D week without competing with the work colours. This is now built.
+> **Superseded on 25 October 2026.** After the tutor's feedback the watch reads heart rate and stress only during each shift, in 15-minute blocks, and the calendar draws them down the shift instead of along the floor of each day. Body Battery and the overnight bridge are gone. The colour, hatching and one-signal decisions below still apply. See [2026-10-25-biometrics-during-shifts.md](2026-10-25-biometrics-during-shifts.md).
+
+The second brief asked how the watch's readings could sit on the same 3D week without competing with the work colours. This was built on 23 October.
 
 | Decision | Why |
 | --- | --- |

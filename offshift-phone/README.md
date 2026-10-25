@@ -1,14 +1,15 @@
 # Offshift · calendar and watch
 
-Offshift helps students who work casual shifts answer a shift ask on their own terms. When a manager asks "can you cover tonight?", the ask lands on the worker's week, in 3D, and on their Garmin watch, next to their classes, plans, rest days and how tired they are. The worker chooses one of three answers: Accept puts the shift on their week, Decline takes the ask off it, and Later keeps it on the week, see-through, to decide when they are ready. No message is sent to the manager.
+Offshift helps students who work casual shifts answer a shift ask on their own terms. When a manager asks "can you cover tonight?", the ask lands on the worker's week, in 3D, and on their Garmin watch, next to their classes, plans and rest days, and beside how their last shifts at that workplace went: their own word for each, and their heart rate and stress during it. The worker chooses one of three answers: Accept puts the shift on their week, Decline takes the ask off it, and Later keeps it on the week, see-through, to decide when they are ready. No message is sent to the manager.
 
 ## What's here
 
 - **`/calendar`** is the worker's week in 3D and the main screen. It works on a phone, an iPad or a laptop.
   - **+ Add**, or **+ Add to {day}** in the side panel, adds a shift, class, due date or plan. Tap anything in the side panel to change or delete it. A deletion can be undone for a few seconds.
   - **‹ Today ›** moves between weeks, and the arrow keys move the day.
-  - **In the 3D week**, drag to turn it and pinch or scroll to zoom. Hold a block still for a moment to pick it up. You can then move a plan to another day, or drop anything on the bin to remove it, and Undo is offered either way. A quick swipe only ever turns the view. Throwing an ask away opens a drafted "no", and nothing reaches the manager until you press Send.
-  - A waiting ask shows as an amber block, in the side list and as a pill in the header. Open it to see the Body and Week checks and press Accept, Decline or Later. Accept and Decline offer Undo for a few seconds. An ask kept for later stays on the week as a see-through block; press it to decide.
+  - **In the 3D week**, drag to turn it and pinch or scroll to zoom. Hold a block still for a moment to pick it up. You can then move a plan to another day, or drop anything on the bin to remove it, and Undo is offered either way. A quick swipe only ever turns the view. Throwing an ask away opens it with Decline pointed out; nothing changes until you press it.
+  - A waiting ask shows as an amber block, in the side list and as a pill in the header. Open it to see the Body, Week and Past shifts checks and press Accept, Decline or Later. Accept and Decline offer Undo for a few seconds. An ask kept for later stays on the week as a see-through block; press it to decide.
+  - **Down each shift**, under the week, picks which of the watch's readings the shifts carry: Stress or Heart. Each shift the watch read has a grey ribbon down its front, one cell per 15 minutes, darker for more and hatched where there was no reading. The day list and the shift's own form show the same strips flat, with a sentence each.
   - **⚙** opens settings: first name, days kept clear, and what counts as a late finish.
   - **Test offer** sends a sample ask, as a manager would. It reaches the calendar and the watch.
   - **Immersive** opens the wide, hands-free week (`/calendar?immersive=1`), described below.
@@ -61,10 +62,10 @@ The Garmin app in [`offshift-watch`](../offshift-watch/README.md) runs on a fēn
 
 - it fetches the waiting ask with its week lines and today's plans;
 - it sends the worker's answer;
-- about 15 minutes after a shift ends, it asks how the work was (Light, Steady, Busy, Hard or Skip), once, and the answer colours that shift on the calendar from pale to dark violet, with the word on the block and a legend. A finished shift can also be rated or changed by tapping it on the calendar. The rating is separate from the body rating (Fine, Tired, Wiped) and never reaches `/api/team`. Rationale and sources: [docs/design/2026-10-23-shift-check-in.md](../docs/design/2026-10-23-shift-check-in.md);
-- only after the worker agrees on the watch, it sends body readings as words, one level from 0 to 3 per signal and never a number.
+- about 15 minutes after a shift ends, it asks how the work was (Light, Steady, Busy, Hard or Skip), once, and the answer colours that shift on the calendar from pale to dark violet, with the word on the block and a legend. A finished shift can also be rated or changed by tapping it on the calendar. It is a shift's only rating and never reaches `/api/team`. Rationale and sources: [docs/design/2026-10-23-shift-check-in.md](../docs/design/2026-10-23-shift-check-in.md);
+- at the same time, and only if the worker agreed on the watch, it reads its own history for that shift's hours and sends heart rate and stress as one level from 0 to 3 per 15 minutes, never a number: Garmin's stress bands (resting, low, medium, high), and heart rate as a share of the worker's own heart-rate reserve (very light, light, moderate, vigorous).
 
-The calendar shows those words in the Body card and in the ask's body check. It also keeps the latest reading of each day (for 28 days, only while sharing is on) and draws it as a grey band along the floor in front of each day: darker means more of the signal the worker picks (Energy, Stress or Heart), hatching means no reading, and a short bridge between two days shows last night's recharge. **Read flat** looks straight down so the band reads as a flat row. Turning sharing off clears every day. Turning sharing off on the watch clears them. Nothing about the body reaches `/api/team` or an employer.
+Offshift reads the body only during shifts. The calendar keeps each shift's blocks on that shift, draws them down the shift in the 3D week and flat in the lists, and uses them in the Past shifts check when a new ask arrives at the same workplace. Turning sharing off on the watch clears every shift's readings. Nothing about the body or the ratings reaches `/api/team` or an employer. Why it works this way: [docs/design/2026-10-25-biometrics-during-shifts.md](../docs/design/2026-10-25-biometrics-during-shifts.md).
 
 A real watch only talks to https. Run `npm run watch-gateway`, which forwards `/api/watch` and nothing else on port 3001, and point a tunnel at it, for example `cloudflared tunnel --url http://127.0.0.1:3001`. A deployed https site such as Vercel needs no gateway: set the watch's server address to it.
 
@@ -108,4 +109,4 @@ npm run typecheck
 npm run build
 ```
 
-The tests cover dates and weeks, the Body and Week checks, the three answers and team actions, the three-way merge, the watch summary and health readings, the API routes and the store.
+The tests cover dates and weeks, the Body, Week and Past shifts checks, the three answers and team actions, the three-way merge, the watch summary, the check-in and each shift's readings, the API routes and the store.
