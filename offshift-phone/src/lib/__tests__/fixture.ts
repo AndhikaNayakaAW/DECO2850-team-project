@@ -13,7 +13,7 @@ export function week(): DataSlice {
     settings: { ...d.settings, name: "Sam", restDays: ["Sun"] },
     shifts: [
       { id: "s-mon", date: "2026-10-19", start: "14:00", end: "19:00", workplace: "Café" },
-      { id: "s-tue", date: "2026-10-20", start: "16:00", end: "21:00", workplace: "Café", rated: "tired" },
+      { id: "s-tue", date: "2026-10-20", start: "16:00", end: "21:00", workplace: "Café", effort: "hard" },
       { id: "s-wed", date: "2026-10-21", start: "12:00", end: "16:00", workplace: "Supermarket" },
       { id: "s-fri", date: "2026-10-23", start: "10:00", end: "16:00", workplace: "Café" },
       { id: "s-sat", date: "2026-10-24", start: "09:00", end: "17:00", workplace: "Supermarket" },

@@ -47,12 +47,10 @@ describe("/api/watch", () => {
     expect((await post({ health: { energy: 1 } })).status).toBe(409);
     expect(g.__offshiftState!.data).toBeNull();
   });
-  it("records a full health reading as words, and clears it when sharing stops", async () => {
+  it("takes an older watch's all-day reading without keeping it, so that watch never shows an error", async () => {
     expect((await post({ health: { energy: 1, sleep: 1, stress: 2, at: "21:02" } })).status).toBe(200);
-    expect(g.__offshiftState!.data!.wearable).toMatchObject({ word: "Running low", at: "21:02", signals: { energy: 1, sleep: 1, stress: 2 } });
-    await post({ health: { share: false } });
-    expect(g.__offshiftState!.data!.wearable).toBeNull();
-    expect((await post({ health: { mood: 3 } })).status).toBe(400);
+    expect((await post({ body: { level: 1 } })).status).toBe(200);
+    expect(JSON.stringify(g.__offshiftState!.data)).not.toMatch(/Running low|energy|wearable/);
   });
 });
 

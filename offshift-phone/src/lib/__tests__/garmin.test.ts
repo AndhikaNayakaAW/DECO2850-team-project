@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { bodyCheck, bodyTile } from "@/lib/checks";
-import { applyWatchAnswer, applyWatchBody, applyWatchHealth, ascii, parseHealth, stopWatchHealth, watchRange, watchSummary } from "@/lib/garmin";
+import { applyWatchAnswer, ascii, watchRange, watchSummary } from "@/lib/garmin";
 import { emptyData } from "@/lib/session";
-import { AT, NOW, ask, week } from "./fixture";
+import { AT, ask, week } from "./fixture";
 
 const asciiOnly = /^[\x20-\x7E]*$/;
 function allStrings(v: unknown): string[] {
@@ -53,58 +52,6 @@ describe("answers from the wrist", () => {
   });
 });
 
-describe("body readings from an older watch build", () => {
-  it("stores a word, never the raw number, and the calendar shows it", () => {
-    const data = applyWatchBody(week(), 1, AT);
-    expect(data.wearable).toMatchObject({ level: 1, word: "Running low", at: "13:02" });
-    expect(JSON.stringify(data.wearable)).not.toMatch(/battery|stress|heart/i);
-    expect(bodyTile(data, NOW).label).toBe("Running low");
-  });
-  it("logs a change once, and ignores readings it can't trust", () => {
-    const once = applyWatchBody(week(), 2, AT);
-    expect(applyWatchBody(once, 2, AT)).toBe(once);
-    expect(applyWatchBody(week(), 7, AT).wearable).toBeNull();
-  });
-});
-
-describe("health readings from the watch", () => {
-  const reading = { energy: 1, sleep: 1, stress: 1, heart: 3, breathing: 2, pulseOx: 3, recovery: 3 } as const;
-
-  it("keeps a level per signal and no raw numbers", () => {
-    const data = applyWatchHealth(week(), reading, "21:02", AT);
-    expect(data.wearable).toMatchObject({ level: 1, word: "Running low", at: "21:02", source: "Garmin" });
-    expect(Object.values(data.wearable!.signals!).every((v) => Number.isInteger(v) && v >= 0 && v <= 3)).toBe(true);
-  });
-  it("names the low signals on the calendar and in the ask's body check", () => {
-    const data = applyWatchHealth(week(), reading, "21:02", AT);
-    expect(bodyTile(data, NOW).detail).toContain("From your watch at 9:02 pm. A poor night's sleep and medium stress.");
-    expect(bodyCheck(ask({ date: "2026-10-24", start: "18:00", end: "20:00" }), data, NOW).text).toMatch(/^Your watch reads running low, with a poor night's sleep and medium stress\. /);
-  });
-  it("keeps the last reading when the watch sends no Body Battery, and logs only word changes", () => {
-    const once = applyWatchHealth(week(), reading, "21:02", AT);
-    expect(applyWatchHealth(once, { sleep: 0, stress: 1 }, "21:07", AT)).toBe(once);
-    expect(applyWatchHealth(once, { ...reading, stress: 2 }, "21:12", AT).sync).toHaveLength(once.sync.length);
-    expect(applyWatchHealth(once, { ...reading, energy: 2 }, "21:17", AT).sync.at(-1)!.text).toBe("Body reading: steady. Kept private.");
-  });
-  it("forgets the reading when sharing is turned off on the watch", () => {
-    const off = stopWatchHealth(applyWatchHealth(week(), reading, "21:02", AT), AT);
-    expect(off.wearable).toBeNull();
-    expect(stopWatchHealth(off, AT)).toBe(off);
-  });
-});
-
-describe("reading what the watch sends", () => {
-  it("keeps known signals with levels 0 to 3 and drops the rest", () => {
-    expect(parseHealth({ energy: 2, sleep: 9, mood: 1, stress: "1", heart: 1.5, pulseOx: null, at: "21:02" })).toEqual({ signals: { energy: 2 }, at: "21:02" });
-  });
-  it("understands a request to stop sharing, and refuses anything unusable", () => {
-    expect(parseHealth({ share: false })).toEqual({ share: false });
-    expect(parseHealth({ mood: 1 })).toBeNull();
-    expect(parseHealth("energy")).toBeNull();
-    expect(parseHealth({ energy: 1, at: "late" })).toEqual({ signals: { energy: 1 }, at: null });
-  });
-});
-
 describe("watch text and order", () => {
   it("keeps names readable without accents, and never empty", () => {
     expect(ascii("Zoë at Café Nº1, Łódź")).toBe("Zoe at Cafe No1, Lodz");
@@ -114,16 +61,5 @@ describe("watch text and order", () => {
   it("shows a new ask before one the worker is deciding later", () => {
     const deferred = ask({ id: "o-old", status: "deferred", sentAt: "2026-10-22T01:00:00.000Z" });
     expect(watchSummary({ ...week(), offers: [deferred, ask()] }, AT).ask?.id).toBe("o-thu");
-  });
-  it("forgets the logged readings too when sharing is turned off", () => {
-    const shared = applyWatchHealth(week(), { energy: 1 }, "21:02", AT);
-    expect(shared.sync.some((e) => e.text.startsWith("Body reading"))).toBe(true);
-    expect(stopWatchHealth(shared, AT).sync.some((e) => e.text.startsWith("Body reading"))).toBe(false);
-  });
-  it("stamps when a reading arrived, and refreshes it only now and then", () => {
-    const first = applyWatchHealth(week(), { energy: 2 }, "21:02", AT);
-    expect(first.wearable?.receivedAt).toBe(AT.toISOString());
-    expect(applyWatchHealth(first, { energy: 2 }, "21:07", new Date(AT.getTime() + 5 * 60_000))).toBe(first);
-    expect(applyWatchHealth(first, { energy: 2 }, "21:40", new Date(AT.getTime() + 40 * 60_000)).wearable?.receivedAt).toBe(new Date(AT.getTime() + 40 * 60_000).toISOString());
   });
 });

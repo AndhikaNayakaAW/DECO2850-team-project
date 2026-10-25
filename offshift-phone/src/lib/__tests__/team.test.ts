@@ -12,12 +12,12 @@ const team = await import("@/app/api/team/route");
 const state = await import("@/app/api/state/route");
 const g = globalThis as unknown as { __offshiftState?: { version: number; client: string | null; data: unknown } };
 
-/** A week with everything the team must never see: a body reading, a private check-in and plans. */
+/** A week with everything the team must never see: readings from a shift, a private check-in and plans. */
 function privateWeek(): DataSlice {
   const w = week();
   return {
     ...w,
-    wearable: { level: 1, word: "Running low", at: "12:55", source: "Garmin", signals: { energy: 1, sleep: 0 } },
+    shifts: w.shifts.map((s) => (s.id === "s-mon" ? { ...s, body: { receivedAt: AT.toISOString(), stress: Array(20).fill(3), heart: Array(20).fill(2) } } : s)),
     sync: [...w.sync, { id: "y-private", at: AT.toISOString(), from: "Offshift", to: "Only you", text: "Check-in: not so good today." }],
     messages: [...w.messages, { id: "m-move", from: "worker", text: "Could I swap Friday's shift for Saturday?", at: AT.toISOString() }],
   };
@@ -28,7 +28,7 @@ describe("what the research team sees", () => {
     const answered = applyResponse(privateWeek(), "o-thu", "decline", AT)!.data;
     const view = teamView(answered, 3, null);
     const json = JSON.stringify(view);
-    expect(json).not.toMatch(/Running low|energy|sleep|Dinner with a friend|Call home|Tutorial|Check-in|Only you/);
+    expect(json).not.toMatch(/stress|heart|body|Dinner with a friend|Call home|Tutorial|Check-in|Only you/i);
     expect(view.asks[0]).toMatchObject({ id: "o-thu", status: "declined" });
     expect(view.asks[0].thread.some((m) => m.from === "worker")).toBe(false);
     expect(view.notes.map((n) => n.text)).toEqual(["Could I swap Friday's shift for Saturday?"]);
@@ -53,7 +53,6 @@ describe("what the research team can do", () => {
     expect((applyTeamAction(week(), { action: "name", name: " Jo " }, AT) as { data: DataSlice }).data.settings.name).toBe("Jo");
     const fresh = (applyTeamAction(privateWeek(), { action: "new-session" }, AT) as { data: DataSlice }).data;
     expect([fresh.shifts, fresh.offers, fresh.messages, fresh.sync].every((x) => x.length === 0)).toBe(true);
-    expect(fresh.wearable).toBeNull();
     expect((applyTeamAction(week(), { action: "practice-week" }, AT) as { data: DataSlice }).data.shifts.length).toBeGreaterThan(0);
     expect(applyTeamAction(week(), { action: "delete-everything" }, AT)).toEqual({ problem: "Unknown action." });
   });
@@ -66,7 +65,7 @@ describe("/api/team", () => {
 
   it("never sends the team the worker's private data", async () => {
     const text = await (await team.GET(new Request("http://x/api/team"))).text();
-    expect(text).not.toMatch(/Running low|Dinner with a friend|Check-in/);
+    expect(text).not.toMatch(/stress|heart|Dinner with a friend|Check-in/i);
   });
 
   it("puts an ask on the worker's calendar", async () => {
@@ -75,7 +74,7 @@ describe("/api/team", () => {
     const shared = await (await state.GET(new Request("http://x/api/state?since=2"))).json();
     expect(shared.version).toBe(3);
     expect(shared.data.offers.at(-1)).toMatchObject({ from: "Sam", date: "2099-01-05" });
-    expect(shared.data.wearable.word).toBe("Running low");
+    expect(shared.data.shifts.find((s: { id: string }) => s.id === "s-mon").body.stress).toHaveLength(20);
   });
 
   it("never builds on an empty week in place of one it can't read; only a new session replaces it", async () => {

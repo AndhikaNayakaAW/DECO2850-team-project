@@ -39,11 +39,11 @@ describe("merging a device's edits with what reached the server meanwhile", () =
   });
   it("removes what the worker deleted and keeps what the server changed", () => {
     const b = base();
-    const server = { ...b, shifts: [{ ...b.shifts[0], rated: "tired" as const }] };
+    const server = { ...b, shifts: [{ ...b.shifts[0], effort: "busy" as const }] };
     const client = { ...b, personal: b.personal.filter((p) => p.id !== "p1") };
     const merged = mergeData(b, server, client);
     expect(merged.personal.map((p) => p.id)).toEqual(["p2"]);
-    expect(merged.shifts[0].rated).toBe("tired");
+    expect(merged.shifts[0].effort).toBe("busy");
   });
   it("lets the worker's change to an item win over the server's copy of the old one", () => {
     const b = base();
@@ -51,12 +51,13 @@ describe("merging a device's edits with what reached the server meanwhile", () =
     const client = { ...b, personal: b.personal.map((p) => (p.id === "p1" ? { ...p, title: "Dinner with Mum" } : p)) };
     expect(mergeData(b, server, client).personal[0].title).toBe("Dinner with Mum");
   });
-  it("keeps a body reading from the watch and the worker's new settings", () => {
+  it("keeps a shift's readings from the watch and the worker's new settings", () => {
     const b = base();
-    const server = { ...b, wearable: { level: 1 as const, word: "Running low", at: "13:00", source: "Garmin" } };
+    const body = { receivedAt: "2026-10-22T03:00:00.000Z", stress: [1, 3], heart: [0, 2] } as const;
+    const server = { ...b, shifts: [{ ...b.shifts[0], body: { ...body, stress: [...body.stress], heart: [...body.heart] } }] };
     const client = { ...b, settings: { ...b.settings, name: "Sam" } };
     const merged = mergeData(b, server, client);
-    expect(merged.wearable?.word).toBe("Running low");
+    expect(merged.shifts[0].body?.stress).toEqual([1, 3]);
     expect(merged.settings.name).toBe("Sam");
   });
   it("drops a device's edits when the team started a new session meanwhile", () => {

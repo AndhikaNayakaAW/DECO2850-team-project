@@ -26,14 +26,16 @@ describe("checking a week that arrives from outside", () => {
       { ...w, personal: [{ ...w.personal[0], title: "   " }] },
       { ...w, settings: { ...w.settings, timeZone: "Mars/Olympus" } },
       { ...w, settings: { ...w.settings, restDays: ["Sun", "Sun"] } },
-      { ...w, wearable: { level: 9, word: "Fine", at: "12:00", source: "Garmin" } },
+      { ...w, shifts: [{ ...w.shifts[0], body: { receivedAt: AT.toISOString(), stress: [9], heart: [1] } }] },
+      { ...w, shifts: [{ ...w.shifts[0], body: { receivedAt: AT.toISOString(), stress: [1, 2], heart: [1] } }] },
       { ...w, messages: Array.from({ length: 2001 }, (_, i) => ({ id: `m${i}`, from: "team", text: "hi", at: AT.toISOString() })) },
     ];
     for (const b of bad) expect(cleanData(b)).toBeNull();
   });
 
-  it("treats a missing body reading as none", () => {
-    const { wearable: _, ...rest } = week();
-    expect(cleanData(rest)!.wearable).toBeNull();
+  it("leaves out the all-day readings an older version kept", () => {
+    const clean = cleanData({ ...week(), wearable: { level: 1, word: "Running low", at: "12:00", source: "Garmin" }, bodyDays: [] })!;
+    expect(clean).not.toBeNull();
+    expect("wearable" in clean || "bodyDays" in clean).toBe(false);
   });
 });

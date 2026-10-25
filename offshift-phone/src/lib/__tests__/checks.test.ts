@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { bodyCheck, bodyTile, buildWeek, clashes, dayItems, isLateFinish, offerChecks, weekCheck, workplacesOf } from "@/lib/checks";
+import { bodyCheck, buildWeek, clashes, dayItems, isLateFinish, offerChecks, weekCheck, workplacesOf } from "@/lib/checks";
 import { NOW, ask, week } from "./fixture";
 
 describe("the checks on an ask", () => {
-  it("Body remembers Tuesday's late finish and counts the second in three days", () => {
+  it("Body remembers how Tuesday's late finish went and counts the second in three days", () => {
     const c = bodyCheck(ask(), week(), NOW);
     expect(c.state).toBe("warn");
-    expect(c.text).toBe("Tuesday's late finish is still in your legs. You rated it Tired. Tonight would be your second late finish in three days, and Friday starts at 10 am.");
+    expect(c.text).toBe("You rated Tuesday's late finish Hard. Tonight would be your second late finish in three days, and Friday starts at 10 am.");
   });
   it("Week flags the overlap, the gap after the tutorial and what's due", () => {
     const c = weekCheck(ask(), week(), NOW);
@@ -32,12 +32,6 @@ describe("the checks on an ask", () => {
     const data = { ...week(), shifts: week().shifts.filter((s) => s.id !== "s-tue" && s.id !== "s-fri") };
     expect(bodyCheck(late, data, NOW).text).toContain("Leaves 9.5 hours before your Supermarket shift on Saturday at 9 am.");
   });
-  it("adds what the watch reads, in words, and takes the worse state", () => {
-    const data = { ...week(), wearable: { level: 1 as const, word: "Running low", at: "12:55", source: "Garmin", signals: { energy: 1 as const, sleep: 1 as const } } };
-    const c = bodyCheck(ask({ start: "09:00", end: "11:00", date: "2026-10-24" }), data, NOW);
-    expect(c.text.startsWith("Your watch reads running low, with a poor night's sleep.")).toBe(true);
-    expect(c.state).toBe("warn");
-  });
 });
 
 describe("the week", () => {
@@ -60,10 +54,6 @@ describe("the week", () => {
   it("counts a shift past midnight as a late finish", () => {
     expect(isLateFinish({ start: "18:00", end: "01:00" }, { lateFinish: "21:00" })).toBe(true);
     expect(isLateFinish({ start: "09:00", end: "17:00" }, { lateFinish: "21:00" })).toBe(false);
-  });
-  it("reads the body from ratings until a watch shares", () => {
-    expect(bodyTile(week(), NOW)).toMatchObject({ state: "warn", label: "Getting tired" });
-    expect(bodyTile(week(), NOW).detail).toBe("Tuesday's late finish rated Tired. Two early starts ahead this week.");
   });
 });
 
@@ -90,11 +80,5 @@ describe("checks keep reading right", () => {
     expect(isLateFinish({ start: "09:00", end: "13:00" }, { lateFinish: "00:30" })).toBe(false);
     expect(isLateFinish({ start: "18:00", end: "01:00" }, { lateFinish: "00:30" })).toBe(true);
     expect(isLateFinish({ start: "16:00", end: "00:00" }, { lateFinish: "21:00" })).toBe(true);
-  });
-  it("lets a reading from the watch go quiet after twelve hours", () => {
-    const at = "2026-10-21T20:00:00.000Z"; // Thursday 6 am in Brisbane
-    const data = { ...week(), wearable: { level: 1 as const, word: "Running low", at: "06:00", source: "Garmin", receivedAt: at } };
-    expect(bodyTile(data, { date: "2026-10-22", time: "13:02" }).label).toBe("Running low");
-    expect(bodyTile(data, { date: "2026-10-22", time: "19:00" }).label).not.toBe("Running low");
   });
 });

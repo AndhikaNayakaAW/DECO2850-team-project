@@ -57,7 +57,7 @@ describe("sessions", () => {
     const d = emptyData(AT);
     expect([d.shifts, d.uni, d.personal, d.offers, d.messages, d.sync].every((xs) => xs.length === 0)).toBe(true);
     expect(d.settings.name).toBe("");
-    expect(d.wearable).toBeNull();
+    expect(d.shifts.some((s) => s.body)).toBe(false);
   });
   it("never read an older saved week as a current one", () => {
     expect(isCurrent(emptyData(AT))).toBe(true);

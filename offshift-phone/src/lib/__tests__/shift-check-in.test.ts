@@ -81,10 +81,10 @@ describe("the calendar shows how the work was", () => {
     expect(EFFORT_COLOUR).toEqual({ light: "#E5D8F0", steady: "#C3ABD2", busy: "#A382B3", hard: "#805C8C" });
   });
 
-  it("keeps the work rating apart from the body rating", () => {
-    const item = dayItems(withShift({ effort: "light", rated: "wiped" }), "2026-10-22").find((it) => it.id === "s-thu-am")!;
+  it("has the work rating as a shift's only rating", () => {
+    const item = dayItems(withShift({ effort: "light" }), "2026-10-22").find((it) => it.id === "s-thu-am")!;
     expect(item.effort).toBe("light");
-    expect(item.warn).toBe("rated Wiped");
+    expect(item.warn).toBeUndefined();
   });
 
   it("keeps a saved week's ratings, and refuses words it doesn't know", () => {
