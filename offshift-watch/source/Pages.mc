@@ -2,8 +2,8 @@ import Toybox.Graphics;
 import Toybox.Lang;
 import Toybox.WatchUi;
 
-//! Four pages, scrolled with Up and Down or a swipe: the ask, the week around it, your body,
-//! and the link to the calendar. Each page holds one idea.
+//! Four pages, scrolled with Up and Down or a swipe: the ask, the week around it, the last shift
+//! the watch read, and the link to the calendar. Each page holds one idea.
 class OffshiftPages extends WatchUi.ViewLoopFactory {
     private var _model as OffshiftModel;
 
@@ -167,7 +167,8 @@ class AskPage extends Page {
 
 }
 
-//! The week around the ask: clashes, the trip there, tomorrow's start. Today's plans when nothing is waiting.
+//! The week around the ask: how the last shifts at that workplace went, clashes, tomorrow's start.
+//! Today's plans when nothing is waiting.
 class WeekPage extends Page {
 
     function initialize(model as OffshiftModel) {
@@ -183,6 +184,10 @@ class WeekPage extends Page {
         var summary = _model.summary();
         var source = (ask != null) ? ask["week"] : (summary != null ? summary["today"] : null);
         var rows = [] as Array<Row>;
+        var past = (ask != null) ? ask["past"] : null;
+        if (past instanceof String) {
+            rows.add(line(past, WatchStyle.at(32), Palette.STRONG, 2, 12));
+        }
         if (source instanceof Array) {
             for (var i = 0; i < source.size() && i < (ask != null ? 3 : 4); i++) {
                 rows.add(line(source[i] as String, WatchStyle.at(32), Palette.INK, 2, ask != null ? 12 : 8));
@@ -199,25 +204,31 @@ class WeekPage extends Page {
     }
 }
 
-//! The body in one word, then sleep, stress and heart. Press for every reading and the sharing switch.
+//! The last shift the watch read, in words: what stress and heart mostly were. Press for more and the sharing switch.
 class BodyPage extends Page {
-    private const SHOWN = ["sleep", "stress", "heart"] as Array<String>;
 
     function initialize(model as OffshiftModel) {
         Page.initialize(model, Pages.BODY);
     }
 
     function title() as String {
-        return "BODY";
+        return "LAST SHIFT";
     }
 
     function rows() as Array<Row> {
-        var levels = _model.levels();
-        var overall = Health.overall(levels);
-        var rows = [line(Health.overallWord(overall), WatchStyle.at(46), BodyWords.tone(levels), 1, 12)] as Array<Row>;
-        for (var i = 0; i < SHOWN.size(); i++) {
-            var level = levels[SHOWN[i]];
-            rows.add(line(BodyWords.label(SHOWN[i]) + ": " + BodyWords.word(SHOWN[i], level).toLower(), WatchStyle.at(32), BodyWords.colour(level), 1, 4));
+        var last = _model.lastShift();
+        if (last == null) {
+            return [
+                line("No shift read yet", WatchStyle.at(38), Palette.STRONG, 2, 12),
+                line(Sharing.isOn() ? "Read after each shift" : "Sharing is off", WatchStyle.at(32), Palette.MUTED, 2, 0)
+            ] as Array<Row>;
+        }
+        var rows = [line(last["title"] as String, WatchStyle.at(32), Palette.MUTED, 2, 10).orSmaller([WatchStyle.at(26)])] as Array<Row>;
+        var signals = ["stress", "heart"] as Array<String>;
+        for (var i = 0; i < signals.size(); i++) {
+            var levels = last[signals[i]];
+            var word = (levels instanceof Array) ? ShiftBody.summary(levels as Array<Number?>, signals[i]) : "No reading";
+            rows.add(line(ShiftBody.label(signals[i]) + ": " + word.toLower(), WatchStyle.at(32), Palette.INK, 2, i == 0 ? 6 : 0));
         }
         return rows;
     }
@@ -251,7 +262,7 @@ class CalendarPage extends Page {
         if (waiting instanceof Number) {
             rows.add(line(waiting == 0 ? "Nothing waiting" : waiting.toString() + (waiting == 1 ? " ask waiting" : " asks waiting"), WatchStyle.at(32), Palette.MUTED, 1, 6));
         }
-        rows.add(line(Sharing.isOn() ? "Body: words only" : "Body stays on watch", WatchStyle.at(32), Palette.INK, 1, 0));
+        rows.add(line(Sharing.isOn() ? "Shifts: words only" : "Shifts stay on watch", WatchStyle.at(32), Palette.INK, 1, 0));
         return rows;
     }
 
@@ -260,7 +271,7 @@ class CalendarPage extends Page {
     }
 }
 
-//! Select answers the ask on the first two pages and opens the body details on the last two.
+//! Select answers the ask on the first two pages and opens the shift details and sharing on the last two.
 class PageDelegate extends WatchUi.BehaviorDelegate {
     private var _model as OffshiftModel;
     private var _page as Number;

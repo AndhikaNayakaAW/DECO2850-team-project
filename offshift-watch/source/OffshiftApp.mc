@@ -5,8 +5,8 @@ import Toybox.System;
 import Toybox.Time;
 import Toybox.WatchUi;
 
-//! Offshift on the wrist: four pages (the ask, the week around it, your body, the calendar link)
-//! and five answers. A background check every five minutes keeps the calendar and the glance current.
+//! Offshift on the wrist: four pages (the ask, the week around it, the last shift, the calendar link)
+//! and three answers. A background check every five minutes keeps the calendar and the glance current.
 (:background)
 class OffshiftApp extends Application.AppBase {
 

@@ -3,7 +3,7 @@ import Toybox.Graphics;
 import Toybox.Lang;
 import Toybox.WatchUi;
 
-//! The glance in the widget loop: the waiting ask in one line, or the body when nothing is waiting.
+//! The glance in the widget loop: the waiting ask in one line, or the last shift the watch read when nothing is waiting.
 (:glance)
 class OffshiftGlance extends WatchUi.GlanceView {
 
@@ -13,10 +13,10 @@ class OffshiftGlance extends WatchUi.GlanceView {
 
     function onUpdate(dc as Dc) as Void {
         var saved = Application.Storage.getValue("glance");
-        var body = Application.Storage.getValue("body");
+        var last = Application.Storage.getValue("lastLine");
         var text = (saved instanceof String) ? saved : "Open to check your week";
-        if ("Nothing waiting".equals(text) && body instanceof String) {
-            text = "Body: " + body.toLower();
+        if ("Nothing waiting".equals(text) && last instanceof String) {
+            text = last;
         }
         var h = dc.getHeight();
         var font = Graphics.FONT_XTINY;

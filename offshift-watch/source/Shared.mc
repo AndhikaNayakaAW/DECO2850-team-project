@@ -1,7 +1,7 @@
 import Toybox.Application;
 import Toybox.Lang;
 
-//! Whether the worker lets the calendar hear the body readings. Asked once, changeable on the Body screen.
+//! Whether the worker lets the calendar have heart rate and stress from their shifts. Asked once, changeable on the Last shift page.
 (:background)
 module Sharing {
 

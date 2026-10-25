@@ -7,7 +7,7 @@ import Toybox.Timer;
 import Toybox.WatchUi;
 
 //! What every page shows, kept fresh while the app is open: the latest summary from the calendar
-//! server (every 5 seconds) and the body as the watch reads it (every minute).
+//! server (every 5 seconds), and the last shift the watch read once it was over.
 class OffshiftModel {
     private var _api as OffshiftApi;
     private var _timer as Timer.Timer?;
@@ -15,11 +15,9 @@ class OffshiftModel {
     private var _summary as Dictionary?;
     private var _status as String = "Checking your week";
     private var _syncedAt as String?;
-    private var _readings as Dictionary<String, Number or Null> = {} as Dictionary<String, Number or Null>;
-    private var _levels as Dictionary<String, Number or Null> = {} as Dictionary<String, Number or Null>;
-    private var _readAt as Number?;
-    private var _sentKey as String = "";
-    private var _sentAt as Number = 0;
+    private var _lastShift as Dictionary?;
+    private var _shown as Boolean = false;
+    private var _pendingBody as String?;
     private var _lastAskId as String?;
     private var _started as Boolean = false;
 
@@ -48,44 +46,27 @@ class OffshiftModel {
         }
     }
 
-    //! Asked once: may the calendar hear the body readings?
+    //! Asked once: may the calendar hear heart rate and stress from the worker's shifts?
     function askConsent() as Void {
         _consentTimer = null;
-        WatchUi.pushView(new WatchUi.Confirmation("Share body words with calendar?"), new ConsentDelegate(self), WatchUi.SLIDE_UP);
+        WatchUi.pushView(new WatchUi.Confirmation("Share stress and heart from shifts?"), new ConsentDelegate(self), WatchUi.SLIDE_UP);
     }
 
     function setSharing(on as Boolean) as Void {
         Sharing.set(on);
-        _sentKey = "";
         if (!on) {
+            // The calendar forgets every shift's readings; turned on again, an unexpired shift is read again.
+            Application.Storage.deleteValue("sentShiftBody");
             _api.stopSharing(method(:onSummary));
         }
-        note(on ? "Sharing words with your calendar" : "Body readings stay on your watch");
+        note(on ? "Shift readings go to your calendar" : "Shift readings stay on your watch");
         refresh();
     }
 
-    //! Read the body once a minute, share it when it changed, and fetch the latest ask.
+    //! Fetch the latest ask and the shift, if any, that just finished.
     function refresh() as Void {
         if (!_api.isIdle()) {
             return;
-        }
-        var now = System.getTimer();
-        if (_readAt == null || now - _readAt > 60000) {
-            _readings = Health.read();
-            _levels = Health.levels(_readings);
-            _readAt = now;
-            Application.Storage.setValue("body", Health.overallWord(Health.overall(_levels)));
-            WatchUi.requestUpdate();
-        }
-        if (Sharing.isOn()) {
-            var key = Health.key(_levels);
-            var payload = Health.payload(_levels);
-            if (payload != null && (!key.equals(_sentKey) || now - _sentAt > 300000)) {
-                _sentKey = key;
-                _sentAt = now;
-                _api.sendHealth(payload, method(:onSummary));
-                return;
-            }
         }
         _api.getSummary(method(:onSummary));
     }
@@ -119,6 +100,37 @@ class OffshiftModel {
             Application.Storage.setValue("glance", "Nothing waiting");
         }
         promptCheckIn(data);
+        readShift(data);
+    }
+
+    //! A shift that just finished: read its heart rate and stress from the watch's history and send the levels, once.
+    function readShift(data as Dictionary) as Void {
+        var due = data["shiftBody"];
+        if (!Sharing.isOn() || !(due instanceof Dictionary)) {
+            return;
+        }
+        var key = ShiftBody.key(due);
+        if (key.equals(Application.Storage.getValue("sentShiftBody")) || key.equals(_pendingBody)) {
+            return;
+        }
+        var payload = ShiftBody.payload(due);
+        ShiftBody.remember(due, payload);
+        _lastShift = null;
+        _pendingBody = key;
+        _api.sendShiftBody(payload, method(:onShiftBodySent));
+    }
+
+    function onShiftBodySent(code as Number, data as Dictionary or String or Null) as Void {
+        if (code == 200 && _pendingBody != null) {
+            Application.Storage.setValue("sentShiftBody", _pendingBody);
+        }
+        _pendingBody = null;
+        if (code == 200 && data instanceof Dictionary) {
+            _summary = data;
+            _status = "";
+            _syncedAt = Clock.now();
+        }
+        WatchUi.requestUpdate();
     }
 
     //! A shift just finished: buzz and ask how the work was, once for that shift.
@@ -175,12 +187,13 @@ class OffshiftModel {
         }
     }
 
-    //! Shows a summary and body levels without the server or the sensors. The layout tests use it.
-    function show(summary as Dictionary?, levels as Dictionary<String, Number or Null>) as Void {
+    //! Shows a summary and a last shift without the server or the sensors. The layout tests use it.
+    function show(summary as Dictionary?, lastShift as Dictionary?) as Void {
         _summary = summary;
         _status = (summary != null) ? "" : "Phone not connected";
         _syncedAt = "10:01 pm";
-        _levels = levels;
+        _lastShift = lastShift;
+        _shown = true;
     }
 
     /* ---------- what the pages read ---------- */
@@ -215,11 +228,12 @@ class OffshiftModel {
         return _syncedAt;
     }
 
-    function readings() as Dictionary<String, Number or Null> {
-        return _readings;
-    }
-
-    function levels() as Dictionary<String, Number or Null> {
-        return _levels;
+    //! The last shift the watch read: its title and both signals, block by block. Null before the first one.
+    function lastShift() as Dictionary? {
+        if (_shown || _lastShift != null) {
+            return _lastShift;
+        }
+        var saved = Application.Storage.getValue("lastShift");
+        return (saved instanceof Dictionary) ? saved : null;
     }
 }

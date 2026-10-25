@@ -48,12 +48,12 @@ class OffshiftApi {
         enqueue(new PendingRequest(Communications.HTTP_REQUEST_METHOD_POST, { "effort" => { "shiftId" => shiftId, "level" => level } }, callback));
     }
 
-    //! Shares the body as a level from 0 to 3 per signal, never the raw numbers.
-    function sendHealth(payload as Dictionary, callback as ResponseCallback) as Void {
-        enqueue(new PendingRequest(Communications.HTTP_REQUEST_METHOD_POST, { "health" => payload }, callback));
+    //! A finished shift's heart rate and stress, as a level from 0 to 3 per 15 minutes, never the raw numbers.
+    function sendShiftBody(payload as Dictionary, callback as ResponseCallback) as Void {
+        enqueue(new PendingRequest(Communications.HTTP_REQUEST_METHOD_POST, { "shiftBody" => payload }, callback));
     }
 
-    //! Sharing turned off: the calendar forgets the last reading.
+    //! Sharing turned off: the calendar forgets every shift's readings.
     function stopSharing(callback as ResponseCallback) as Void {
         enqueue(new PendingRequest(Communications.HTTP_REQUEST_METHOD_POST, { "health" => { "share" => false } }, callback));
     }

@@ -1,17 +1,17 @@
 import Toybox.Lang;
 import Toybox.WatchUi;
 
-//! Your body: each signal in words with the watch's own number beside it, and the sharing switch.
+//! The last shift in detail: stress and heart in words, where each comes from, and the sharing switch.
 function pushBodyMenu(model as OffshiftModel) as Void {
-    var r = model.readings();
-    var levels = model.levels();
-    var menu = new WatchUi.Menu2({ :theme => WatchUi.MENU_THEME_GREEN, :title => "Your body" });
-    var signals = Health.SIGNALS;
+    var last = model.lastShift();
+    var menu = new WatchUi.Menu2({ :theme => WatchUi.MENU_THEME_GREEN, :title => "Your shifts" });
+    var signals = ["stress", "heart"] as Array<String>;
     for (var i = 0; i < signals.size(); i++) {
-        menu.addItem(new WatchUi.MenuItem(BodyWords.label(signals[i]), BodyWords.detail(signals[i], r, levels), signals[i], null));
+        var levels = (last != null) ? last[signals[i]] : null;
+        var detail = (levels instanceof Array) ? ShiftBody.summary(levels as Array<Number?>, signals[i]) : "No shift read yet";
+        menu.addItem(new WatchUi.MenuItem(ShiftBody.label(signals[i]), detail, signals[i], null));
     }
-    menu.addItem(new WatchUi.MenuItem("Steps", BodyWords.detail("steps", r, levels), "steps", null));
-    menu.addItem(new WatchUi.ToggleMenuItem("Share with calendar", { :enabled => "Words only", :disabled => "Stays on watch" }, "share", Sharing.isOn(), null));
+    menu.addItem(new WatchUi.ToggleMenuItem("Share with calendar", { :enabled => "Shifts, as words only", :disabled => "Stays on watch" }, "share", Sharing.isOn(), null));
     WatchUi.pushView(menu, new BodyMenuDelegate(model), WatchUi.SLIDE_UP);
 }
 
@@ -29,7 +29,7 @@ class BodyMenuDelegate extends WatchUi.Menu2InputDelegate {
             _model.setSharing((item as ToggleMenuItem).isEnabled());
             return;
         }
-        _model.note(BodyWords.source(id, _model.readings()));
+        _model.note(ShiftBody.source(id));
     }
 
     function onBack() as Void {
