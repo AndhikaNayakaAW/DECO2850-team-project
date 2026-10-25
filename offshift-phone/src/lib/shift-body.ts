@@ -72,6 +72,9 @@ export function shiftBodyDue(data: DataSlice, at: Date = new Date()): Shift | nu
 
 export interface ShiftBodyInput {
   shiftId: string;
+  /** The window the watch read, in seconds since 1970, as the summary gave it. */
+  from: number;
+  to: number;
   stress: (Load | null)[];
   heart: (Load | null)[];
 }
@@ -81,43 +84,53 @@ function loads(v: unknown): (Load | null)[] | null {
   return v.every((x) => x === null || (Number.isInteger(x) && x >= 0 && x <= 3)) ? (v as (Load | null)[]) : null;
 }
 
-/** Keeps only what the watch is allowed to send: a level from 0 to 3, or no reading, per block, for both signals. */
+/** Keeps only what the watch is allowed to send: the window it read, and a level from 0 to 3, or no reading, per block, for both signals. */
 export function parseShiftBody(input: unknown): ShiftBodyInput | null {
   if (!input || typeof input !== "object" || Array.isArray(input)) return null;
   const o = input as Record<string, unknown>;
   const stress = loads(o.stress);
   const heart = loads(o.heart);
   if (typeof o.shiftId !== "string" || !o.shiftId || o.shiftId.length > 80 || !stress || !heart || stress.length !== heart.length) return null;
-  return { shiftId: o.shiftId, stress, heart };
+  if (!Number.isInteger(o.from) || !Number.isInteger(o.to) || (o.to as number) <= (o.from as number)) return null;
+  return { shiftId: o.shiftId, from: o.from as number, to: o.to as number, stress, heart };
 }
 
 function logText(shift: Shift): string {
   return `Read your ${shift.workplace} shift, ${shortDate(shift.date)} ${range12(shift.start, shift.end)}. Kept private.`;
 }
 
-/** Stores the watch's blocks on that shift. Nothing goes to anyone else. */
-export function applyShiftBody(data: DataSlice, input: ShiftBodyInput, at: Date = new Date()): { data: DataSlice } | { problem: "missing" | "unfinished" | "length" } {
+const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+const isReadLine = (e: { from: string; text: string }) => e.from === "Watch" && e.text.startsWith("Read your");
+
+/**
+ * Stores the watch's blocks on that shift. Nothing goes to anyone else. Readings for a window the shift no longer has
+ * (it was moved after the watch read it) are refused, and the same readings arriving twice are stored once.
+ */
+export function applyShiftBody(data: DataSlice, input: ShiftBodyInput, at: Date = new Date()): { data: DataSlice } | { problem: "missing" | "unfinished" | "moved" | "length" } {
   const shift = data.shifts.find((s) => s.id === input.shiftId);
   if (!shift) return { problem: "missing" };
   if (minutesSinceEnd(shift, data.settings.timeZone, at) < 0) return { problem: "unfinished" };
+  const window = shiftWindow(shift, data.settings.timeZone);
+  if (input.from !== window.from || input.to !== window.to) return { problem: "moved" };
   if (input.stress.length !== blockCount(shift) || input.heart.length !== blockCount(shift)) return { problem: "length" };
+  if (shift.body && same(shift.body.stress, input.stress) && same(shift.body.heart, input.heart)) return { data };
   const body: ShiftBody = { receivedAt: at.toISOString(), stress: input.stress, heart: input.heart };
   return {
     data: {
       ...data,
       shifts: data.shifts.map((s) => (s.id === shift.id ? { ...s, body } : s)),
-      sync: [...data.sync, { id: uid("y"), at: at.toISOString(), from: "Watch", to: "Only you", text: logText(shift) }],
+      sync: shift.body ? data.sync : [...data.sync, { id: uid("y"), at: at.toISOString(), from: "Watch", to: "Only you", text: logText(shift) }],
     },
   };
 }
 
 /** Sharing turned off on the watch: every shift's readings go, and so do the log lines about them. */
 export function forgetShiftBodies(data: DataSlice, at: Date = new Date()): DataSlice {
-  if (!data.shifts.some((s) => s.body)) return data;
+  if (!data.shifts.some((s) => s.body) && !data.sync.some(isReadLine)) return data;
   return {
     ...data,
     shifts: data.shifts.map((s) => (s.body ? { ...s, body: undefined } : s)),
-    sync: [...data.sync.filter((e) => !(e.from === "Watch" && e.text.startsWith("Read your"))), { id: uid("y"), at: at.toISOString(), from: "Watch", to: "Only you", text: "Sharing turned off on the watch. The calendar forgot the shift readings." }],
+    sync: [...data.sync.filter((e) => !isReadLine(e)), { id: uid("y"), at: at.toISOString(), from: "Watch", to: "Only you", text: "Sharing turned off on the watch. The calendar forgot the shift readings." }],
   };
 }
 

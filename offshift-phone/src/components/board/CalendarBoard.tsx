@@ -292,6 +292,7 @@ export default function CalendarBoard() {
           onExit={exitImmersive}
           weekAnchor={weekAnchor}
           now={now}
+          bodySignal={bodySignal}
           onOpenAsk={(id) => {
             exitImmersive();
             openAsk(id);

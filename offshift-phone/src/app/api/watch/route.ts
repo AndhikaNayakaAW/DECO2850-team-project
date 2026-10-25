@@ -70,7 +70,8 @@ export async function POST(req: Request) {
       const data = currentData(s);
       const r = applyShiftBody(data, body);
       if ("problem" in r) {
-        const [status, error]: [number, string] = r.problem === "missing" ? [404, "No such shift"] : r.problem === "unfinished" ? [409, "That shift hasn't finished"] : [400, "Those readings don't fit that shift"];
+        const [status, error]: [number, string] =
+          r.problem === "missing" ? [404, "No such shift"] : r.problem === "unfinished" ? [409, "That shift hasn't finished"] : r.problem === "moved" ? [409, "That shift has changed since"] : [400, "Those readings don't fit that shift"];
         return Response.json({ error }, { status, headers });
       }
       if (!cleanData(capLogs(r.data))) return Response.json({ error: "That would break the week" }, { status: 400, headers });

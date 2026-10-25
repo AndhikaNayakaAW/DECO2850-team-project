@@ -1,4 +1,4 @@
-import type { DataSlice, Offer, Settings } from "./types";
+import type { DataSlice, Offer, Settings, Shift } from "./types";
 
 const LISTS = ["shifts", "uni", "personal", "offers", "messages", "sync"] as const;
 
@@ -42,6 +42,26 @@ function open(o: Offer | undefined): boolean {
 }
 
 /**
+ * A shift the calendar edited while the watch was reading it, or while sharing was turned off: the item merge takes the
+ * calendar's copy whole, so its readings are settled on their own. The server's readings stand unless the calendar
+ * changed them (it only ever drops them), and readings never survive a move to other times.
+ */
+function settleBodies(base: DataSlice, server: DataSlice, client: DataSlice, merged: Shift[]): Shift[] {
+  const inBase = new Map(base.shifts.map((s) => [s.id, s]));
+  const inServer = new Map(server.shifts.map((s) => [s.id, s]));
+  const inClient = new Map(client.shifts.map((s) => [s.id, s]));
+  return merged.map((m) => {
+    const s = inServer.get(m.id);
+    const c = inClient.get(m.id);
+    if (!s || !c || m === s) return m;
+    const calendarChanged = !same(c.body, inBase.get(m.id)?.body);
+    const moved = m.date !== s.date || m.start !== s.start || m.end !== s.end;
+    const body = calendarChanged ? c.body : moved ? undefined : s.body;
+    return same(body, m.body) ? m : { ...m, body };
+  });
+}
+
+/**
  * Combines one device's edits (made on top of `base`) with whatever reached the server since,
  * so an ask from the team, an answer from the watch and an edit on the calendar never cancel each other out.
  * If an ask was answered in two places at once, the answer that reached the server first stands,
@@ -52,6 +72,7 @@ export function mergeData(base: DataSlice, server: DataSlice, client: DataSlice)
   if (server.sessionStartedAt !== base.sessionStartedAt) return server;
   const out: DataSlice = { ...server };
   for (const key of LISTS) (out as unknown as Record<string, unknown>)[key] = mergeList<{ id: string }>(base[key], server[key], client[key]);
+  out.shifts = settleBodies(base, server, client, out.shifts);
   out.settings = mergeSettings(base.settings, server.settings, client.settings);
 
   const baseOffers = new Map(base.offers.map((o) => [o.id, o]));

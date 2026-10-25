@@ -39,6 +39,14 @@ export function checkInDue(data: DataSlice, at: Date = new Date()): Shift | null
   return due[0]?.s ?? null;
 }
 
+/**
+ * What the edit form should save for the rating: nothing when the worker left it as it was when the form opened,
+ * so a rating that arrived from the watch while the form was open is never wiped; null to clear it.
+ */
+export function effortToSave(opened: Effort | undefined, chosen: Effort | undefined): Effort | null | undefined {
+  return opened === chosen ? undefined : (chosen ?? null);
+}
+
 /** Saves the answer on that shift, or a skip. Nothing is sent to anyone. Null for an unknown or unfinished shift. */
 export function applyEffort(data: DataSlice, shiftId: string, level: Effort | "skip", at: Date = new Date()): { data: DataSlice; toast: string } | null {
   const shift = data.shifts.find((s) => s.id === shiftId);

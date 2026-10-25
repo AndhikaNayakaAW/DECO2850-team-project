@@ -9,7 +9,7 @@ import { startHandTracking, type HandTracker } from "@/lib/hands";
 import { DAYS, DAY_NAMES, clock12, dayIndex, minutes, range12 } from "@/lib/logic";
 import { useStore } from "@/lib/store";
 import { isClock, weekDates, weekLabel, weekdayOf, type Now } from "@/lib/time";
-import type { DateKey, Day, DayItem, DayView, Importance, PlanCategory } from "@/lib/types";
+import type { DateKey, Day, DayItem, DayView, Importance, PlanCategory, ShiftSignal } from "@/lib/types";
 
 const LINE_EXPLODE = "I have separated your schedule into work, study, personal time, travel and rest.";
 const LINE_COMBINE = "Your schedule is back in the weekly view.";
@@ -70,7 +70,20 @@ function describe(item: DayItem, day: Day, days: DayView[]): string {
 }
 
 /** The week, big and wide, driven by hands, voice or touch. Shows the same week as the board. */
-export default function Immersive({ onExit, weekAnchor, now, onOpenAsk }: { onExit: () => void; weekAnchor: DateKey; now: Pick<Now, "date" | "time">; onOpenAsk: (offerId: string) => void }) {
+export default function Immersive({
+  onExit,
+  weekAnchor,
+  now,
+  onOpenAsk,
+  bodySignal = "stress",
+}: {
+  onExit: () => void;
+  weekAnchor: DateKey;
+  now: Pick<Now, "date" | "time">;
+  onOpenAsk: (offerId: string) => void;
+  /** The watch reading the shifts carry, as the worker chose it on the calendar. */
+  bodySignal?: ShiftSignal;
+}) {
   const state = useStore();
   const updatePersonal = useStore((s) => s.updatePersonal);
   const addPersonal = useStore((s) => s.addPersonal);
@@ -503,7 +516,7 @@ export default function Immersive({ onExit, weekAnchor, now, onOpenAsk }: { onEx
             days={days}
             immersive
             detail
-            bodySignal="stress"
+            bodySignal={bodySignal}
             selectedId={selectedId}
             height="100%"
             className="big imm-stage"

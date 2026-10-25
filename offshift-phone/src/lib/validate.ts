@@ -135,7 +135,7 @@ const week = object({
 });
 
 /**
- * The week in the current shape, cleaned, or null if anything in it is malformed or from an older version.
+ * The week in the current shape, cleaned, or null if anything in it is malformed or its schema number is an old one.
  * The all-day readings an older version kept (wearable, bodyDays) aren't fields any more, so they drop out.
  * The keys always come back in the same order: devices compare weeks as JSON.
  */

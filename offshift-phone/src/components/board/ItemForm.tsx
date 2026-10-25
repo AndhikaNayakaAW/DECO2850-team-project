@@ -6,7 +6,7 @@ import { workplacesOf } from "@/lib/checks";
 import { useStore } from "@/lib/store";
 import { minutes } from "@/lib/logic";
 import { isClock, isDateKey, type Now } from "@/lib/time";
-import { EFFORTS, EFFORT_COLOUR, EFFORT_WORD } from "@/lib/effort";
+import { EFFORTS, EFFORT_COLOUR, EFFORT_WORD, effortToSave } from "@/lib/effort";
 import type { DateKey, Effort, Importance, PersonalEvent, Shift, UniEvent } from "@/lib/types";
 
 export type ItemKindChoice = "shift" | "uni" | "due" | "personal";
@@ -51,6 +51,7 @@ export default function ItemForm({ target, now, onDone, onRemoved }: { target: I
     importance: (existing && "importance" in existing ? existing.importance : undefined) ?? ("flexible" as Importance),
     effort: (existing && "effort" in existing ? existing.effort : undefined) as Effort | undefined,
   }));
+  const [openedEffort] = useState(() => (existing && "effort" in existing ? existing.effort : undefined) as Effort | undefined);
   const [problem, setProblem] = useState<string | null>(null);
   const [timesTouched, setTimesTouched] = useState(false);
   const workplaces = workplacesOf(s);
@@ -80,7 +81,8 @@ export default function ItemForm({ target, now, onDone, onRemoved }: { target: I
       const data = { date: form.date, start: form.start, end, workplace: title };
       if (editing) {
         s.updateShift(existing!.id, data);
-        s.setEffort(existing!.id, form.effort ?? null);
+        const effort = effortToSave(openedEffort, form.effort);
+        if (effort !== undefined) s.setEffort(existing!.id, effort);
       } else s.addShift(data);
     } else if (kind === "personal") {
       const data = { date: form.date, start: form.start, end, title, importance: form.importance };

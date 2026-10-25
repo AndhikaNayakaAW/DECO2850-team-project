@@ -180,8 +180,9 @@ describe("/api/watch and a shift's readings", () => {
 
   it("refuses readings it can't use", async () => {
     expect((await post({ shiftBody: { shiftId: "s-thu-am", stress: [72], heart: [118] } })).status).toBe(400);
-    expect((await post({ shiftBody: { shiftId: "nope", stress: [1], heart: [1] } })).status).toBe(404);
-    expect((await post({ shiftBody: { shiftId: "s-thu-am", stress: [1], heart: [1] } })).status).toBe(400);
+    expect((await post({ shiftBody: { ...reading, shiftId: "nope" } })).status).toBe(404);
+    expect((await post({ shiftBody: { ...reading, stress: [1], heart: [1] } })).status).toBe(400);
+    expect((await post({ shiftBody: { shiftId: "s-thu-am", stress: reading.stress, heart: reading.heart } })).status).toBe(400);
     expect(shift().body).toBeUndefined();
   });
 

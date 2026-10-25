@@ -159,7 +159,10 @@ export interface ShiftBody {
   heart: (Load | null)[];
 }
 
-/** Bumped whenever the shape changes, so old saved weeks are never read as new ones. */
+/**
+ * Bumped only when an older saved week can't be read as a current one. A field that was removed (the all-day
+ * `wearable` and `bodyDays`, the old `rated`) doesn't need a bump: cleanData drops it.
+ */
 export const SCHEMA = 2;
 
 /** Everything that syncs between the calendar, the team API, the watch and the server. */

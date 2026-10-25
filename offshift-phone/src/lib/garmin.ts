@@ -47,6 +47,8 @@ export interface WatchSummary {
   checkIn: { id: string; title: string } | null;
   /** A shift that just finished, for the watch to read its heart rate and stress during: from and to in seconds since 1970. */
   shiftBody: { id: string; title: string; from: number; to: number } | null;
+  /** How many shifts carry readings. With sharing off on the watch this should be 0, or the watch asks the calendar to forget again. */
+  readings: number;
 }
 
 /** Letters that don't split into a plain letter and an accent. */
@@ -150,6 +152,7 @@ export function watchSummary(data: DataSlice, atTime: Date = new Date()): WatchS
     ask,
     checkIn: due ? { id: due.id, title: title(due) } : null,
     shiftBody: read ? { id: read.id, title: title(read), ...shiftWindow(read, data.settings.timeZone) } : null,
+    readings: data.shifts.filter((s) => s.body).length,
     today: todayLines(data, now.date),
     waiting: open.length,
     replied: last ? { from: ascii(last.from) || "Your manager", time: ascii(range12(last.start, last.end)), status: STATUS_WORDS[last.status] } : null,
