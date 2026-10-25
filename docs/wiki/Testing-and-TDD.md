@@ -2,7 +2,7 @@
 
 # Testing and TDD
 
-The current web suite passes **212 tests across 25 files**. The native Garmin suite passes **31 tests** in the `fenix847mm` simulator. The release builder has **10 Node contract and artifact tests**, also run in GitHub Actions. Native simulator checks run separately on a Mac with Garmin's SDK and device profile.
+The current web suite passes **222 tests across 25 files**. The native Garmin suite passes **35 tests** in the `fenix847mm` simulator. The release builder has **10 Node contract and artifact tests**, also run in GitHub Actions. Native simulator checks run separately on a Mac with Garmin's SDK and device profile.
 
 ## Run the checks
 
@@ -23,7 +23,7 @@ node offshift-watch/scripts/build.mjs --test
 "$OFFSHIFT_GARMIN_SDK/bin/monkeydo" offshift-watch/bin/offshift-test.prg fenix847mm -t
 ```
 
-The simulator must be open. Inspect its final `PASSED (passed=26, failed=0, errors=0)` summary. On this SDK installation `monkeydo` returned status 1 even when that complete summary passed; the native result was checked from its output, not inferred from the exit status.
+The simulator must be open. Inspect its final `PASSED (passed=35, failed=0, errors=0)` summary. On this SDK installation `monkeydo` returned status 1 even when that complete summary passed; the native result was checked from its output, not inferred from the exit status.
 
 ## Observed test-first cycles
 
@@ -37,6 +37,8 @@ The simulator must be open. Inspect its final `PASSED (passed=26, failed=0, erro
 | Missing sensor history | `6e81a03`: 25 pass; one new assertion errors because a timestamp-only payload is produced. | `9465c22`: no health upload without a signal; foreground/background fetch the calendar, and band zero remains valid. All 26 pass. |
 | Biometrics during each shift (web, 25 Oct) | The past-shifts and shift-body suites can't load; 8 of 181 other tests fail. | The calendar keeps stress and heart levels per 15 minutes on each shift, draws them on the shift, adds a Past shifts check to every ask, and drops the all-day reading and the second rating. All 212 pass. |
 | Biometrics during each shift (watch, 25 Oct) | The native test build stops on undefined `ShiftBody`, `Blocks`, `readShift` and `onShiftBodySent`. | The watch reads its own stress and heart-rate history for a finished shift only, sends one level per quarter hour once, and shows the last shift. All 31 pass. |
+| Review fixes (web, 25 Oct) | 10 new tests fail: readings lost or brought back by merges, readings for a moved shift, duplicates, the edit form wiping a watch rating. | Readings are merged on their own, carry their window, are stored once, and the form saves only a changed rating. All 222 pass. |
+| Review fixes (watch, 25 Oct) | The native build stops on an undefined `onForgotten`. | "Sharing off" is owed until the calendar confirms, refused readings aren't resent, and failed sends back off. All 35 pass. |
 
 Each red test commit precedes its green implementation commit. The [current contribution record](Weekly-Contribution) links every commit. UI copy and glance polish were subsequent refinements, not represented as additional TDD cycles.
 

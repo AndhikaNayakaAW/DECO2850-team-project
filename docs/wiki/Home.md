@@ -13,7 +13,7 @@ Offshift is a reflective tool for students who work casual shifts. A calendar sh
 
 ## Current release · 25 October 2026
 
-Following the tutor's feedback, Offshift has three pieces only: the calendar, the one-press check-in after a shift, and heart rate and stress during each shift, drawn on that shift. The all-day Body Battery reading, the daily floor band and the second (Fine/Tired/Wiped) rating are gone. All 212 web, 31 native and 10 build tests pass. The new watch build must be installed on the fēnix 8 before real shifts are read; see the [design rationale](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/design/2026-10-25-biometrics-during-shifts.md).
+Following the tutor's feedback, Offshift has three pieces only: the calendar, the one-press check-in after a shift, and heart rate and stress during each shift, drawn on that shift. The all-day Body Battery reading, the daily floor band and the second (Fine/Tired/Wiped) rating are gone. All 222 web, 35 native and 10 build tests pass. The new watch build must be installed on the fēnix 8 before real shifts are read; see the [design rationale](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/design/2026-10-25-biometrics-during-shifts.md).
 
 Earlier: on 20 October the fēnix 8 47mm completed a physical request/reply round trip through the paired phone to Vercel and Redis.
 
