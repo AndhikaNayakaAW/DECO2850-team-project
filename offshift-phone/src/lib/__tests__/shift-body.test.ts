@@ -266,3 +266,30 @@ describe("/api/watch refuses readings for a shift that moved", () => {
     expect(res.status).toBe(409);
   });
 });
+
+describe("readings travel from the watch as plain text", () => {
+  const g = globalThis as { __offshiftState?: { version: number; client: string | null; data: DataSlice } };
+  const post = (body: unknown) => watchRoute.POST(new Request("http://x/api/watch", { method: "POST", body: JSON.stringify(body) }));
+
+  it("takes one character per 15 minutes, 0 to 3 or - for no reading, so the watch never has to send a list or a null", () => {
+    expect(parseShiftBody({ ...reading, stress: "21-3", heart: "0012" })).toEqual({ ...reading, stress: [2, 1, null, 3], heart: [0, 0, 1, 2] });
+    for (const bad of ["", "1x", "4", "12-", "1".repeat(97)]) expect(parseShiftBody({ ...reading, stress: bad, heart: "1" })).toBeNull();
+  });
+
+  it("stores readings sent as text", async () => {
+    g.__offshiftState = { version: 0, client: null, data: withShift() };
+    const text = "2".repeat(19);
+    expect((await post({ shiftBody: { ...reading, stress: text, heart: "1".repeat(19) } })).status).toBe(200);
+    expect(g.__offshiftState.data.shifts.find((s) => s.id === "s-thu-am")?.body?.stress).toEqual(levels(19, 2));
+  });
+
+  it("notes privately when it couldn't store a reading, once, so a failed send can be seen", async () => {
+    g.__offshiftState = { version: 0, client: null, data: withShift({ start: "07:00", end: "11:45" }) };
+    await post({ shiftBody: reading });
+    await post({ shiftBody: reading });
+    const notes = g.__offshiftState.data.sync.filter((e) => e.text.startsWith("A reading from the watch wasn't stored"));
+    expect(notes).toHaveLength(1);
+    expect(notes[0]).toMatchObject({ from: "Watch", to: "Only you" });
+    expect(JSON.stringify(teamView(g.__offshiftState.data, 1, null))).not.toMatch(/reading from the watch/);
+  });
+});
