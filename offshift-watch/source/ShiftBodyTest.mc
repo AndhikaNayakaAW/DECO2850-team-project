@@ -72,18 +72,20 @@ function onlyLevelsLeaveTheWatch(logger as Test.Logger) as Boolean {
 (:test)
 function aShiftsPayloadHasOneLevelPerBlockAndNothingElse(logger as Test.Logger) as Boolean {
     var now = Time.now().value();
-    var p = ShiftBody.payload({ "id" => "s-thu-am", "from" => now - 4 * 3600, "to" => now - 3600 }) as Dictionary;
+    var due = { "id" => "s-thu-am", "from" => now - 4 * 3600, "to" => now - 3600 };
+    var p = ShiftBody.payload(due, ShiftBody.levelsFor(due)) as Dictionary;
     Test.assertEqual(p["shiftId"], "s-thu-am");
     Test.assertEqual(p["from"], now - 4 * 3600);
     Test.assertEqual(p["to"], now - 3600);
     Test.assertEqual(p.keys().size(), 5);
     var signals = ["stress", "heart"] as Array<String>;
     for (var s = 0; s < 2; s++) {
-        var levels = p[signals[s]] as Array;
-        Test.assertEqual(levels.size(), 12);
-        for (var i = 0; i < levels.size(); i++) {
-            var v = levels[i];
-            Test.assert(v == null || ((v as Number) >= 0 && (v as Number) <= 3));
+        // Plain text on the wire: a watch request body can't be relied on to carry lists or nulls.
+        var text = p[signals[s]] as String;
+        Test.assertEqual(text.length(), 12);
+        var chars = text.toCharArray();
+        for (var i = 0; i < chars.size(); i++) {
+            Test.assert("0123-".find(chars[i].toString()) != null);
         }
     }
     return true;
@@ -132,7 +134,7 @@ function aFinishedShiftIsReadAndSentOnceWhileSharing(logger as Test.Logger) as B
     model.readShift(summary);
     Test.assertEqual(api.sent, 1);
     Test.assertEqual((api.last as Dictionary)["shiftId"], "s-thu-am");
-    Test.assertEqual(((api.last as Dictionary)["stress"] as Array).size(), 19);
+    Test.assertEqual(((api.last as Dictionary)["stress"] as String).length(), 19);
     model.onShiftBodySent(200, summary);
     model.readShift(summary);
     Test.assertEqual(api.sent, 1);
@@ -245,5 +247,43 @@ function aFailedSendWaitsBeforeTryingAgain(logger as Test.Logger) as Boolean {
     model.readShift(summary);
     Test.assertEqual(api.sent, 1);
     restoreSharing(was);
+    return true;
+}
+
+(:test)
+function levelsTravelAsOneCharacterPerQuarterHour(logger as Test.Logger) as Boolean {
+    Test.assertEqual(ShiftBody.wire([1, null, 3, 0] as Array<Number?>), "1-30");
+    Test.assertEqual(ShiftBody.wire([null, null] as Array<Number?>), "--");
+    return true;
+}
+
+//! A shift that failed under the old list format is read and sent again once this build is installed.
+(:test)
+function theSendKeyNamesTheFormat(logger as Test.Logger) as Boolean {
+    Test.assertEqual(ShiftBody.key({ "id" => "s1", "from" => 100, "to" => 2800 }), "2:s1@100-2800");
+    return true;
+}
+
+//! The worker can see on the watch whether the last shift reached the calendar.
+(:test)
+function theLastSendShowsOnTheWatch(logger as Test.Logger) as Boolean {
+    var was = Sharing.choice();
+    Sharing.set(true);
+    Application.Storage.deleteValue("sentShiftBody");
+    Application.Storage.deleteValue("lastSend");
+    Test.assertEqual(ShiftBody.sendNote(), "Not sent yet");
+    var api = new BodySpy();
+    var model = new QuietModel(api);
+    var summary = shiftToRead(Time.now().value() - 5 * 3600);
+    model.readShift(summary);
+    model.onShiftBodySent(503, null);
+    Test.assertEqual(ShiftBody.sendNote(), "Not saved yet (503)");
+    Application.Storage.deleteValue("sentShiftBody");
+    var again = new QuietModel(api);
+    again.readShift(summary);
+    again.onShiftBodySent(200, null);
+    Test.assertEqual(ShiftBody.sendNote(), "Saved on your calendar");
+    restoreSharing(was);
+    Application.Storage.deleteValue("lastSend");
     return true;
 }
