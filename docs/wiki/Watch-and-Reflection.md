@@ -25,11 +25,19 @@ Up/Down or a swipe moves between pages. Select opens the three answers (Accept, 
 
 ## Connection and privacy
 
-The private release targets the protected Vercel watch endpoint. Garmin Connect on the paired phone provides the communication bridge, and Redis holds the shared session. The laptop server and tunnel are no longer required by the deployed architecture.
+The current release targets Vercel's watch endpoint. The public prototype opens without a code; optional `OFFSHIFT_ACCESS_CODE` enables a protected route, and older installed code-prefixed routes remain compatible when the code is unset. Garmin Connect on the paired phone provides the communication bridge, and Redis holds the shared session. The laptop server and tunnel are no longer required by the deployed architecture.
 
 Sharing is a worker choice. The watch reads only the hours of a finished shift, and the server receives one level (0–3) per 15 minutes for stress and for heart rate, never a raw value and nothing from outside a shift. Turning sharing off removes every shift's readings. The team projection does not contain body readings or private plans; shared-code access is still a prototype limitation, not separate employer accounts.
 
 The words are an interaction representation of Garmin readings, not a diagnosis or evidence that work caused stress. Stress uses Garmin's own bands; heart rate is a share of the worker's own heart-rate reserve. Missing readings stay missing (hatched), never low.
+
+## Shift check-in and upload status
+
+About 15 minutes after a shift ends, the watch asks **How was the work?** Choose **Light**, **Steady**, **Busy**, **Hard** or **Skip**. The calendar colours the shift from pale to dark violet; opening a finished shift lets the worker change its rating. No second body rating is collected.
+
+With sharing enabled, the watch reads the finished shift's heart-rate and stress history and uploads one character per quarter hour: `0`–`3` for a level, `-` for missing. The server checks the shift's ID, time window and block count. The Last shift details show **Not sent yet**, **Saved on your calendar** or **Not saved yet (code)**. Rejected readings add a private log entry that the team projection omits. Failed connections back off; turning sharing off is retried until the calendar confirms removal.
+
+The [latest native fix](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/a44c648) must be built and installed on the fēnix 8 to use this format and status display. Redeploying Vercel updates only the web app and API. See the [native README](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/offshift-watch/README.md).
 
 ## Browser reflection removed
 
@@ -37,6 +45,8 @@ The circular browser preview (`/watch`) and the daily reflection (`/calendar?vie
 
 ## What has been verified
 
-On 20 October the paired phone enabled a verified physical round trip: a synthetic ask appeared on the watch, a confirmed Take it action produced one reply and one calendar shift, and available Garmin bands arrived. Synthetic artifacts were removed without clearing the wearable record. All 26 native tests, 200 web tests and nine build checks pass. A sensor-unavailable upload bug was reproduced and fixed; the corrected transfer matches the compiled readback hash.
+On 26 October, 225 web tests, 10 build checks, TypeScript, the production build and standalone prototype tests passed. The latest native commit records 38 passing simulator tests; those were not rerun for this web deployment. This does not establish a physical upload of the new per-shift format.
+
+Earlier, on 20 October, the paired phone enabled a verified physical round trip: a synthetic ask appeared on the watch, a confirmed Take it action produced one reply and one calendar shift, and available Garmin bands arrived. Synthetic artifacts were removed without clearing the then-current wearable record. At that time, 26 native tests, 200 web tests and nine build checks passed. A sensor-unavailable upload bug was reproduced and fixed; the corrected transfer matched the compiled readback hash. These results describe the earlier all-day-reading release.
 
 For evaluation, ask workers what they want to understand, which view is easier, whether it supports a useful action and what feels uncomfortable. Technical tests do not establish reduced stress, medical meaning or improved reflection. A saved glance or an older Synced display alone does not prove a current connection.

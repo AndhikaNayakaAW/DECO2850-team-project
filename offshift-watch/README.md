@@ -49,7 +49,7 @@ node offshift-watch/scripts/build.mjs --test
 node --test offshift-watch/test/*.test.mjs
 ```
 
-There are 35 native tests and 10 Node build contracts/artifact checks. This SDK returned exit status 1 even for a complete native pass; inspect its final `PASSED (passed=35, failed=0, errors=0)` summary. The native tests use the real device profile's fonts, test round-screen bounds and contrast, and isolate replies from real network activity.
+The latest native commit, [`a44c648`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/a44c648), records 38 passing native tests. All 10 Node build contracts/artifact checks were rerun and passed on 26 October; the native simulator was not rerun for that web release. This SDK returned exit status 1 even for a complete native pass; inspect its final `PASSED (passed=38, failed=0, errors=0)` summary. The native tests use the real device profile's fonts, test round-screen bounds and contrast, and isolate answers from real network activity.
 
 For an isolated laptop simulation, run the web app with a separate `OFFSHIFT_STATE_FILE`, then build explicitly for loopback:
 
@@ -73,7 +73,7 @@ The calendar page shows the last successful sync and sharing choice. A failed an
 
 The deployed route is watch → paired phone/Garmin Connect → internet → Vercel → Redis. Once installed it does not depend on a laptop server or tunnel. The app polls every five seconds while open and registers a five-minute background event; Garmin controls actual background scheduling. The public server uses `KV_REST_API_URL` and `KV_REST_API_TOKEN`. The prototype opens without an access code; older installed watch addresses remain compatible. `OFFSHIFT_ACCESS_CODE` is optional if access restriction is needed later.
 
-One deployment holds one participant session at a time. The `/team` response omits shifts, ratings, readings and private plans, but the shared code does not implement separate employer and worker account roles.
+One deployment holds one participant session at a time. The `/api/team` response omits shifts, ratings, readings and private plans, but the prototype does not implement separate employer and worker account roles. The old `/team` page redirects to the calendar; **Test offer** on the calendar sends a sample ask.
 
 ## What it reads
 
@@ -85,6 +85,8 @@ Offshift reads the body **only during the worker's rostered shifts**, and only t
 | Heart | Heart rate as a share of your heart-rate reserve: between your resting rate (the watch's 7-day average) and your maximum (the top of your heart-rate zones) | Very light under 30%, Light 30–39%, Moderate 40–59%, Vigorous 60% and over |
 
 A quarter hour needs at least two real samples, or it is "no reading": samples are blank while the watch is off the wrist, and Garmin doesn't measure stress while you are moving. A gap stays a gap; it never becomes a low reading. Body Battery, sleep, breathing, pulse ox, recovery time and steps are not read: they describe the whole day rather than the shift, Garmin keeps its sleep score from apps, and the tutor asked us not to model the body as a battery. Why: [design rationale](../docs/design/2026-10-25-biometrics-during-shifts.md).
+
+Each signal is uploaded as text, one character per quarter hour: `0`–`3` for a level and `-` for no reading. Last shift details include a Calendar line: **Not sent yet**, **Saved on your calendar** or **Not saved yet (code)**. The server checks the shift's time window and block count, and privately logs rejected uploads. Installing the new format allows a shift whose older-format upload failed to be sent again. Deploying the website alone does not install this watch update.
 
 ## Privacy
 

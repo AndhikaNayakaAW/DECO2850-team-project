@@ -2,56 +2,53 @@
 
 # Design & research
 
-> **Current implementation:** The dated 3D calendar and native Garmin app now share a protected Redis-backed server. Earlier phone/scenario sections below are design history. The focus on reflection remains a proposed direction; no worker outcome is established. See [Watch and reflection](Watch-and-Reflection).
+Offshift is a reflective tool for students in casual work. The current prototype joins a dated 3D week, one post-shift work rating and optional stress/heart readings from the shift itself. When a new ask arrives, past shifts at that workplace sit beside the surrounding commitments. The worker chooses Accept, Decline or Later; no manager message is sent.
 
 ## The moment we are designing for
 
-An extra shift arrives. Before replying, a student weighs their body, coursework, rent, travel and a manager they may feel guilty disappointing. Offshift makes those trade-offs legible and helps with the words, while leaving the decision with the worker.
+An extra shift arrives. Before deciding, a student weighs coursework, rent, travel, rest and a manager they may feel guilty disappointing. The design evidence comes from **five semi-structured interviews with university students in casual work in Brisbane**. Participant IDs P1–P5 appear in the [Pleasure Framework research document](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/pleasure-framework-iteration.md).
 
-The design evidence comes from **five semi-structured interviews with university students in casual work in Brisbane**. Participant IDs P1–P5 are used in the [full research document](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/pleasure-framework-iteration.md).
+Dinda Pratiwi is a composite persona: a 21-year-old international undergraduate balancing retail shifts, study, essential expenses and personal commitments. Scenario names, workplace details and dollar figures in the earlier prototype are illustrative.
 
-## Meet Dinda
+## Current design · late October
 
-Dinda Pratiwi is a composite persona: a 21-year-old international undergraduate balancing retail shifts, study, essential expenses and personal commitments. The scenario's names, managers, workplace details and dollar figures are illustrative.
+The tutor's feedback led to three connected pieces: calendar, check-in and readings during shifts. The watch asks **How was the work?** with Light, Steady, Busy, Hard or Skip. Its optional heart/stress history becomes neutral grey 15-minute strips on that shift. A new ask shows the recent shifts at the same workplace, the worker's rating and the available readings without recommending an answer.
 
-| Needs | Design response |
+| Need | Current design response |
 | :--- | :--- |
-| Cover essentials without accepting every offer automatically. | Money in plain language, including what is already earned and booked. |
-| Protect study, friends and recovery time. | Classes, plans, travel and rest in one visible week. |
-| Say no honestly without rehearsing for ten minutes. | Editable reply drafts with Warm and Plain tones. |
-| Feel that either answer is acceptable. | Equal standing for all five response options. |
-| Keep bodily and emotional notes out of workplace decisions. | A worker-centred design; manager screens simulate roster and messages. |
+| See work alongside study and personal commitments. | One dated week with shifts, classes, due dates, plans and rest days. |
+| Recall how a workplace's shifts went. | One rating per finished shift, and Past shifts beside the next ask. |
+| Compare body readings with the shift's timing. | Stress and heart strips on the shift, with missing samples hatched. |
+| Keep ownership of the decision. | Accept, Decline and Later, with deliberate watch confirmation and calendar Undo. |
+| Control sharing. | Optional watch consent; sharing-off removes all shift readings. The team API excludes shifts, ratings and body data. |
 
-## Four Pleasures
+Read the [shift check-in rationale](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/design/2026-10-23-shift-check-in.md), [biometrics storyboard and evaluation plan](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/design/2026-10-25-biometrics-during-shifts.md), and [reading list by feature](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/research/2026-10-25-reading-list.md).
 
-| Lens | What it contributes |
-| :--- | :--- |
-| **Physio** | Travel gaps, close shifts and recovery rituals. |
-| **Socio** | Reply wording, negotiation and staying connected with colleagues. |
-| **Psycho — primary lens** | Less mental rehearsal, clearer trade-offs and ownership of the decision. |
-| **Ideo** | Honesty, personal priorities and care without surveillance. |
+## Four Pleasures and course history
 
-The primary lens is **psycho-pleasure**: the hardest moment is cognitive and emotional, in the gap between receiving an offer and replying. The detailed mapping and references are in the [Pleasure Framework iteration](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/pleasure-framework-iteration.md).
+The earlier iteration used psycho-pleasure as its primary lens: make the cognitive and emotional work around an ask easier. Physio-pleasure informed rest and recovery; socio-pleasure informed negotiation; ideo-pleasure informed honesty and care without surveillance. The [original mapping](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/pleasure-framework-iteration.md) remains design history.
+
+Reply drafts, five response options, the Fine/Tired/Wiped check-in, voice assistant and browser reflection belong to earlier iterations. The current implementation uses three answers, one work rating, no voice and one calendar screen.
 
 ## Design commitments
 
-- Show the trade-offs without a verdict, score or recommended answer.
-- Treat rest as a commitment, rather than whatever time happens to remain.
-- Let Health, Uni or Money priorities change the order of checks.
-- Keep reply drafts editable and make the response deliberate.
-- Provide touch and keyboard alternatives to gestures and voice.
+- Show commitments and past experience without a verdict or recommended answer.
+- Treat rest as a commitment.
+- Keep missing readings visibly missing and separate the worker's rating from watch readings.
+- Read sensor history only for shift hours, with the worker's sharing choice.
+- Provide touch and keyboard alternatives to optional hand gestures.
 
-> [!IMPORTANT]
-> These are design commitments, not a production security guarantee. The demo uses shared state endpoints without authentication. The optional hosted assistant receives scenario context. Use fictional data until access controls, isolation and privacy handling are implemented and reviewed.
+The public prototype holds one shared week and currently opens without a code. Its filtered team response is not separate employer/worker account authorization. Technical checks do not establish worker outcomes or show that work caused a physiological reading.
 
 ## Evaluate the experience
 
 | Participant task | What to observe |
 | :--- | :--- |
-| Jess asks you to cover tonight. Decide and reply. | Which checks are read? Is the draft edited? Does the participant feel it was their call? |
-| You have finished a close. Complete a check-in. | Are Fine / Tired / Wiped comfortable choices? Does the recovery kit feel personal? |
-| Set this month's priority, then find who can see it. | Are the privacy boundaries understandable and believable? |
+| Compare two finished shifts and explain the grey strips. | Can the worker distinguish rating, sensor level and missing data? |
+| Rate a finished shift, then change the rating on the calendar. | Are Light, Steady, Busy and Hard useful words? |
+| Open an ask from the same workplace and choose an answer. | Does Past shifts help explain a deliberate choice? |
+| Turn sharing off and find what remains visible. | Are sharing and the shared-session boundary understood? |
 
-Record task time, whether they would send the message as written, a 1–5 rating for “It felt like my call”, and an open response about anything that felt like being watched. These are proposed evaluation measures; the repository does not establish outcomes from a completed study.
+Ask what the worker wants to understand, which view is easier, what useful action it supports and what feels uncomfortable. These are proposed evaluation tasks; the repository does not establish reduced stress or improved reflection from a completed worker study.
 
-**Next:** [See how the design becomes code](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Architecture).
+**Next:** [Architecture](Architecture) · [Watch and reflection](Watch-and-Reflection) · [Testing](Testing-and-TDD).

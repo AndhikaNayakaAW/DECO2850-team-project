@@ -1,6 +1,22 @@
 [Home](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki) · [Get started](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Getting-Started) · [Design](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Design-and-Research) · [Architecture](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Architecture) · [Testing](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Testing-and-TDD) · [Deployment](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Deployment) · [Watch & reflection](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Watch-and-Reflection) · [Weekly contribution](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Weekly-Contribution)
 
-# Weekly contribution · 20 October 2026
+# Release maintenance · 26 October 2026
+
+Pulled `main` through [`a44c648`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/a44c648), bringing in the calendar-only interface, one post-shift work rating, shift-specific stress/heart ribbons and the Past shifts comparison. The latest fixes send levels as text, preserve missing readings, log refused uploads privately and show whether the calendar saved the watch upload.
+
+Updated the main and web-app READMEs and the handbook to describe the current routes, answers, shared session, optional access code and separate watch installation. On 26 October the public calendar returned HTTP 200 without credentials and the state API reported Redis storage. Production checks use reads only and preserve the participant session.
+
+Release validation passed 225 web tests across 25 files, 10 Garmin build contracts, the standalone prototype tests, TypeScript and the production build. Stale generated route types from the removed pages were cleared before the successful build and type check. The native commit records 38 passing simulator tests; native simulator and physical-watch tests were not rerun for this web deployment. Documentation and release maintenance were assisted by Codex.
+
+| Change | Evidence |
+| :--- | :--- |
+| Plain-text levels and private upload refusal logs | [Red: `60f2e85`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/60f2e85) · [Green: `902e406`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/902e406) |
+| Native serialization and saved/not-saved display | [Red: `a2e5375`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/a2e5375) · [Green: `a44c648`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/a44c648) |
+| Design, review fixes and proposed evaluation | [25 October design report](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/design/2026-10-25-biometrics-during-shifts.md) |
+
+The explicit [Vercel redeployment](https://vercel.com/andhikanayakaaws-projects/offshift/FRXoFGQjG8DuAK4Y8SKSaktSV1nT) reached Ready and was assigned to the public URL; the [source commit's GitHub validation](https://github.com/AndhikaNayakaAW/DECO2850-team-project/actions/runs/40187651710) passed. The [deployment guide](Deployment) describes Git-triggered releases and publishing this wiki's separate repository. Web deployment does not install the native watch build or verify sensor delivery.
+
+## Earlier weekly contribution · 20 October 2026
 
 **Contributor:** Andhika Nayaka Arya Wibowo (`AndhikaNayakaAW`)
 **Date:** 20 October 2026 · Australia/Brisbane

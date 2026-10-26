@@ -11,9 +11,11 @@ Offshift is a reflective tool for students who work casual shifts. A calendar sh
 
 **[Open the calendar ↗](https://offshift-nine.vercel.app/calendar)**
 
-## Current release · 25 October 2026
+## Current release · 26 October 2026
 
-Following the tutor's feedback, Offshift has three pieces only: the calendar, the one-press check-in after a shift, and heart rate and stress during each shift, drawn on that shift. The all-day Body Battery reading, the daily floor band and the second (Fine/Tired/Wiped) rating are gone. All 222 web, 35 native and 10 build tests pass. The new watch build must be installed on the fēnix 8 before real shifts are read; see the [design rationale](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/design/2026-10-25-biometrics-during-shifts.md).
+Following the tutor's feedback, Offshift has three pieces: the calendar, the one-press check-in after a shift, and heart rate and stress during each shift, drawn on that shift. The all-day Body Battery reading, the daily floor band and the second (Fine/Tired/Wiped) rating are gone. The latest watch fix sends 15-minute levels as text and shows whether the calendar saved them; rejected readings appear only in the worker's log. See the [design rationale](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/design/2026-10-25-biometrics-during-shifts.md).
+
+Release checks on 26 October passed **225 web tests**, **10 build checks**, TypeScript, the production build and the standalone prototype tests. The latest native commit records **38 simulator tests** passing; they were not rerun for this web release. Install the updated watch build separately to use the new upload format and status display.
 
 Earlier: on 20 October the fēnix 8 47mm completed a physical request/reply round trip through the paired phone to Vercel and Redis.
 
@@ -22,7 +24,7 @@ Earlier: on 20 October the fēnix 8 47mm completed a physical request/reply roun
 | **[01 / Get started](Getting-Started)** | Current routes, an empty session and the research walkthrough. |
 | **[02 / Design and research](Design-and-Research)** | The care question, earlier design rationale and questions for workers. |
 | **[03 / Architecture](Architecture)** | Garmin Connect, Vercel, Redis and where body data goes. |
-| **[04 / Testing and TDD](Testing-and-TDD)** | Five observed red/green cycles and the verification limits. |
+| **[04 / Testing and TDD](Testing-and-TDD)** | Test-first changes, current release checks and verification limits. |
 | **[05 / Deployment](Deployment)** | Git deployment, free Redis, access protection and native builds. |
 | **[06 / Watch and reflection](Watch-and-Reflection)** | Four native pages, the shift check-in, what the watch reads during a shift, and privacy. |
 | **[07 / Weekly contribution](Weekly-Contribution)** | Dated changes, commits, screenshots, evidence and remaining hardware work. |
@@ -31,7 +33,7 @@ Earlier: on 20 October the fēnix 8 47mm completed a physical request/reply roun
 
 The researcher starts a session and sends an ask. The worker sees it beside the week, with how their last shifts at that workplace went, and chooses **Accept**, **Decline** or **Later**. Accepting adds the shift, declining takes the ask off the week, and later keeps it there, see-through, until they decide. No message goes to the manager. Personal body readings do not become an employer explanation.
 
-The deployment holds one shared session at a time. The shared access code is supplied privately. The team API omits body data and plans, but the prototype does not have separate employer and worker accounts.
+The deployment opens without an access code and holds one shared session at a time. `OFFSHIFT_ACCESS_CODE` can optionally restrict access. The team API omits shifts, ratings, body data and plans, but the prototype does not have separate employer and worker accounts.
 
 ## Course history
 

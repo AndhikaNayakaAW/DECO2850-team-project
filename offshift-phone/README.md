@@ -31,7 +31,7 @@ The terminal prints a Network URL such as `http://192.168.1.20:3000`. Open `…/
 
 1. Open `/calendar?reset=1` to start a new session. Every open calendar empties. The participant can enter their first name in **⚙**; it is used in a test ask's message, and is optional.
 2. The participant adds their real week on `/calendar`.
-3. Press **Test offer** to send an ask. It reaches the calendar and the watch within about two seconds.
+3. Press **Test offer** to send an ask. The calendar polls every two seconds with Redis; the watch polls every five seconds while open. Delivery also depends on the paired phone's connection.
 4. The participant answers on the calendar or on the watch.
 5. Open `/calendar?reset=1` again before the next participant.
 
@@ -52,9 +52,9 @@ A serverless host such as Vercel doesn't keep files, so it needs Redis.
 
 ## Access code
 
-On a public deployment, set `OFFSHIFT_ACCESS_CODE`. Only people who enter that code can then open Offshift or its API, and each browser remembers the code for 60 days. The watch can't type, so its server address carries the code: `https://<your-site>/w/<code>`.
+The current public prototype opens without a code. To restrict a deployment, set the optional `OFFSHIFT_ACCESS_CODE`. Only people who enter that code can then open Offshift or its API, and each browser remembers the code for 60 days. The watch can't type, so its compiled server address carries the code: `https://<your-site>/w/<code>`.
 
-Without the variable nothing asks for a code, as on a laptop. Use a long code made of letters, numbers and dashes, such as `maple-river-42-kite`. Changing the code locks everyone out until they enter the new one.
+Without the variable nothing asks for a code, and older installed `/w/<code>/api/watch` addresses still reach the watch API. If a code is enabled or changed, browsers must enter it and the watch must be rebuilt and installed with the matching endpoint. This does not create separate participant or employer accounts.
 
 ## Garmin watch app
 
@@ -67,7 +67,9 @@ The Garmin app in [`offshift-watch`](../offshift-watch/README.md) runs on a fēn
 
 Offshift reads the body only during shifts. The calendar keeps each shift's blocks on that shift, draws them down the shift in the 3D week and flat in the lists, and uses them in the Past shifts check when a new ask arrives at the same workplace. Turning sharing off on the watch clears every shift's readings. Nothing about the body or the ratings reaches `/api/team` or an employer. Why it works this way: [docs/design/2026-10-25-biometrics-during-shifts.md](../docs/design/2026-10-25-biometrics-during-shifts.md).
 
-A real watch only talks to https. Run `npm run watch-gateway`, which forwards `/api/watch` and nothing else on port 3001, and point a tunnel at it, for example `cloudflared tunnel --url http://127.0.0.1:3001`. A deployed https site such as Vercel needs no gateway: set the watch's server address to it.
+The current upload format uses one character per 15-minute block: `0`–`3` for a level and `-` for a missing reading. The API also accepts lists. It checks the shift's ID, time window and block count before saving. A refused reading adds a private log entry; the watch's Last shift details say **Saved on your calendar** or **Not saved yet (code)**. Sharing-off is retried until the server confirms deletion.
+
+A real watch only talks to https. For local testing, run `npm run watch-gateway`, which forwards `/api/watch` and nothing else on port 3001, and point a tunnel at it, for example `cloudflared tunnel --url http://127.0.0.1:3001`. A deployed https site such as Vercel needs no gateway. The release endpoint is compiled in: follow the [native build and installation guide](../offshift-watch/README.md) to change it or install the current shift-reading features. A Vercel deployment does not update the watch binary.
 
 ## Phone calendars
 
@@ -110,3 +112,5 @@ npm run build
 ```
 
 The tests cover dates and weeks, the Body, Week and Past shifts checks, the three answers and team actions, the three-way merge, the watch summary, the check-in and each shift's readings, the API routes and the store.
+
+On 26 October 2026, all **225 tests across 25 files**, TypeScript and the production build passed. If type checking after a pull still references removed routes under `.next`, remove the generated `.next` folder and run `npm run build` followed by `npm run typecheck`.

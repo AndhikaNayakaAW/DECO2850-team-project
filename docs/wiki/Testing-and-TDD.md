@@ -2,7 +2,7 @@
 
 # Testing and TDD
 
-The current web suite passes **222 tests across 25 files**. The native Garmin suite passes **35 tests** in the `fenix847mm` simulator. The release builder has **10 Node contract and artifact tests**, also run in GitHub Actions. Native simulator checks run separately on a Mac with Garmin's SDK and device profile.
+On **26 October 2026**, release checks passed **225 web tests across 25 files**, **10 Node build contract and artifact tests**, the standalone prototype tests, TypeScript and the production build. The latest native commit, [`a44c648`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/a44c648), records **38 tests** passing in the `fenix847mm` simulator. Native simulator checks were not rerun for this web deployment; they require Garmin's SDK and device profile.
 
 ## Run the checks
 
@@ -23,7 +23,7 @@ node offshift-watch/scripts/build.mjs --test
 "$OFFSHIFT_GARMIN_SDK/bin/monkeydo" offshift-watch/bin/offshift-test.prg fenix847mm -t
 ```
 
-The simulator must be open. Inspect its final `PASSED (passed=35, failed=0, errors=0)` summary. On this SDK installation `monkeydo` returned status 1 even when that complete summary passed; the native result was checked from its output, not inferred from the exit status.
+The simulator must be open. The latest recorded summary is `PASSED (passed=38, failed=0, errors=0)`. On this SDK installation `monkeydo` returned status 1 even when the complete summary passed; check the native result from its output, not only its exit status.
 
 ## Observed test-first cycles
 
@@ -39,18 +39,20 @@ The simulator must be open. Inspect its final `PASSED (passed=35, failed=0, erro
 | Biometrics during each shift (watch, 25 Oct) | The native test build stops on undefined `ShiftBody`, `Blocks`, `readShift` and `onShiftBodySent`. | The watch reads its own stress and heart-rate history for a finished shift only, sends one level per quarter hour once, and shows the last shift. All 31 pass. |
 | Review fixes (web, 25 Oct) | 10 new tests fail: readings lost or brought back by merges, readings for a moved shift, duplicates, the edit form wiping a watch rating. | Readings are merged on their own, carry their window, are stored once, and the form saves only a changed rating. All 222 pass. |
 | Review fixes (watch, 25 Oct) | The native build stops on an undefined `onForgotten`. | "Sharing off" is owed until the calendar confirms, refused readings aren't resent, and failed sends back off. All 35 pass. |
+| Plain-text uploads (web, 25 Oct) | [`60f2e85`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/60f2e85): three new tests fail for text levels and private refusal logs. | [`902e406`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/902e406): accept `0`–`3` and `-` per block, preserve missing readings, and log rejection reasons privately. All 225 pass. |
+| Plain-text uploads (watch, 25 Oct) | [`a2e5375`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/a2e5375): native build stops on undefined serialization and status helpers. | [`a44c648`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/a44c648): send each signal as text, retry the earlier failed format once, and show saved/not-saved status. The commit records 38 native passes. |
 
-Each red test commit precedes its green implementation commit. The [current contribution record](Weekly-Contribution) links every commit. UI copy and glance polish were subsequent refinements, not represented as additional TDD cycles.
+Each red test commit precedes its green implementation commit. The [contribution record](Weekly-Contribution) and [shift-reading design report](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/design/2026-10-25-biometrics-during-shifts.md) provide the supporting history. UI copy and glance polish were subsequent refinements, not represented as additional TDD cycles.
 
 ## Native coverage
 
-Layout checks use Garmin's device fonts and circle geometry to find overlap, clipping and premature truncation for asks, deferred asks, empty/offline states and long names. Theme tests measure text contrast. Sync tests exercise failed replies, successful recovery, cancellation and explicit confirmation without real network requests. Health tests retain the teammate's original mapping and raw-value boundary checks.
+Layout checks use Garmin's device fonts and circle geometry to find overlap, clipping and premature truncation for asks, deferred asks, empty/offline states and long names. Theme tests measure text contrast. Sync tests exercise failed answers, successful recovery, cancellation and explicit confirmation without real network requests. Shift-body tests cover 15-minute aggregation, missing readings, wire encoding, retries, sharing-off and upload status. Check-in tests cover the single post-shift rating.
 
 The native log is saved as [release evidence](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/contributions/assets/garmin-native-tests-2026-10-19.txt). The refreshed Ask page was also inspected in the simulator using an isolated practice session.
 
-## Production integration checks
+## Earlier production integration checks · 19 October
 
-Seventeen synthetic checks ran against the deployed HTTPS API with Redis. They verified unauthorized access, the login cookie, shared asks, a pair of concurrent answers resolving only once, one resulting shift, health sharing, the team projection and sharing-off deletion. The synthetic session was cleared afterward. [Machine-readable results](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/contributions/assets/garmin-production-verification-2026-10-19.json).
+Seventeen synthetic checks ran against the then-protected HTTPS API with Redis. They verified unauthorized access, the login cookie, shared asks, a pair of concurrent answers resolving only once, one resulting shift, health sharing, the team projection and sharing-off deletion. The synthetic session was cleared afterward. These are historical results for the earlier all-day-reading implementation, not a rerun of the current per-shift flow. [Machine-readable results](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/contributions/assets/garmin-production-verification-2026-10-19.json).
 
 These checks do not prove physical watch installation, real sensor delivery, accessibility on the wrist or worker outcomes. Record those separately when actually observed. Previous browser-reflection and overnight-shift TDD evidence remains in the [15 October contribution report](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/contributions/2026-10-15-watch-reflection.md).
 

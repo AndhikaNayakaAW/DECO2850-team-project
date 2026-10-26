@@ -5,6 +5,14 @@ DECO2850 team project exploring care-centred interaction design for university s
 
 Explore the [Offshift wiki](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki) for the demo walkthrough, design rationale, architecture, TDD workflow and deployment guide. The [wiki source](docs/wiki/README.md) is versioned with the code.
 
+## Current release · 26 October 2026
+
+Open the [3D calendar](https://offshift-nine.vercel.app/calendar). The website now centres on the week, one post-shift rating (Light, Steady, Busy or Hard), and optional heart-rate and stress readings for each shift. **Test offer** sends an ask to the calendar and Garmin; **Accept**, **Decline** and **Later** change the shared week without sending a manager a message.
+
+This release includes [`a44c648`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/a44c648): the watch sends each shift's 15-minute levels as text, preserves missing readings, and shows whether the calendar saved them. The server records rejected uploads in the worker's private log. The updated native app must be built and installed separately; redeploying Vercel updates the website and API.
+
+Local release checks: **225 web tests**, **10 Garmin build checks**, the standalone prototype tests, TypeScript and the production build pass. The latest native commit records **38 simulator tests** passing; those simulator tests were not rerun for this web release.
+
 ## Iteration 2 · Pleasure Framework pass
 
 - [docs/pleasure-framework-iteration.md](docs/pleasure-framework-iteration.md): experience brainstorm, persona (Dinda) built from the five interviews, Four Pleasures mapping with psycho-pleasure applied, and the prototype update.
@@ -70,11 +78,23 @@ npm ci
 npm test
 npm run typecheck
 npm run build
+cd ..
+node --test offshift-watch/test/*.test.mjs
+node --test prototype/offshift.logic.test.js
 ```
 
-Before field testing on Vercel:
+If a pull removes routes and TypeScript still references them under `.next`, clear the generated `.next` folder and rebuild before rerunning type checking.
 
-- **Connect an Upstash Redis database** to the project. The integration sets `KV_REST_API_URL` and `KV_REST_API_TOKEN`. Without it, `/api/state` keeps the week only in one server instance's memory, so the calendar and the watch can drift apart and lose it on a restart.
-- **Set `OFFSHIFT_ACCESS_CODE`.** The site is public, and participants' weeks shouldn't be.
+Production configuration checked on 26 October 2026:
 
-See [offshift-phone/README.md](offshift-phone/README.md) for both.
+- **Redis is connected.** `/api/state` reports `storage: "redis"`. The integration supplies `KV_REST_API_URL` and `KV_REST_API_TOKEN`. Without Redis, the app falls back to a local file, which is not durable shared storage on Vercel.
+- **The prototype opens directly.** `OFFSHIFT_ACCESS_CODE` is optional and is currently unset. Older installed watch addresses continue to work. One deployment serves one shared week; there are no separate participant or employer accounts.
+
+After editing the handbook, publish its separate GitHub wiki repository from the repository root:
+
+```bash
+bash scripts/publish-wiki.sh --dry-run
+bash scripts/publish-wiki.sh
+```
+
+See [offshift-phone/README.md](offshift-phone/README.md) for storage, access and session setup.
