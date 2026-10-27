@@ -1,6 +1,24 @@
 [Home](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki) · [Get started](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Getting-Started) · [Design](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Design-and-Research) · [Architecture](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Architecture) · [Testing](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Testing-and-TDD) · [Deployment](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Deployment) · [Watch & reflection](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Watch-and-Reflection) · [Weekly contribution](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki/Weekly-Contribution)
 
-# Release maintenance · 26 October 2026
+# UI release and screenshots · 27 October 2026
+
+Pulled `main` through [`2e93548`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/2e93548). The new UI keeps violet work ratings on the 3D blocks, uses a blue dot to mark available watch readings, and reveals a timed bar graph on hover or tap. Yellow-green-blue bars replace the grey strips. The ask shows past-shift rows directly and names its answers Accept, Decline and Decide later, matching the simplified Garmin menu.
+
+Captured six current screenshots from a local production build with synthetic names, commitments and readings, an isolated file store and a separate Chrome profile. Updated all three READMEs, wiki pages and the design storyboard to use the new images and describe the current controls. The older dated screenshots remain historical evidence. [Screenshot gallery](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/wiki/README.md#current-ui-screenshots) · [Browser checks](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/wiki/assets/2026-10-27-browser-checks.json).
+
+Release validation passed **230 web tests across 25 files**, **10 Garmin build contracts**, the standalone prototype tests, TypeScript and the production build. Browser checks covered the scene, both hover signals, missing samples, axis labels, shift details, past-shift rows, answer labels, mobile overflow and browser exceptions. The native UI commit records 39 passing simulator tests; those tests and physical watch installation were not rerun for this web release. Documentation and release maintenance were assisted by Codex.
+
+| Change | Implementation evidence |
+| :--- | :--- |
+| Native answers show names only | [`631332b` red](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/631332b) · [`624620b` green](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/624620b) |
+| New reading palette | [`8f0d8e9` red](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/8f0d8e9) · [`51ec4d8` green](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/51ec4d8) |
+| Graphs with a time axis | [`bb6f737` red](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/bb6f737) · [`77f8105` green](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/77f8105) |
+| Reading dots and graph on demand | [`3139705` test](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/3139705) · [`279ff70` implementation](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/279ff70) |
+| Quieter ask panel | [`e408cdc`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/e408cdc) |
+
+The [deployment guide](Deployment) describes production deployment and publication of the wiki's separate repository. Web deployment does not install the native watch build.
+
+## Earlier release maintenance · 26 October 2026
 
 Pulled `main` through [`a44c648`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/a44c648), bringing in the calendar-only interface, one post-shift work rating, shift-specific stress/heart ribbons and the Past shifts comparison. The latest fixes send levels as text, preserve missing readings, log refused uploads privately and show whether the calendar saved the watch upload.
 

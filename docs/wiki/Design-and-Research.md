@@ -2,7 +2,7 @@
 
 # Design & research
 
-Offshift is a reflective tool for students in casual work. The current prototype joins a dated 3D week, one post-shift work rating and optional stress/heart readings from the shift itself. When a new ask arrives, past shifts at that workplace sit beside the surrounding commitments. The worker chooses Accept, Decline or Later; no manager message is sent.
+Offshift is a reflective tool for students in casual work. The current prototype joins a dated 3D week, one post-shift work rating and optional stress/heart readings from the shift itself. When a new ask arrives, past shifts at that workplace sit beside the surrounding commitments. The worker chooses Accept, Decline or Decide later; no manager message is sent.
 
 ## The moment we are designing for
 
@@ -12,17 +12,21 @@ Dinda Pratiwi is a composite persona: a 21-year-old international undergraduate 
 
 ## Current design · late October
 
-The tutor's feedback led to three connected pieces: calendar, check-in and readings during shifts. The watch asks **How was the work?** with Light, Steady, Busy, Hard or Skip. Its optional heart/stress history becomes neutral grey 15-minute strips on that shift. A new ask shows the recent shifts at the same workplace, the worker's rating and the available readings without recommending an answer.
+The tutor's feedback led to three connected pieces: calendar, check-in and readings during shifts. The watch asks **How was the work?** with Light, Steady, Busy, Hard or Skip. Its optional heart/stress history appears as timed 15-minute bars, using height and a yellow-green-blue shade for level. The 3D block keeps the worker's violet rating and a blue reading dot; hover or tap it for the graph. A new ask shows the recent shifts at the same workplace, the worker's rating and the available readings without recommending an answer.
 
 | Need | Current design response |
 | :--- | :--- |
 | See work alongside study and personal commitments. | One dated week with shifts, classes, due dates, plans and rest days. |
 | Recall how a workplace's shifts went. | One rating per finished shift, and Past shifts beside the next ask. |
-| Compare body readings with the shift's timing. | Stress and heart strips on the shift, with missing samples hatched. |
-| Keep ownership of the decision. | Accept, Decline and Later, with deliberate watch confirmation and calendar Undo. |
+| Compare body readings with the shift's timing. | A blue reading dot on the shift and timed Stress/Heart graphs on demand; missing samples are hatched. |
+| Keep ownership of the decision. | Accept, Decline and Decide later, with deliberate watch confirmation and calendar Undo. |
 | Control sharing. | Optional watch consent; sharing-off removes all shift readings. The team API excludes shifts, ratings and body data. |
 
 Read the [shift check-in rationale](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/design/2026-10-23-shift-check-in.md), [biometrics storyboard and evaluation plan](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/design/2026-10-25-biometrics-during-shifts.md), and [reading list by feature](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/research/2026-10-25-reading-list.md).
+
+![Hovering a rated shift reveals its timed stress graph](https://raw.githubusercontent.com/AndhikaNayakaAW/DECO2850-team-project/main/docs/wiki/assets/2026-10-27-calendar-hover-stress.png)
+
+*Current UI, 27 October. Synthetic local week and readings.*
 
 ## Four Pleasures and course history
 
@@ -44,7 +48,7 @@ The public prototype holds one shared week and currently opens without a code. I
 
 | Participant task | What to observe |
 | :--- | :--- |
-| Compare two finished shifts and explain the grey strips. | Can the worker distinguish rating, sensor level and missing data? |
+| Compare two finished shifts and explain the reading dots and bar graphs. | Can the worker distinguish rating, sensor level and missing data? |
 | Rate a finished shift, then change the rating on the calendar. | Are Light, Steady, Busy and Hard useful words? |
 | Open an ask from the same workplace and choose an answer. | Does Past shifts help explain a deliberate choice? |
 | Turn sharing off and find what remains visible. | Are sharing and the shared-session boundary understood? |

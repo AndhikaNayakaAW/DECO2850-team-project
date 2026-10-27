@@ -41,25 +41,27 @@ The 23 October design laid the band out per day because "the watch gives one lev
 
 ## 3. The loop, as a storyboard
 
-All screenshots use a made-up week with made-up readings on a local copy. None of it is a participant's data.
+The current screenshots were captured on **27 October 2026**, from the local production build at source `2e93548`. All names, shifts and readings are synthetic. The original [25 October stress-ribbon image](assets/2026-10-25-1-week-stress.png) and [heart-ribbon image](assets/2026-10-25-2-week-heart.png) remain as iteration history.
 
 1. **The shift.** Nothing happens on the wrist while the worker is working.
-2. **About 15 minutes after the rostered end**, the watch buzzes once and asks *How was the work?*: Light, Steady, Busy, Hard or Skip. That is one press, about five seconds. If the worker has agreed to share, the watch also reads its own heart-rate and stress history for exactly the shift's hours, averages each quarter hour and sends one level per quarter hour. With sharing off it reads nothing.
-3. **That evening, on the calendar,** the shift block takes the worker's word as a violet shade, darker for harder. A grey ribbon runs down its front: one cell per 15 minutes, darker for more stress (or heart work), hatched where the watch had no reading. *Since 27 October the block shows only the word and a small blue dot; hovering or tapping it shows the shift's bar graph (§5).*
+2. **About 15 minutes after the rostered end**, the watch asks *How was the work?*: Light, Steady, Busy, Hard or Skip. With sharing enabled, it reads its own heart-rate and stress history for exactly the shift's hours and sends one level per quarter hour. With sharing off it reads nothing.
+3. **On the calendar**, the shift block takes the worker's word as a violet shade, darker for harder. A blue dot marks available watch readings. Hover or tap the block to open a timed bar graph; the **Stress** and **Heart** buttons choose the signal. A shift containing only missing samples has no reading dot.
 
-   ![The 3D week with stress ribbons down each shift (25 Oct version)](assets/2026-10-25-1-week-stress.png)
+   ![Current 3D week with violet work ratings and blue reading dots](../wiki/assets/2026-10-27-calendar-desktop.png)
 
-4. **Tapping the shift** shows the same readings flat, with a sentence each: *"Stress mostly medium, high for 1 h 45 min near the end."* and *"Heart mostly moderate, vigorous for 30 min in the middle."*
+   ![Hovering a shift reveals its stress graph with start, hour and finish times](../wiki/assets/2026-10-27-calendar-hover-stress.png)
 
-   ![A shift's readings in 2D, with the work rating](assets/2026-10-25-4-shift-detail.png)
+4. **Opening the shift** shows both signals as bar graphs with times underneath, alongside the worker's editable rating. Each bar represents 15 minutes, taller and darker for more; missing samples are hatched stubs. Summary sentences remain in accessible graph labels.
 
-5. **A new ask arrives at the same workplace.** Beside the Body and Week checks, *Past shifts* reads: *"Your last three shifts at Café: Light, Hard and Busy. Your watch read high stress in two of them, mostly near the end."* Under it are small multiples: each past shift's word with its stress and heart strips. The same comparison appears on the watch as one line ("Last 3 at Cafe: Light, Hard, Busy").
+   ![Current shift form with stress and heart graphs and one work rating](../wiki/assets/2026-10-27-shift-detail.png)
 
-   ![An ask with the Past shifts check](assets/2026-10-25-5-ask-past-shifts.png)
+5. **A new ask arrives at the same workplace.** The Past shifts check shows compact rows with dates, work ratings and the two graphs, without repeating a summary sentence when rows exist. Body and Week checks remain beside them. The watch uses a short past-shifts line for the same context.
 
-6. **The worker decides**: Accept, Decline or Later. Offshift never suggests an answer, and nothing is sent to the manager.
+   ![Current ask with past-shift graphs and the three answer names](../wiki/assets/2026-10-27-ask-desktop.png)
 
-On a phone the ask reads top to bottom: [phone screenshot](assets/2026-10-25-7-phone-ask.png). With **Heart** chosen, the ribbons showed heart work: [Heart view](assets/2026-10-25-2-week-heart.png).
+6. **The worker decides**: Accept, Decline or Decide later. The buttons and Garmin menu show only the answer names. Offshift never suggests an answer, and no message is sent to the manager.
+
+[Current mobile ask](../wiki/assets/2026-10-27-ask-mobile.png) · [Heart graph on hover](../wiki/assets/2026-10-27-calendar-hover-heart.png) · [Capture provenance and browser checks](../wiki/assets/2026-10-27-browser-checks.json).
 
 ## 4. What the watch reads, and why only this
 

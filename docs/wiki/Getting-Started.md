@@ -32,14 +32,18 @@ Use Node 24, matching CI. For browser devices on the same Wi-Fi, use Next.js's p
 
 ## Try the complete interaction
 
-Open `/calendar?reset=1` to start a new session, and let the worker add their own commitments. Press **Test offer** to send an ask dated in the future. Read it on the calendar and on the Garmin, inspect the surrounding week, and choose Accept, Decline or Later. An accepted ask becomes a shift.
+Open `/calendar?reset=1` to start a new session, and let the worker add their own commitments. Press **Test offer** to send an ask dated in the future. Read it on the calendar and on the Garmin, inspect the surrounding week, and choose Accept, Decline or Decide later. An accepted ask becomes a shift.
 
 After a finished shift, the worker can rate the work **Light**, **Steady**, **Busy** or **Hard**, or skip. The watch prompts about 15 minutes after the shift; a completed shift can also be rated or changed on the calendar. This is the shift's only rating.
 
-On the watch, body sharing is optional. When enabled, the watch reads only the finished shift's hours and sends one level per 15 minutes for stress and heart rate. Raw values stay on the watch. A blue dot marks each shift the watch read; hover or tap it to see that shift's graph, and use the **Stress** and **Heart** buttons under the week to switch between them. Missing readings are hatched. Open another ask at the same workplace to compare **Past shifts**. Turning sharing off removes every shift's readings.
+On the watch, body sharing is optional. When enabled, the watch reads only the finished shift's hours and sends one level per 15 minutes for stress and heart rate. Raw values stay on the watch. A blue dot marks each shift with at least one available reading; hover or tap it to see that shift's graph, and use the **Stress** and **Heart** buttons under the week to switch between them. Bars grow taller and darker on a yellow-green-blue scale, with start, hour and finish times underneath. Missing readings are hatched stubs. Open another ask at the same workplace to compare **Past shifts**. Turning sharing off removes every shift's readings.
 
 The watch's Last shift details show whether the upload was saved. The current native build must be installed separately; updating the website does not install it. The calendar polls every two seconds with Redis, and the watch every five seconds while open, subject to the paired phone's connection.
 
 The phone and manager apps retained under `prototype/` are earlier course artifacts. They are not the main deployed interface. The camera remains optional, and Offshift never speaks or listens; normal touch and button controls work independently.
+
+![Current ask with past-shift graphs and the three answer labels](https://raw.githubusercontent.com/AndhikaNayakaAW/DECO2850-team-project/main/docs/wiki/assets/2026-10-27-ask-desktop.png)
+
+*27 October capture with synthetic local data. The mobile view is in the [screenshot gallery](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/wiki/README.md#current-ui-screenshots).*
 
 **Next:** [Watch and reflection](Watch-and-Reflection) · [Build and deploy](Deployment) · [Testing](Testing-and-TDD).

@@ -14,7 +14,13 @@ A push to `main` automatically deploys the Next.js app through the existing Verc
 | Billing choice | Free plan; `autoUpgrade=false`, `prodPack=false` |
 | Access | Public prototype; `OFFSHIFT_ACCESS_CODE` is currently unset and optional |
 
-## Verified release
+## Current UI release · 27 October 2026
+
+Pulled `main` through [`2e93548`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/2e93548), including reading dots, timed bar graphs, the new palette and simplified answers. Local release checks passed 230 web tests, 10 Garmin build checks, the standalone prototype tests, TypeScript and the production build. The [current screenshots](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/wiki/README.md#current-ui-screenshots) use an isolated local week with synthetic readings. Production verification must preserve the shared participant session.
+
+A push of this release's README, images and wiki source triggers Vercel's production deployment. Confirm the matching commit and Ready state in [Vercel](https://vercel.com/andhikanayakaaws-projects/offshift), and the matching successful run in [GitHub validation](https://github.com/AndhikaNayakaAW/DECO2850-team-project/actions/workflows/validate.yml). The native menu changes require a separate watch build and installation.
+
+## Previous verified release · 26 October
 
 On 26 October 2026, `main` was pulled through [`a44c648`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/a44c648), including the plain-text shift-reading upload fix. Local checks passed: 225 web tests across 25 files, 10 Garmin build checks, the standalone prototype tests, TypeScript and the production build. Production configuration was checked: Node 24, root `offshift-phone`, Redis storage, and direct calendar access without a code. See Vercel's [production deployments](https://vercel.com/andhikanayakaaws-projects/offshift) and [GitHub validation](https://github.com/AndhikaNayakaAW/DECO2850-team-project/actions/workflows/validate.yml) for the deployment and CI status of each push.
 

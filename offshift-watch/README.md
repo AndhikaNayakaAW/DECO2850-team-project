@@ -49,7 +49,7 @@ node offshift-watch/scripts/build.mjs --test
 node --test offshift-watch/test/*.test.mjs
 ```
 
-The latest native commit, [`a44c648`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/a44c648), records 38 passing native tests. All 10 Node build contracts/artifact checks were rerun and passed on 26 October; the native simulator was not rerun for that web release. This SDK returned exit status 1 even for a complete native pass; inspect its final `PASSED (passed=38, failed=0, errors=0)` summary. The native tests use the real device profile's fonts, test round-screen bounds and contrast, and isolate answers from real network activity.
+The latest native UI commit, [`624620b`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/624620b), records 39 passing native tests. All 10 Node build contracts/artifact checks were rerun and passed on 27 October; the native simulator was not rerun for that web release. This SDK returned exit status 1 even for a complete native pass; inspect its final `PASSED (passed=39, failed=0, errors=0)` summary. The native tests use the real device profile's fonts, test round-screen bounds and contrast, and isolate answers from real network activity.
 
 For an isolated laptop simulation, run the web app with a separate `OFFSHIFT_STATE_FILE`, then build explicitly for loopback:
 
@@ -63,7 +63,7 @@ Use **Settings → Glance Launch Mode → Launch in Normal Mode** for the full a
 
 ## Pages and controls
 
-Up/Down or a swipe moves between Ask, Around it/Today, Last shift and Calendar. Around it leads with how the last shifts at that workplace went ("Last 2 at Cafe: Hard, Busy"). Select on the first two pages opens the three answers: Accept and Decline each ask for confirmation, and Decide later keeps the ask, marked "Saved for later". No answer sends the manager a message. Select on Last shift or Calendar opens the shift's stress and heart in words, where each comes from, and the sharing switch.
+Up/Down or a swipe moves between Ask, Around it/Today, Last shift and Calendar. Around it leads with how the last shifts at that workplace went ("Last 2 at Cafe: Hard, Busy"). Select on the first two pages opens three answers labelled only **Accept**, **Decline** and **Decide later**, with no descriptions underneath. Accept and Decline each ask for confirmation, and Decide later keeps the ask, marked "Saved for later". No answer sends the manager a message. Select on Last shift or Calendar opens the shift's stress and heart in words, where each comes from, and the sharing switch.
 
 About 15 minutes after a rostered shift ends, the watch buzzes once and asks how the work was: **Light**, **Steady**, **Busy** or **Hard**, or **Skip**. One press saves it on that shift; backing out counts as a skip. It never asks twice about the same shift, and it stops asking 12 hours after the end. The rating colours the shift on the calendar, where it can be changed. Why it works this way: [design rationale](../docs/design/2026-10-23-shift-check-in.md).
 
@@ -91,7 +91,7 @@ Each signal is uploaded as text, one character per quarter hour: `0`–`3` for a
 ## Privacy
 
 - The watch asks once, on first open: "Share stress and heart from shifts?" Sharing can be changed any time from Last shift.
-- Only one level (0 to 3) per 15 minutes of a shift leaves the watch, never a number, and never anything from outside a shift. The calendar shows words and grey cells.
+- Only one level (0 to 3) per 15 minutes of a shift leaves the watch, never a number, and never anything from outside a shift. The calendar marks available readings with a blue dot and shows timed yellow-green-blue bar graphs on hover, tap and in shift details.
 - Turning sharing off makes the calendar forget every shift's readings, and the watch reads nothing more. The watch keeps asking until the calendar confirms, and asks again if readings ever turn up while sharing is off.
 - Readings never go to an employer, and neither do shift ratings.
 

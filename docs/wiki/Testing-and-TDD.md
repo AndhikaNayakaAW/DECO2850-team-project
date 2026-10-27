@@ -2,7 +2,13 @@
 
 # Testing and TDD
 
-On **26 October 2026**, release checks passed **225 web tests across 25 files**, **10 Node build contract and artifact tests**, the standalone prototype tests, TypeScript and the production build. The latest native commit, [`a44c648`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/a44c648), records **38 tests** passing in the `fenix847mm` simulator. Native simulator checks were not rerun for this web deployment; they require Garmin's SDK and device profile.
+On **27 October 2026**, release checks passed **230 web tests across 25 files**, **10 Node build contract and artifact tests**, the standalone prototype tests, TypeScript and the production build. The latest native UI commit, [`624620b`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/624620b), records **39 tests** passing in the `fenix847mm` simulator. Native simulator checks were not rerun for this web deployment; they require Garmin's SDK and device profile.
+
+## Browser checks and current images
+
+The 27 October screenshots use the local production build, an isolated file-backed week and a separate Chrome profile. Checks cover the 3D scene, Stress and Heart hover graphs, quarter-hour and missing-sample bars, time labels, both graphs in the shift form, past-shift rows, answer labels, mobile overflow and browser exceptions. This is browser UI verification with synthetic readings; it does not prove physical sensor delivery.
+
+[Browser check record](https://raw.githubusercontent.com/AndhikaNayakaAW/DECO2850-team-project/main/docs/wiki/assets/2026-10-27-browser-checks.json) · [Screenshot gallery](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/wiki/README.md#current-ui-screenshots).
 
 ## Run the checks
 
@@ -23,7 +29,7 @@ node offshift-watch/scripts/build.mjs --test
 "$OFFSHIFT_GARMIN_SDK/bin/monkeydo" offshift-watch/bin/offshift-test.prg fenix847mm -t
 ```
 
-The simulator must be open. The latest recorded summary is `PASSED (passed=38, failed=0, errors=0)`. On this SDK installation `monkeydo` returned status 1 even when the complete summary passed; check the native result from its output, not only its exit status.
+The simulator must be open. The latest recorded summary is `PASSED (passed=39, failed=0, errors=0)`. On this SDK installation `monkeydo` returned status 1 even when the complete summary passed; check the native result from its output, not only its exit status.
 
 ## Observed test-first cycles
 
@@ -41,6 +47,10 @@ The simulator must be open. The latest recorded summary is `PASSED (passed=38, f
 | Review fixes (watch, 25 Oct) | The native build stops on an undefined `onForgotten`. | "Sharing off" is owed until the calendar confirms, refused readings aren't resent, and failed sends back off. All 35 pass. |
 | Plain-text uploads (web, 25 Oct) | [`60f2e85`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/60f2e85): three new tests fail for text levels and private refusal logs. | [`902e406`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/902e406): accept `0`–`3` and `-` per block, preserve missing readings, and log rejection reasons privately. All 225 pass. |
 | Plain-text uploads (watch, 25 Oct) | [`a2e5375`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/a2e5375): native build stops on undefined serialization and status helpers. | [`a44c648`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/a44c648): send each signal as text, retry the earlier failed format once, and show saved/not-saved status. The commit records 38 native passes. |
+| Answer names (watch, 27 Oct) | [`631332b`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/631332b): two menu assertions error, 37 pass. | [`624620b`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/624620b): name-only answers, with confirmation retained; commit records 39 native passes. |
+| Reading palette (web, 27 Oct) | [`8f0d8e9`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/8f0d8e9): two colour-step assertions fail. | [`51ec4d8`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/51ec4d8): yellow-green-blue levels; 226 web tests pass. |
+| Timed graphs (web, 27 Oct) | [`bb6f737`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/bb6f737): three time-axis tests fail. | [`77f8105`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/77f8105): bar height, missing stubs and a timed axis; 229 pass. |
+| Reading dots (web, 27 Oct) | [`3139705`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/3139705): specify when a shift has a reading to mark. | [`279ff70`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/279ff70): blue dot plus graph on demand; current suite passes 230 tests. |
 
 Each red test commit precedes its green implementation commit. The [contribution record](Weekly-Contribution) and [shift-reading design report](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/design/2026-10-25-biometrics-during-shifts.md) provide the supporting history. UI copy and glance polish were subsequent refinements, not represented as additional TDD cycles.
 

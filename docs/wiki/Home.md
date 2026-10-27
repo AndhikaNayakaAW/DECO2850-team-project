@@ -7,15 +7,23 @@
 
 ## Your week. Your call.
 
-Offshift is a reflective tool for students who work casual shifts. A calendar shows when you work; a watch shows your body. Offshift joins them: after each shift the Garmin watch asks one question ("How was the work?") and reads your heart rate and stress during that shift, and the 3D week shows both on the shift itself. When a manager asks you to cover another shift, the ask shows how your last shifts at that workplace went, so you decide from what happened rather than from memory or guilt. Nothing is decided for you, and nothing reaches the employer. The focus still needs evaluation with workers.
+Offshift is a reflective tool for students who work casual shifts. A calendar shows when you work; a watch shows your body. Offshift joins them: after each shift the Garmin watch asks one question ("How was the work?") and reads your heart rate and stress during that shift, and the 3D week links them through the shift's violet work rating, a blue reading dot and a graph on demand. When a manager asks you to cover another shift, the ask shows how your last shifts at that workplace went, so you decide from what happened rather than from memory or guilt. Nothing is decided for you, and nothing reaches the employer. The focus still needs evaluation with workers.
 
 **[Open the calendar ↗](https://offshift-nine.vercel.app/calendar)**
 
-## Current release · 26 October 2026
+## Current release · 27 October 2026
 
-Following the tutor's feedback, Offshift has three pieces: the calendar, the one-press check-in after a shift, and heart rate and stress during each shift, drawn on that shift. The all-day Body Battery reading, the daily floor band and the second (Fine/Tired/Wiped) rating are gone. The latest watch fix sends 15-minute levels as text and shows whether the calendar saved them; rejected readings appear only in the worker's log. See the [design rationale](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/design/2026-10-25-biometrics-during-shifts.md).
+The new UI keeps the 3D week for the shape of the schedule and reads sensor levels in a 2D graph. A **blue dot** marks a shift with available readings. Hover or tap it to see timed bars, and switch **Stress** and **Heart** below the week. The bar height and yellow-green-blue shade show the level; hatching means no reading. The violet block colour still means the worker's own rating.
 
-Release checks on 26 October passed **225 web tests**, **10 build checks**, TypeScript, the production build and the standalone prototype tests. The latest native commit records **38 simulator tests** passing; they were not rerun for this web release. Install the updated watch build separately to use the new upload format and status display.
+![Current week with violet ratings, reading dots and a day-panel graph](https://raw.githubusercontent.com/AndhikaNayakaAW/DECO2850-team-project/main/docs/wiki/assets/2026-10-27-calendar-desktop.png)
+
+*27 October, local production build with a synthetic week and readings. These are interface examples, not participant or physical-sensor evidence.*
+
+The ask panel now shows past-shift rows and graphs without a repeated summary. The calendar and Garmin use **Accept**, **Decline** and **Decide later** as their answer labels, with no descriptions underneath. No manager message is sent.
+
+Release checks passed **230 web tests**, **10 build checks**, TypeScript, the production build and standalone prototype tests. The native menu commit records **39 simulator tests** passing; they were not rerun for this web release. Native changes must be installed on the watch separately.
+
+[Stress on hover](https://raw.githubusercontent.com/AndhikaNayakaAW/DECO2850-team-project/main/docs/wiki/assets/2026-10-27-calendar-hover-stress.png) · [Heart on hover](https://raw.githubusercontent.com/AndhikaNayakaAW/DECO2850-team-project/main/docs/wiki/assets/2026-10-27-calendar-hover-heart.png) · [Shift detail](https://raw.githubusercontent.com/AndhikaNayakaAW/DECO2850-team-project/main/docs/wiki/assets/2026-10-27-shift-detail.png) · [Desktop ask](https://raw.githubusercontent.com/AndhikaNayakaAW/DECO2850-team-project/main/docs/wiki/assets/2026-10-27-ask-desktop.png) · [Mobile ask](https://raw.githubusercontent.com/AndhikaNayakaAW/DECO2850-team-project/main/docs/wiki/assets/2026-10-27-ask-mobile.png)
 
 Earlier: on 20 October the fēnix 8 47mm completed a physical request/reply round trip through the paired phone to Vercel and Redis.
 
@@ -31,7 +39,7 @@ Earlier: on 20 October the fēnix 8 47mm completed a physical request/reply roun
 
 ## One session, three answers
 
-The researcher starts a session and sends an ask. The worker sees it beside the week, with how their last shifts at that workplace went, and chooses **Accept**, **Decline** or **Later**. Accepting adds the shift, declining takes the ask off the week, and later keeps it there, see-through, until they decide. No message goes to the manager. Personal body readings do not become an employer explanation.
+The researcher starts a session and sends an ask. The worker sees it beside the week, with how their last shifts at that workplace went, and chooses **Accept**, **Decline** or **Decide later**. Accepting adds the shift, declining takes the ask off the week, and later keeps it there, see-through, until they decide. No message goes to the manager. Personal body readings do not become an employer explanation.
 
 The deployment opens without an access code and holds one shared session at a time. `OFFSHIFT_ACCESS_CODE` can optionally restrict access. The team API omits shifts, ratings, body data and plans, but the prototype does not have separate employer and worker accounts.
 

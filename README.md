@@ -5,13 +5,17 @@ DECO2850 team project exploring care-centred interaction design for university s
 
 Explore the [Offshift wiki](https://github.com/AndhikaNayakaAW/DECO2850-team-project/wiki) for the demo walkthrough, design rationale, architecture, TDD workflow and deployment guide. The [wiki source](docs/wiki/README.md) is versioned with the code.
 
-## Current release · 26 October 2026
+## Current release · 27 October 2026
 
-Open the [3D calendar](https://offshift-nine.vercel.app/calendar). The website now centres on the week, one post-shift rating (Light, Steady, Busy or Hard), and optional heart-rate and stress readings for each shift. **Test offer** sends an ask to the calendar and Garmin; **Accept**, **Decline** and **Later** change the shared week without sending a manager a message.
+Open the [3D calendar](https://offshift-nine.vercel.app/calendar). The new UI keeps each shift's work rating in violet and marks available watch readings with a **blue dot**. Hover or tap the shift to see a **timed bar graph**; switch **Stress** and **Heart** below the week. Bars grow taller and darker on a yellow-green-blue scale, and missing readings remain hatched.
 
-This release includes [`a44c648`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/a44c648): the watch sends each shift's 15-minute levels as text, preserves missing readings, and shows whether the calendar saved them. The server records rejected uploads in the worker's private log. The updated native app must be built and installed separately; redeploying Vercel updates the website and API.
+![Current calendar: violet shift ratings, blue reading dots and a timed graph in the day panel](docs/wiki/assets/2026-10-27-calendar-desktop.png)
 
-Local release checks: **225 web tests**, **10 Garmin build checks**, the standalone prototype tests, TypeScript and the production build pass. The latest native commit records **38 simulator tests** passing; those simulator tests were not rerun for this web release.
+*Captured on 27 October from the local production build with a synthetic week and readings. [More current screenshots](docs/wiki/README.md#current-ui-screenshots).*
+
+The ask panel shows past shifts as compact rows with graphs. Its buttons now read **Accept**, **Decline** and **Decide later**, matching the Garmin menu, with no descriptions underneath. No manager message is sent. This release includes the UI through [`2e93548`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/2e93548), alongside the existing one-press shift check-in, sharing controls and saved/not-saved upload status. Watch changes require a separate native build and installation.
+
+Release checks: **230 web tests across 25 files**, **10 Garmin build checks**, standalone prototype tests, TypeScript and the production build pass. The native menu commit [`624620b`](https://github.com/AndhikaNayakaAW/DECO2850-team-project/commit/624620b) records **39 simulator tests** passing; native tests were not rerun for this web release.
 
 ## Iteration 2 · Pleasure Framework pass
 
@@ -20,7 +24,7 @@ Local release checks: **225 web tests**, **10 Garmin build checks**, the standal
 
 ## Iteration 5 · A reflective tool (25 Oct 2026)
 
-After the tutor's feedback, Offshift keeps three pieces and joins them: the **3D calendar**, a **one-press check-in** on the watch after each shift ("How was the work?": Light, Steady, Busy or Hard), and **heart rate and stress during each shift**, read by the watch for that shift's hours only and drawn down the shift as 15-minute grey cells. When a new ask arrives, a **Past shifts** check shows how the last shifts at that workplace went, in the worker's words and the watch's, with no advice. The all-day Body Battery reading, the daily floor band, the voice assistant and the second rating are gone. Rationale, storyboard, how this links to our interviews, the tutor's three questions and the user tests still to run: [docs/design/2026-10-25-biometrics-during-shifts.md](docs/design/2026-10-25-biometrics-during-shifts.md).
+After the tutor's feedback, Offshift keeps three pieces and joins them: the **3D calendar**, a **one-press check-in** on the watch after each shift ("How was the work?": Light, Steady, Busy or Hard), and **heart rate and stress during each shift**, read by the watch for that shift's hours only. The initial 15-minute grey ribbons became blue reading dots and timed bar graphs on 27 October. When a new ask arrives, a **Past shifts** check shows how the last shifts at that workplace went, in the worker's words and the watch's, with no advice. The all-day Body Battery reading, the daily floor band, the voice assistant and the second rating are gone. Rationale, storyboard, how this links to our interviews, the tutor's three questions and the user tests still to run: [docs/design/2026-10-25-biometrics-during-shifts.md](docs/design/2026-10-25-biometrics-during-shifts.md).
 
 ## Iteration 4 · Watch and calendar, ready for field testing
 

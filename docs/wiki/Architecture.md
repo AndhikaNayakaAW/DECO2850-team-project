@@ -27,6 +27,8 @@ Events have dates and a time zone, Australia/Brisbane by default. A session has 
 | Garmin mapping | `offshift-phone/src/lib/garmin.ts` | Words and watch-sized summaries. |
 | Shift readings | `offshift-phone/src/lib/shift-body.ts` | Parse levels, validate shift windows, store readings and record private refusal reasons. |
 | Shift check-in | `offshift-phone/src/lib/effort.ts` | Identify a completed shift and store its one work rating. |
+| Reading graphs | `offshift-phone/src/components/board/BodyGraph.tsx` | Timed bars and accessible graph summaries in the day list, shift form and past-shift rows. |
+| Week scene | `offshift-phone/src/components/board/Week3D.tsx` | Violet work ratings, blue dots for available readings and a graph on hover/tap. |
 | Past shifts | `offshift-phone/src/lib/past-shifts.ts` | Compare recent finished shifts at the ask's workplace. |
 | Team API | `offshift-phone/src/app/api/team/route.ts` | Asks from the calendar's Test offer, and the restricted projection. |
 | Native watch | `offshift-watch/source` | Circular pages, answer confirmation, sensors and serial requests. |

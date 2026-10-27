@@ -1,0 +1,40 @@
+{
+  "date": "2026-10-27",
+  "timeZone": "Australia/Brisbane",
+  "sourceCommit": "2e93548",
+  "environment": "Local production build at 127.0.0.1:3210; isolated file store and Chrome profile",
+  "data": "Synthetic names, week and readings; no participant data or physical-watch measurements",
+  "viewports": {
+    "desktop": [
+      1600,
+      1000
+    ],
+    "mobile": [
+      390,
+      1000
+    ],
+    "desktopAsk": [
+      1600,
+      1100
+    ]
+  },
+  "checks": [
+    "3D calendar rendered with sample shifts and reading dots",
+    "Stress hover has 16 quarter-hour bars and two missing samples",
+    "Heart toggle changes hover graph",
+    "Graph axis labels shift times",
+    "Shift form contains stress and heart graphs",
+    "Past shifts shows two shifts with four graphs",
+    "Answer buttons are Accept, Decline, Decide later without descriptions",
+    "No horizontal mobile overflow",
+    "No browser exceptions"
+  ],
+  "screenshots": [
+    "2026-10-27-calendar-desktop.png",
+    "2026-10-27-calendar-hover-stress.png",
+    "2026-10-27-calendar-hover-heart.png",
+    "2026-10-27-shift-detail.png",
+    "2026-10-27-ask-desktop.png",
+    "2026-10-27-ask-mobile.png"
+  ]
+}
