@@ -7,15 +7,15 @@
 
 ## Your week. Your call.
 
-Offshift is a reflective tool for students who work casual shifts. A calendar shows when you work; a watch shows your body. Offshift joins them: after each shift the Garmin watch asks one question ("How was the work?") and reads your heart rate and stress during that shift, and the 3D week links them through the shift's violet work rating, a blue reading dot and a graph on demand. When a manager asks you to cover another shift, the ask shows how your last shifts at that workplace went, so you decide from what happened rather than from memory or guilt. Nothing is decided for you, and nothing reaches the employer. The focus still needs evaluation with workers.
+Offshift is a reflective tool for students who work casual shifts. A calendar shows when you work; a watch shows your body. Offshift joins them: after each shift the Garmin watch asks one question ("How was the work?") and reads your heart rate and stress during that shift, and the 3D week links them through the shift's violet work rating, a 15-minute reading strip down the shift and timed graphs in the lists. When a manager asks you to cover another shift, the ask shows how your last shifts at that workplace went, so you decide from what happened rather than from memory or guilt. Nothing is decided for you, and nothing reaches the employer. The focus still needs evaluation with workers.
 
 **[Open the calendar ↗](https://offshift-nine.vercel.app/calendar)**
 
 ## Current release · 27 October 2026
 
-The new UI keeps the 3D week for the shape of the schedule and reads sensor levels in a 2D graph. A **blue dot** marks a shift with available readings. Hover or tap it to see timed bars, and switch **Stress** and **Heart** below the week. The bar height and yellow-green-blue shade show the level; hatching means no reading. The violet block colour still means the worker's own rating.
+The new UI keeps the 3D week for the shape of the schedule and reads sensor levels in a 2D graph. A **strip** of 15-minute cells runs down each shift the watch read, and the day list shows the same readings as timed bars; switch **Stress** and **Heart** below the week. The yellow-green-blue shade (and, in 2D, bar height) shows the level; hatching means no reading. The violet block colour still means the worker's own rating.
 
-![Current week with violet ratings, reading dots and a day-panel graph](https://raw.githubusercontent.com/AndhikaNayakaAW/DECO2850-team-project/main/docs/wiki/assets/2026-10-27-calendar-desktop.png)
+![Current week with violet ratings, reading strips and a day-panel graph](https://raw.githubusercontent.com/AndhikaNayakaAW/DECO2850-team-project/main/docs/wiki/assets/2026-10-27-calendar-desktop.png)
 
 *27 October, local production build with a synthetic week and readings. These are interface examples, not participant or physical-sensor evidence.*
 

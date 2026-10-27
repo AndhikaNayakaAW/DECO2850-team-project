@@ -33,7 +33,7 @@ The words are an interaction representation of Garmin readings, not a diagnosis 
 
 ## Reading the new calendar UI
 
-The 3D block keeps the worker's violet work rating. A small blue dot appears only when at least one stress or heart sample is available; a shift containing only gaps has no dot. Hover or tap the block to see a timed graph, and use **Stress** or **Heart** beneath the week to choose the signal. Each 15-minute bar grows taller and darker on a yellow-green-blue ramp for a higher level. A missing sample is a short hatched stub. Summary sentences remain available to screen readers.
+The 3D block keeps the worker's violet work rating. A strip of 15-minute cells runs down the front of a shift the watch read, and **Stress** or **Heart** beneath the week chooses the signal. Each cell is darker on a yellow-green-blue ramp for a higher level, and a missing sample is hatched. Hovering or tapping the block adds a one-line summary, and the day list shows the same readings as timed bars. Summary sentences remain available to screen readers.
 
 The day list, shift form and the ask's Past shifts rows use the same graphs. The ask shows the past-shift rows directly when available; its answers read **Accept**, **Decline** and **Decide later** without descriptions.
 

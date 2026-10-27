@@ -31,7 +31,7 @@ In our consultation in late October the tutor reframed Offshift:
 | Before (23 Oct) | Now (25 Oct) | Why |
 | --- | --- | --- |
 | An all-day reading every few minutes: Body Battery, sleep, stress, heart, breathing, pulse ox, recovery | **Heart rate and stress during each rostered shift only, per 15 minutes** | Limit to the shift; only two signals, each defended (§4) |
-| A grey band on the floor in front of each day: the day's latest reading | **A grey ribbon down each shift's block, one cell per 15 minutes** (since 27 Oct a dot, with the graph on hover or tap) | A clear link to the schedule (§5) |
+| A grey band on the floor in front of each day: the day's latest reading | **A grey ribbon down each shift's block, one cell per 15 minutes** (on 27 Oct briefly a dot with the graph on hover, then the strip again) | A clear link to the schedule (§5) |
 | A Body card listing seven signals | Removed | It repeated what the watch already shows; Offshift adds context instead |
 | Two ratings: Fine/Tired/Wiped on the calendar and Light–Hard on the watch | **One rating: Light, Steady, Busy or Hard, on the watch** | One simple prompt and less manual input |
 | An ask showed Body and Week checks | **Plus a Past shifts check**: the last four shifts at that workplace, with their words and readings | The tutor's Thursday-to-Tuesday decision |
@@ -41,15 +41,15 @@ The 23 October design laid the band out per day because "the watch gives one lev
 
 ## 3. The loop, as a storyboard
 
-The current screenshots were captured on **27 October 2026**, from the local production build at source `2e93548`. All names, shifts and readings are synthetic. The original [25 October stress-ribbon image](assets/2026-10-25-1-week-stress.png) and [heart-ribbon image](assets/2026-10-25-2-week-heart.png) remain as iteration history.
+The current screenshots were captured on **27 October 2026**, from the local production build at source `2e93548`, and the three calendar captures were retaken with the strip after it came back the same day. All names, shifts and readings are synthetic. The original [25 October stress-ribbon image](assets/2026-10-25-1-week-stress.png) and [heart-ribbon image](assets/2026-10-25-2-week-heart.png) remain as iteration history.
 
 1. **The shift.** Nothing happens on the wrist while the worker is working.
 2. **About 15 minutes after the rostered end**, the watch asks *How was the work?*: Light, Steady, Busy, Hard or Skip. With sharing enabled, it reads its own heart-rate and stress history for exactly the shift's hours and sends one level per quarter hour. With sharing off it reads nothing.
-3. **On the calendar**, the shift block takes the worker's word as a violet shade, darker for harder. A blue dot marks available watch readings. Hover or tap the block to open a timed bar graph; the **Stress** and **Heart** buttons choose the signal. A shift containing only missing samples has no reading dot.
+3. **On the calendar**, the shift block takes the worker's word as a violet shade, darker for harder. A strip runs down its front: one cell per 15 minutes, darker on a yellow-green-blue scale for more stress (or heart work), hatched where the watch had no reading. The **Stress** and **Heart** buttons choose the signal, and hovering or tapping the block adds a one-line summary.
 
-   ![Current 3D week with violet work ratings and blue reading dots](../wiki/assets/2026-10-27-calendar-desktop.png)
+   ![Current 3D week with violet work ratings and a reading strip down each shift](../wiki/assets/2026-10-27-calendar-desktop.png)
 
-   ![Hovering a shift reveals its stress graph with start, hour and finish times](../wiki/assets/2026-10-27-calendar-hover-stress.png)
+   ![Hovering a shift shows its stress summary; the day panel shows the same readings as a timed bar graph](../wiki/assets/2026-10-27-calendar-hover-stress.png)
 
 4. **Opening the shift** shows both signals as bar graphs with times underneath, alongside the worker's editable rating. Each bar represents 15 minutes, taller and darker for more; missing samples are hatched stubs. Summary sentences remain in accessible graph labels.
 
@@ -61,7 +61,7 @@ The current screenshots were captured on **27 October 2026**, from the local pro
 
 6. **The worker decides**: Accept, Decline or Decide later. The buttons and Garmin menu show only the answer names. Offshift never suggests an answer, and no message is sent to the manager.
 
-[Current mobile ask](../wiki/assets/2026-10-27-ask-mobile.png) · [Heart graph on hover](../wiki/assets/2026-10-27-calendar-hover-heart.png) · [Capture provenance and browser checks](../wiki/assets/2026-10-27-browser-checks.json).
+[Current mobile ask](../wiki/assets/2026-10-27-ask-mobile.png) · [Heart strip and summary on hover](../wiki/assets/2026-10-27-calendar-hover-heart.png) · [Capture provenance and browser checks](../wiki/assets/2026-10-27-browser-checks.json).
 
 ## 4. What the watch reads, and why only this
 
@@ -125,13 +125,13 @@ The worker can still see Garmin's own numbers in Garmin's widgets. Offshift adds
 
 | Decision | Why | Sources |
 | --- | --- | --- |
-| In the 3D week, only the worker's rating on each block, plus a small blue dot when the watch read the shift. Hovering or tapping the block shows its bar graph. A ribbon of cells ran down each block until 27 Oct | The reading stays on the shift it belongs to, so reading and schedule are still one object, but the block carries one colour channel instead of two. 3D shows where the hard shifts fall in the week; the values are read in 2D, on demand | On-calendar visualisation (Huang, Tory & Bartram, 2016); overview first, details on demand (Shneiderman, 1996); Munzner (2014) |
+| A strip down the front of each shift's block, one cell per 15 minutes | Height already means time in the 3D week, so each cell sits exactly where its quarter hour is, and the reading and the schedule are one object you can see without hovering. On 27 Oct we tried the rating only with a dot and the graph on hover, then returned to the strip | On-calendar visualisation (Huang, Tory & Bartram, 2016); superposition (Gleicher et al., 2011) |
 | One yellow-green-blue ramp (ColorBrewer YlGnBu), darker for more. Grey until 27 Oct | Sequential; darker reads as more on a light ground; no red or green verdicts. The four greys were only about 15 apart in CIELAB ΔE, and the lightest only 10 from the page, so levels blurred in small cells and Resting looked empty. YlGnBu steps are 33 to 45 apart, it stays clear of the violet ratings and amber asks, and it reads with colour-blind vision. A test keeps every step more than 30 apart | Harrower & Brewer (2003); Schloss et al. (2019) via Sibrel et al. (2020) |
 | Hatched cells for no reading | Missing must look missing, never low | Song & Szafir (2019) |
 | One signal at a time, chosen by the worker (Stress or Heart) | Showing everything overwhelms | Jones & Kelly (2017) |
 | Violet for the worker's word, yellow-green-blue for the watch | Two channels that never mix: how the work felt, and what the body did | 23 Oct rationale, §4.4 and §6 |
-| In 2D (day list, shift form, the ask's past shifts) a bar graph instead of a strip: one bar per 15 minutes, taller and darker for more, a hatched stub for no reading, and the start, each hour and the end underneath. Since 27 Oct the 3D week shows the same graph on hover or tap | 3D shows the shape of the week; 2D is for reading values. Length is read more accurately than shade, and the time labels show *when* without counting cells | Munzner (2014); Kraus et al. (2020) |
-| One plain sentence per signal: what it mostly was, its peak and when. Since 27 Oct only in the graph's screen-reader label | For people who don't read charts; it names no cause and gives no advice. Shown on screen it repeated what the labelled graph already says | Krosnick & Presser (2010); Baumer (2015) |
+| In 2D (day list, shift form, the ask's past shifts) a bar graph instead of a strip: one bar per 15 minutes, taller and darker for more, a hatched stub for no reading, and the start, each hour and the end underneath. The 3D strip stays a strip, since a graph doesn't fit on a block's face | 3D shows the shape of the week; 2D is for reading values. Length is read more accurately than shade, and the time labels show *when* without counting cells | Munzner (2014); Kraus et al. (2020) |
+| One plain sentence per signal: what it mostly was, its peak and when. Since 27 Oct only in the graph's screen-reader label and on hover in the 3D week | For people who don't read charts; it names no cause and gives no advice. Shown on screen it repeated what the labelled graph already says | Krosnick & Presser (2010); Baumer (2015) |
 | Small multiples of the last four shifts at that workplace on an ask | The same view repeated, so like is compared with like at the moment of decision. Grouping by a shared feature (here, the workplace) helps people see patterns. | Tufte (1990); Epstein et al. (2014) |
 
 **Forms we considered.** We looked at chart templates in [Flourish](https://flourish.studio) (line charts, heatmaps, small multiples):
@@ -147,7 +147,7 @@ Offshift draws the strips itself rather than embedding Flourish, so the readings
 
 - **Colour:** the grey ramp became yellow-green-blue (table above). Alternatives compared were blues, viridis (its darkest step is purple, which clashes with the violet ratings) and yellow-orange-brown (it reads as heat and warning).
 - **Bar graph in 2D:** the flat strips became bar graphs with times along the bottom (table above).
-- **No ribbon in 3D:** each block now shows only the worker's rating. A small blue dot marks a shift the watch read, and hovering or tapping the block shows its bar graph with times. The ribbon put a second colour scale on top of the violet ratings, and its 15-minute cells were too small to read at week scale. Alternatives compared were a thin or wider ribbon with hour ticks, the whole front face as the reading, a bar graph beside each block and marking only the high stretches.
+- **The 3D strip stays:** we tried showing only the worker's rating on each block, with a blue dot for a shift the watch read and its bar graph on hover or tap. It removed the second colour scale from the block, but the readings disappeared until you hovered, and *when* a shift got hard was no longer visible across the week. The team brought the strip back the same day. Other alternatives compared were a wider strip with hour ticks, the whole front face as the reading, a bar graph beside each block and marking only the high stretches.
 - **Less text on an ask:** the Past shifts check no longer shows its summary sentence (*"Your last three shifts at Café…"*) when there are shifts to show; the graphs carry it. "Nothing is sent to …" under the answer buttons was removed too. Nothing is sent to the manager either way. The section is unchanged where there are no past shifts yet.
 
 ## 6. How this links to our own field data
@@ -200,7 +200,7 @@ We don't claim participants said they dislike manual input. Our interviews don't
 - It was what the exhibition feedback credited for creativity.
 
 We also know 3D is poor for reading values (Munzner, 2014; Kraus et al., 2020), so no value is read off depth:
-- The block shows only the worker's word and a dot; the readings open as a flat 2D graph on hover or tap.
+- The strip sits on the flat front face, where its height is time.
 - The word is printed on the block.
 - Every reading is also shown flat in 2D.
 
@@ -263,6 +263,7 @@ The full reading list, by feature, with checked links, is in [2026-10-25-reading
 - Garber, C. E., et al. (2011). Quantity and quality of exercise for developing and maintaining cardiorespiratory, musculoskeletal, and neuromotor fitness in apparently healthy adults (ACSM position stand). *Medicine & Science in Sports & Exercise, 43*(7), 1334–1359. https://doi.org/10.1249/MSS.0b013e318213fefb
 - Garmin. (n.d.). *Stress tracking*. https://www.garmin.com/en-US/garmin-technology/health-science/stress-tracking/
 - Geurts, S. A. E., & Sonnentag, S. (2006). Recovery as an explanatory mechanism in the relation between acute stress reactions and chronic health impairment. *Scandinavian Journal of Work, Environment & Health, 32*(6), 482–492. https://doi.org/10.5271/sjweh.1053
+- Gleicher, M., Albers, D., Walker, R., Jusufi, I., Hansen, C. D., & Roberts, J. C. (2011). Visual comparison for information visualization. *Information Visualization, 10*(4), 289–309. https://doi.org/10.1177/1473871611416549
 - Harrower, M., & Brewer, C. A. (2003). ColorBrewer.org: An online tool for selecting colour schemes for maps. *The Cartographic Journal, 40*(1), 27–37. https://doi.org/10.1179/000870403235002042
 - Huang, D., Tory, M., & Bartram, L. (2016). A field study of on-calendar visualizations. *Proc. Graphics Interface 2016*, 13–20. https://doi.org/10.20380/GI2016.03
 - Järvelin-Pasanen, S., Sinikallio, S., & Tarvainen, M. P. (2018). Heart rate variability and occupational stress: Systematic review. *Industrial Health, 56*(6), 500–511. https://doi.org/10.2486/indhealth.2017-0190
@@ -275,7 +276,6 @@ The full reading list, by feature, with checked links, is in [2026-10-25-reading
 - Ravichandran, R., Sien, S.-W., Patel, S. N., Kientz, J. A., & Pina, L. R. (2017). Making sense of sleep sensors: How sleep sensing technologies support and undermine sleep health. *Proc. CHI 2017*, 6864–6875. https://doi.org/10.1145/3025453.3025557
 - Rosenbach, H., Itzkovitch, A., Gidron, Y., & Schonberg, T. (2025). Assessing stress level scores against wearables-driven physiological measurements. *Stress and Health, 41*(6), e70125. https://doi.org/10.1002/smi.70125
 - Sanches, P., Höök, K., Vaara, E., Weymann, C., Bylund, M., Ferreira, P., Peira, N., & Sjölinder, M. (2010). Mind the body! Designing a mobile stress management application encouraging personal reflection. *Proc. DIS 2010*, 47–56. https://doi.org/10.1145/1858171.1858182
-- Shneiderman, B. (1996). The eyes have it: A task by data type taxonomy for information visualizations. *Proceedings 1996 IEEE Symposium on Visual Languages*, 336–343. https://doi.org/10.1109/VL.1996.545307
 - Sibrel, S. C., Rathore, R., Lessard, L., & Schloss, K. B. (2020). The relation between color and spatial structure for interpreting colormap data visualizations. *Journal of Vision, 20*(12), 7. https://doi.org/10.1167/jov.20.12.7
 - Siepe, B. S., Tutunji, R., Rieble, C. L., Proppert, R. K. K., & Fried, E. I. (2025). Associations between ecological momentary assessment and passive sensor data in a large student sample. *Journal of Psychopathology and Clinical Science, 134*(8), 912–925. https://doi.org/10.1037/abn0001013
 - Song, H., & Szafir, D. A. (2019). Where's my data? Evaluating visualizations with missing data. *IEEE Transactions on Visualization and Computer Graphics, 25*(1), 914–924. https://doi.org/10.1109/TVCG.2018.2864914

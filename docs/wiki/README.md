@@ -19,9 +19,9 @@ Captured on **27 October 2026** from source `2e93548`, using the local productio
 
 | Image | Current feature |
 | --- | --- |
-| [Week overview](assets/2026-10-27-calendar-desktop.png) | Violet shift ratings, blue reading dots and the day-panel graph. |
-| [Stress on hover](assets/2026-10-27-calendar-hover-stress.png) | A 3D shift opens a timed stress bar graph. |
-| [Heart on hover](assets/2026-10-27-calendar-hover-heart.png) | Heart switch and the matching hover graph. |
+| [Week overview](assets/2026-10-27-calendar-desktop.png) | Violet shift ratings, reading strips and the day-panel graph. |
+| [Stress on hover](assets/2026-10-27-calendar-hover-stress.png) | A 3D shift's stress strip and hover summary, with the timed graph in the day panel. |
+| [Heart on hover](assets/2026-10-27-calendar-hover-heart.png) | Heart switch, the heart strip and its hover summary. |
 | [Shift detail](assets/2026-10-27-shift-detail.png) | Work rating and both signal graphs. |
 | [Desktop ask](assets/2026-10-27-ask-desktop.png) | Past-shift rows and the three answer names. |
 | [Mobile ask](assets/2026-10-27-ask-mobile.png) | The same ask on a 390-pixel viewport. |

@@ -7,9 +7,9 @@ Explore the [Offshift wiki](https://github.com/AndhikaNayakaAW/DECO2850-team-pro
 
 ## Current release · 27 October 2026
 
-Open the [3D calendar](https://offshift-nine.vercel.app/calendar). The new UI keeps each shift's work rating in violet and marks available watch readings with a **blue dot**. Hover or tap the shift to see a **timed bar graph**; switch **Stress** and **Heart** below the week. Bars grow taller and darker on a yellow-green-blue scale, and missing readings remain hatched.
+Open the [3D calendar](https://offshift-nine.vercel.app/calendar). The new UI keeps each shift's work rating in violet and runs a **strip of 15-minute cells** down each shift the watch read; switch **Stress** and **Heart** below the week. Cells grow darker on a yellow-green-blue scale for more, missing readings are hatched, and the day list shows the same readings as a **timed bar graph**.
 
-![Current calendar: violet shift ratings, blue reading dots and a timed graph in the day panel](docs/wiki/assets/2026-10-27-calendar-desktop.png)
+![Current calendar: violet shift ratings, a reading strip down each shift and a timed graph in the day panel](docs/wiki/assets/2026-10-27-calendar-desktop.png)
 
 *Captured on 27 October from the local production build with a synthetic week and readings. [More current screenshots](docs/wiki/README.md#current-ui-screenshots).*
 
@@ -24,7 +24,7 @@ Release checks: **230 web tests across 25 files**, **10 Garmin build checks**, s
 
 ## Iteration 5 · A reflective tool (25 Oct 2026)
 
-After the tutor's feedback, Offshift keeps three pieces and joins them: the **3D calendar**, a **one-press check-in** on the watch after each shift ("How was the work?": Light, Steady, Busy or Hard), and **heart rate and stress during each shift**, read by the watch for that shift's hours only. The initial 15-minute grey ribbons became blue reading dots and timed bar graphs on 27 October. When a new ask arrives, a **Past shifts** check shows how the last shifts at that workplace went, in the worker's words and the watch's, with no advice. The all-day Body Battery reading, the daily floor band, the voice assistant and the second rating are gone. Rationale, storyboard, how this links to our interviews, the tutor's three questions and the user tests still to run: [docs/design/2026-10-25-biometrics-during-shifts.md](docs/design/2026-10-25-biometrics-during-shifts.md).
+After the tutor's feedback, Offshift keeps three pieces and joins them: the **3D calendar**, a **one-press check-in** on the watch after each shift ("How was the work?": Light, Steady, Busy or Hard), and **heart rate and stress during each shift**, read by the watch for that shift's hours only. The 15-minute strip down each shift turned yellow-green-blue on 27 October, the lists gained timed bar graphs, and a brief switch to reading dots was undone the same day. When a new ask arrives, a **Past shifts** check shows how the last shifts at that workplace went, in the worker's words and the watch's, with no advice. The all-day Body Battery reading, the daily floor band, the voice assistant and the second rating are gone. Rationale, storyboard, how this links to our interviews, the tutor's three questions and the user tests still to run: [docs/design/2026-10-25-biometrics-during-shifts.md](docs/design/2026-10-25-biometrics-during-shifts.md).
 
 ## Iteration 4 · Watch and calendar, ready for field testing
 
