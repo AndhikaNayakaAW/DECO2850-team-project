@@ -1,5 +1,6 @@
 import Toybox.Lang;
 import Toybox.Test;
+import Toybox.WatchUi;
 
 (:test)
 class RateSpy extends OffshiftApi {
@@ -38,20 +39,35 @@ function pickingAWordSendsItForThatShift(logger as Test.Logger) as Boolean {
     var model = new QuietModel(api);
     model.show(finishedShift(), shiftRead());
     Test.assertEqual((model.checkIn() as Dictionary)["id"], "s-thu-am");
-    model.rate("busy");
+    new CheckInDelegate(model, "s-thu-am").onSelect(new WatchUi.MenuItem("Busy", null, "busy", null));
     Test.assertEqual(api.sent, 1);
     Test.assertEqual(api.lastShift, "s-thu-am");
     Test.assertEqual(api.lastLevel, "busy");
     return true;
 }
 
+//! A refresh can move on while the question is open. The word still goes to the shift the worker was asked about.
 (:test)
-function nothingIsSentWithoutAFinishedShift(logger as Test.Logger) as Boolean {
+function aWordGoesToTheShiftThatWasAsked(logger as Test.Logger) as Boolean {
     var api = new RateSpy();
     var model = new QuietModel(api);
+    model.show(finishedShift(), shiftRead());
+    var menu = new CheckInDelegate(model, "s-thu-am");
     model.show(ask(false), shiftRead());
-    Test.assert(model.checkIn() == null);
-    model.rate("hard");
+    menu.onSelect(new WatchUi.MenuItem("Hard", null, "hard", null));
+    Test.assertEqual(api.sent, 1);
+    Test.assertEqual(api.lastShift, "s-thu-am");
+    Test.assertEqual(api.lastLevel, "hard");
+    return true;
+}
+
+//! Backing out is not an answer: nothing is sent, and the shift stays rateable on the calendar.
+(:test)
+function backingOutOfTheCheckInSendsNothing(logger as Test.Logger) as Boolean {
+    var api = new RateSpy();
+    var model = new QuietModel(api);
+    model.show(finishedShift(), shiftRead());
+    new CheckInDelegate(model, "s-thu-am").onBack();
     Test.assertEqual(api.sent, 0);
     return true;
 }
