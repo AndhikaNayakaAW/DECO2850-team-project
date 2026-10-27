@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AskPanel from "./AskPanel";
-import { BodyStrip } from "./BodyStrip";
+import { BodyGraph } from "./BodyGraph";
 import Immersive from "./Immersive";
 import ItemForm, { type ItemKindChoice, type ItemTarget, type Removed } from "./ItemForm";
 import SettingsForm from "./SettingsForm";
@@ -12,7 +12,7 @@ import Week3D, { type DropTarget, type SceneHandle } from "./Week3D";
 import { buildWeek, clashes, waitingAsks } from "@/lib/checks";
 import { EFFORTS, EFFORT_COLOUR, EFFORT_WORD } from "@/lib/effort";
 import { DAY_NAMES, clock12, dayIndex } from "@/lib/logic";
-import { LOAD_COLOUR, LOAD_WORDS, SHIFT_SIGNALS, SIGNAL_MEANING, SIGNAL_NAME, describeSignal } from "@/lib/shift-body";
+import { LOAD_COLOUR, LOAD_WORDS, SHIFT_SIGNALS, SIGNAL_MEANING, SIGNAL_NAME } from "@/lib/shift-body";
 import { useStore } from "@/lib/store";
 import { useSynced } from "@/lib/sync";
 import { useNow } from "@/lib/use-now";
@@ -500,8 +500,7 @@ function ListRow({ it, clash, signal, onOpen }: { it: DayItem; clash?: string; s
         <span className="src">{it.kind === "offer" ? (it.later ? "Kept for later · press to decide" : "Ask · open it") : it.status || it.source}</span>
         {it.body && (
           <span className="ev-body-reading">
-            <BodyStrip levels={it.body[signal]} signal={signal} shift={it} />
-            <span>{describeSignal(it.body[signal], signal)}</span>
+            <BodyGraph levels={it.body[signal]} signal={signal} shift={it} />
           </span>
         )}
         {it.warn && <span className="warn-tag">{it.warn}</span>}

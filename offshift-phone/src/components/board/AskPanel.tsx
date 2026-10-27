@@ -1,6 +1,6 @@
 "use client";
 
-import { BodyStrip } from "./BodyStrip";
+import { BodyGraph } from "./BodyGraph";
 import { offerChecks, offerWhen } from "@/lib/checks";
 import { EFFORT_COLOUR, EFFORT_WORD } from "@/lib/effort";
 import { clock12, range12 } from "@/lib/logic";
@@ -125,8 +125,8 @@ function PastRows({ shifts }: { shifts: Shift[] }) {
           </span>
           {s.body ? (
             <span className="past-body">
-              <BodyStrip levels={s.body.stress} signal="stress" shift={s} label />
-              <BodyStrip levels={s.body.heart} signal="heart" shift={s} label />
+              <BodyGraph levels={s.body.stress} signal="stress" shift={s} label />
+              <BodyGraph levels={s.body.heart} signal="heart" shift={s} label />
             </span>
           ) : (
             <span className="past-body quiet">No watch reading</span>

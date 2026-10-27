@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ShiftBodyChart } from "./BodyStrip";
+import { ShiftBodyChart } from "./BodyGraph";
 import { workplacesOf } from "@/lib/checks";
 import { useStore } from "@/lib/store";
 import { minutes } from "@/lib/logic";

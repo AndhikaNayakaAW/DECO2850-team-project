@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Week3D, { type SceneHandle, type SlotTarget } from "@/components/board/Week3D";
 import { buildWeek, type DataState } from "@/lib/checks";
 import { GestureEngine, type GestureEvent, type HandFrame } from "@/lib/gestures";
-import { ShiftBodyChart } from "./BodyStrip";
+import { ShiftBodyChart } from "./BodyGraph";
 import { startHandTracking, type HandTracker } from "@/lib/hands";
 import { DAYS, DAY_NAMES, clock12, dayIndex, minutes, range12 } from "@/lib/logic";
 import { useStore } from "@/lib/store";

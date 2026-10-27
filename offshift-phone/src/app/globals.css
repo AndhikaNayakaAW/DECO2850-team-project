@@ -299,26 +299,27 @@ button.status-pill{cursor:pointer;border:0;min-height:40px}
 .warn-tag,.cal-ev .clash{align-self:flex-start;margin-top:4px;font-size:11.5px;color:#7A5718;background:var(--warn-soft);padding:2px 7px;border-radius:6px}
 /* The past shifts check carries no judgement, so it gets the ink, not a state colour. */
 .check.info::before{background:var(--ink-2)} .check.info .ck{color:var(--ink-2)}
-/* The watch's readings during a shift: one cell per 15 minutes on the grey ramp, hatched where there was no reading. The strip keeps one width whatever the shift's length. */
-.body-strip{display:flex;align-items:center;gap:6px;min-width:0;width:100%;max-width:260px}
-.body-strip b{font-family:var(--font-mono);font-size:10px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);flex:0 0 46px}
-.body-strip .cells{display:flex;gap:1px;padding:1px;flex:1 1 auto;min-width:0;border:1px solid #374938;border-radius:3px;background:var(--surface)}
-.body-strip .cells i{display:block;flex:1 1 0;min-width:2px;height:10px;border-radius:1px}
-.body-strip .cells i.none{background:repeating-linear-gradient(135deg,#F5F2ED 0 2px,#5c5c57 2px 3px)}
 .ev-body-reading{display:flex;flex-direction:column;gap:3px;margin-top:5px;font-size:12px;color:var(--ink-2)}
 .past-rows{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
 .past-rows li{display:grid;grid-template-columns:1fr auto;gap:4px 8px;padding:7px 9px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
 .past-when{font-family:var(--font-mono);font-size:11px;color:var(--ink-2)}
 .past-rating{font-size:12.5px;font-weight:700;justify-self:end;white-space:nowrap}
-.past-body{grid-column:1 / -1;display:flex;flex-direction:column;gap:3px}
+.past-body{grid-column:1 / -1;display:flex;flex-direction:column;gap:6px}
+.past-body .body-graph{max-width:none}
 .past-body.quiet{font-size:12px;color:var(--ink-2)}
 .shift-body{display:flex;flex-direction:column;gap:10px;border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--surface-2)}
-.shift-body-row{display:flex;flex-direction:column;gap:3px}
-.shift-body-row p{margin:0;font-size:13.5px;line-height:1.4}
-.shift-body-row small{font-size:11.5px;color:var(--ink-2);line-height:1.35}
-.shift-body .body-strip{max-width:none}
-.shift-body .body-strip .cells i{height:14px}
-.shift-body-axis{display:flex;justify-content:space-between;padding-left:52px;font-family:var(--font-mono);font-size:10.5px;color:var(--ink-2);margin-top:-6px}
+/* A shift's readings as a bar graph: one bar per 15 minutes, its height and colour the level, times underneath. */
+.body-graph{display:flex;align-items:flex-start;gap:6px;width:100%;max-width:340px;min-width:0}
+.body-graph b{font-family:var(--font-mono);font-size:10px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);flex:0 0 46px;padding-top:14px}
+.body-graph .graph{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
+.body-graph .bars{display:flex;align-items:flex-end;gap:1px;height:36px;border-bottom:1px solid #374938}
+.body-graph .bars i{display:block;flex:1 1 0;min-width:2px;border-radius:2px 2px 0 0}
+.body-graph .bars i.none{height:4px;background:repeating-linear-gradient(135deg,#F5F2ED 0 2px,#5c5c57 2px 3px)}
+.body-graph .axis{position:relative;height:16px;margin-top:3px;font-family:var(--font-mono);font-size:10px;color:var(--ink-2);white-space:nowrap}
+.body-graph .axis span{position:absolute;top:0;transform:translateX(-50%)}
+.body-graph .axis span.first{transform:none}
+.body-graph .axis span.last{transform:translateX(-100%)}
+.shift-body .body-graph{max-width:none}
 .add-day{width:100%;border:1px dashed var(--line);border-radius:14px}
 .board-wait{display:grid;place-items:center}
 .rest-note{font-size:13px;color:var(--ok);background:var(--ok-soft);border-radius:10px;padding:6px 10px}

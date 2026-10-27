@@ -5,7 +5,7 @@
  */
 import { minutesSinceEnd } from "./effort";
 import { uid } from "./ids";
-import { elapsedMinutes, fromMinutes, minutes, range12 } from "./logic";
+import { clock12, elapsedMinutes, fromMinutes, minutes, range12 } from "./logic";
 import { addDays, instantOf, shortDate } from "./time";
 import type { DataSlice, Load, Shift, ShiftBody, ShiftSignal } from "./types";
 
@@ -30,12 +30,6 @@ export const LOAD_WORDS: Record<ShiftSignal, readonly [string, string, string, s
   heart: ["Very light", "Light", "Moderate", "Vigorous"],
 };
 
-/** Where each reading comes from, shown beside it. */
-export const SIGNAL_SOURCE: Record<ShiftSignal, string> = {
-  stress: "Garmin's stress level, from heart-rate variability while you're still",
-  heart: "Your heart rate between your own resting and maximum rate",
-};
-
 /** What darker means, for the key: "darker: more stress". */
 export const SIGNAL_MEANING: Record<ShiftSignal, string> = { stress: "more stress", heart: "harder heart work" };
 
@@ -56,6 +50,24 @@ export function blockTimes(shift: Pick<Shift, "start" | "end">): { start: string
   const total = elapsedMinutes(shift.start, shift.end);
   const from = minutes(shift.start);
   return Array.from({ length: blockCount(shift) }, (_, i) => ({ start: fromMinutes(from + i * BLOCK_MINUTES), end: fromMinutes(from + Math.min(total, (i + 1) * BLOCK_MINUTES)) }));
+}
+
+/**
+ * The time labels under a shift's graph: its start, whole hours (every second hour past six hours, every third past
+ * twelve) and its end. `at` runs 0 to 1 along the shift. An hour closer than 30 minutes to either end is left out so
+ * labels never overlap.
+ */
+export function timeMarks(shift: Pick<Shift, "start" | "end">): { at: number; label: string }[] {
+  const total = elapsedMinutes(shift.start, shift.end);
+  const from = minutes(shift.start);
+  const step = total <= 360 ? 60 : total <= 720 ? 120 : 180;
+  const marks = [{ at: 0, label: clock12(shift.start) }];
+  for (let t = Math.ceil(from / step) * step; t < from + total; t += step) {
+    const offset = t - from;
+    if (offset >= 30 && total - offset >= 30) marks.push({ at: offset / total, label: clock12(fromMinutes(t)) });
+  }
+  marks.push({ at: 1, label: clock12(shift.end) });
+  return marks;
 }
 
 /** When the shift ran, as instants in seconds, so the watch can read exactly those hours without knowing the zone. */
