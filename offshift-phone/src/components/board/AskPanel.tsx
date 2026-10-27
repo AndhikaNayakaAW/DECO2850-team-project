@@ -71,8 +71,7 @@ export default function AskPanel({
         <div key={c.key} className={`check ${c.state}`}>
           <div className="ck">{CHECK_LABEL[c.key]}</div>
           <div>
-            {c.text}
-            {c.key === "past" && <PastRows shifts={past} />}
+            {c.key === "past" && past.length ? <PastRows shifts={past} /> : c.text}
           </div>
         </div>
       ))}
@@ -94,7 +93,6 @@ export default function AskPanel({
               </button>
             )}
           </div>
-          <p className="quiet">Nothing is sent to {offer.from}.</p>
         </>
       )}
 
