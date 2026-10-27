@@ -25,15 +25,18 @@ function pushAnswerMenu(model as OffshiftModel, ask as Dictionary) as Void {
         var c = choices[i] as Array;
         menu.addItem(new WatchUi.MenuItem(c[0] as String, null, c[1] as String, null));
     }
-    WatchUi.pushView(menu, new AnswerMenuDelegate(model), WatchUi.SLIDE_UP);
+    WatchUi.pushView(menu, new AnswerMenuDelegate(model, ask["id"] as String), WatchUi.SLIDE_UP);
 }
 
+//! Holds the id of the ask the menu was opened for, so a refresh that brings another ask can't change which one is answered.
 class AnswerMenuDelegate extends WatchUi.Menu2InputDelegate {
     private var _model as OffshiftModel;
+    private var _askId as String;
 
-    function initialize(model as OffshiftModel) {
+    function initialize(model as OffshiftModel, askId as String) {
         Menu2InputDelegate.initialize();
         _model = model;
+        _askId = askId;
     }
 
     function onSelect(item as MenuItem) as Void {
@@ -41,10 +44,10 @@ class AnswerMenuDelegate extends WatchUi.Menu2InputDelegate {
         WatchUi.popView(WatchUi.SLIDE_IMMEDIATE);
         // Later only changes how the ask looks, so it needs no confirmation.
         if ("later".equals(decision)) {
-            _model.answer(decision);
+            _model.answer(_askId, decision);
             return;
         }
-        WatchUi.pushView(new WatchUi.Confirmation(answerPrompt(decision)), new SendConfirmDelegate(_model, decision), WatchUi.SLIDE_IMMEDIATE);
+        WatchUi.pushView(new WatchUi.Confirmation(answerPrompt(decision)), new SendConfirmDelegate(_model, _askId, decision), WatchUi.SLIDE_IMMEDIATE);
     }
 
     function onBack() as Void {
@@ -54,17 +57,19 @@ class AnswerMenuDelegate extends WatchUi.Menu2InputDelegate {
 
 class SendConfirmDelegate extends WatchUi.ConfirmationDelegate {
     private var _model as OffshiftModel;
+    private var _askId as String;
     private var _decision as String;
 
-    function initialize(model as OffshiftModel, decision as String) {
+    function initialize(model as OffshiftModel, askId as String, decision as String) {
         ConfirmationDelegate.initialize();
         _model = model;
+        _askId = askId;
         _decision = decision;
     }
 
     function onResponse(response as Confirm) as Boolean {
         if (response == WatchUi.CONFIRM_YES) {
-            _model.answer(_decision);
+            _model.answer(_askId, _decision);
         }
         return true;
     }

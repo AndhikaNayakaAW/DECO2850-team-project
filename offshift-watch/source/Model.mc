@@ -187,21 +187,15 @@ class OffshiftModel {
         pushCheckInMenu(self, checkIn);
     }
 
-    //! Saves how the work was on the shift that just finished. Nothing goes to the manager.
-    function rate(level as String) as Void {
-        var checkIn = self.checkIn();
-        if (checkIn == null) {
-            return;
-        }
-        _api.rate(checkIn["id"] as String, level, method(:onAnswered));
+    //! Saves how the work was on the shift the worker was asked about. Nothing goes to the manager.
+    //! The id comes from the open question, not the latest summary, which a refresh may have moved on.
+    function rate(shiftId as String, level as String) as Void {
+        _api.rate(shiftId, level, method(:onAnswered));
     }
 
-    function answer(decision as String) as Void {
-        var ask = self.ask();
-        if (ask == null) {
-            return;
-        }
-        _api.answer(ask["id"] as String, decision, method(:onAnswered));
+    //! Answers the ask the worker opened. The server says if it was already answered elsewhere.
+    function answer(offerId as String, decision as String) as Void {
+        _api.answer(offerId, decision, method(:onAnswered));
     }
 
     function onAnswered(code as Number, data as Dictionary or String or Null) as Void {
