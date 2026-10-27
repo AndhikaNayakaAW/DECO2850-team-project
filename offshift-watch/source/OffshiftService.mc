@@ -44,7 +44,8 @@ class OffshiftService extends System.ServiceDelegate {
             if (ask instanceof Dictionary) {
                 Application.Storage.setValue("glance", Lines.ask(ask));
                 var id = ask["id"] as String;
-                if (!id.equals(Application.Storage.getValue("seenAsk"))) {
+                // During a shift the ask waits: the wake comes on the first check after the shift ends.
+                if (Lines.quiet(ask) == null && !id.equals(Application.Storage.getValue("seenAsk"))) {
                     Application.Storage.setValue("seenAsk", id);
                     Background.requestApplicationWake(Lines.wake(ask));
                 }

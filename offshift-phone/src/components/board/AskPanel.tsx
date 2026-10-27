@@ -5,6 +5,7 @@ import { offerChecks, offerWhen } from "@/lib/checks";
 import { EFFORT_COLOUR, EFFORT_WORD } from "@/lib/effort";
 import { clock12, range12 } from "@/lib/logic";
 import { pastShifts } from "@/lib/past-shifts";
+import { quietUntil } from "@/lib/quiet";
 import { useStore } from "@/lib/store";
 import { nowIn, shortDate, weekdayName, type Now } from "@/lib/time";
 import { STATUS } from "@/lib/status";
@@ -39,6 +40,7 @@ export default function AskPanel({
   const open = offer.status === "pending" || offer.status === "deferred";
   const checks = offerChecks(offer, state, now);
   const past = pastShifts(offer, state, now);
+  const quiet = quietUntil(offer, state, now);
   const sentAt = clock12(nowIn(state.settings.timeZone, new Date(offer.sentAt)).time);
 
   function answer(d: Decision) {
@@ -80,6 +82,7 @@ export default function AskPanel({
         <>
           {suggested && <p className="form-note">You said {suggested === "accept" ? "accept" : "decline"}. Press it below to make it so.</p>}
           {offer.status === "deferred" && <p className="form-note">You kept this for later.</p>}
+          {quiet && <p className="form-note">You're at work until {clock12(quiet)}, so your watch stays quiet about this until then.</p>}
           <div className="decisions" role="group" aria-label="Your answer">
             <button className={`btn take${suggested === "accept" ? " suggested" : ""}`} onClick={() => answer("accept")}>
               <b>Accept</b>

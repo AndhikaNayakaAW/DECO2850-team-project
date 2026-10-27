@@ -40,4 +40,19 @@ module Lines {
     function wake(ask as Dictionary) as String {
         return (ask["from"] as String) + " asked you to cover " + (ask["when"] as String) + ", " + (ask["time"] as String) + ". Open Offshift?";
     }
+
+    //! The end of the shift the worker is on ("9 pm") while a new ask waits to buzz, or null when it may buzz now.
+    function quiet(ask as Dictionary) as String? {
+        var until = ask["quiet"];
+        return (until instanceof String) ? until : null;
+    }
+
+    //! Buzz for an ask that is new since the last one, or one held during a shift that has now ended. Never during a shift.
+    function buzzFor(ask as Dictionary, lastId as String?, heldId as String?) as Boolean {
+        if (quiet(ask) != null) {
+            return false;
+        }
+        var id = ask["id"] as String;
+        return id.equals(heldId) || (lastId != null && !id.equals(lastId));
+    }
 }

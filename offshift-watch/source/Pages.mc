@@ -305,5 +305,9 @@ function askHint(ask as Dictionary?) as String? {
     if (ask == null) {
         return null;
     }
+    var quiet = Lines.quiet(ask);
+    if (quiet != null) {
+        return "Quiet until " + quiet;
+    }
     return "deferred".equals(ask["status"]) ? "Saved for later" : "Press to answer";
 }

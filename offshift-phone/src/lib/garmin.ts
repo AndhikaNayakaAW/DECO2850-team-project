@@ -4,6 +4,7 @@ import { dayItems, eventsFor, isRestDay, offerImpact, waitingAsks } from "./chec
 import { EFFORT_WORD, checkInDue } from "./effort";
 import { clock12, minutes, range12 } from "./logic";
 import { pastShifts } from "./past-shifts";
+import { quietUntil } from "./quiet";
 import { shiftBodyDue, shiftWindow } from "./shift-body";
 import { addDays, nowIn, weekdayOf, whenWord, type Now } from "./time";
 import type { DataSlice, Decision, Offer, OfferStatus } from "./types";
@@ -35,6 +36,8 @@ export interface WatchAsk {
   status: "pending" | "deferred";
   /** Older builds show this after "Reminder" for an ask kept for later. There is no reminder any more. */
   reminder: string | null;
+  /** When the worker is on a shift: its end ("9 pm"), so the watch stays still until then. Older builds ignore it and buzz. */
+  quiet: string | null;
 }
 
 export interface WatchSummary {
@@ -118,6 +121,12 @@ function todayLines(data: DataSlice, today: string): string[] {
     .map((it) => ascii(`${at(it.start)} ${it.label}`));
 }
 
+/** The end of the shift the worker is on, as the watch shows it ("9 pm"), when a new ask should wait until then. */
+function quietOn(offer: Offer, data: DataSlice, now: Pick<Now, "date" | "time">): string | null {
+  const until = quietUntil(offer, data, now);
+  return until ? ascii(clock12(until)) : null;
+}
+
 /** Everything the watch shows, in plain text. */
 export function watchSummary(data: DataSlice, atTime: Date = new Date()): WatchSummary {
   const now = nowIn(data.settings.timeZone, atTime);
@@ -138,6 +147,7 @@ export function watchSummary(data: DataSlice, atTime: Date = new Date()): WatchS
         swap: "No one",
         status: o.status as "pending" | "deferred",
         reminder: o.status === "deferred" ? "later" : null,
+        quiet: quietOn(o, data, now),
       }
     : null;
   const last = data.offers

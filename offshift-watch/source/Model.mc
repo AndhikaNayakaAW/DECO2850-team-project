@@ -21,6 +21,7 @@ class OffshiftModel {
     //! After a failed send, when to try that shift again (System.getTimer), so the history isn't re-read every 5 seconds.
     private var _retryBodyAt as Number?;
     private var _lastAskId as String?;
+    private var _heldAskId as String?;
     private var _started as Boolean = false;
 
     function initialize(api as OffshiftApi) {
@@ -99,16 +100,24 @@ class OffshiftModel {
         WatchUi.requestUpdate();
     }
 
-    //! Buzz once when a new ask arrives, and keep a line for the glance.
+    //! Buzz once when a new ask arrives, or when the shift it arrived during ends, and keep a line for the glance.
     private function remember(data as Dictionary) as Void {
         var ask = data["ask"];
         if (ask instanceof Dictionary) {
             var id = ask["id"] as String;
-            if (_lastAskId != null && !id.equals(_lastAskId) && (Attention has :vibrate)) {
+            if (Lines.buzzFor(ask, _lastAskId, _heldAskId) && (Attention has :vibrate)) {
                 Attention.vibrate([new Attention.VibeProfile(60, 400)]);
             }
+            if (Lines.quiet(ask) != null) {
+                // On a shift: stay still, and buzz for this ask once the shift ends. The background wake waits too.
+                if (!id.equals(_lastAskId)) {
+                    _heldAskId = id;
+                }
+            } else {
+                _heldAskId = null;
+                Application.Storage.setValue("seenAsk", id);
+            }
             _lastAskId = id;
-            Application.Storage.setValue("seenAsk", id);
             Application.Storage.setValue("glance", Lines.ask(ask));
         } else {
             _lastAskId = null;
