@@ -6,9 +6,20 @@ import Toybox.Test;
 function anAskHasThreeAnswers(logger as Test.Logger) as Boolean {
     var choices = answerChoices((ask(false) as Dictionary)["ask"] as Dictionary);
     Test.assertEqual(choices.size(), 3);
-    Test.assertEqual((choices[0] as Array)[2], "accept");
-    Test.assertEqual((choices[1] as Array)[2], "decline");
-    Test.assertEqual((choices[2] as Array)[2], "later");
+    Test.assertEqual((choices[0] as Array)[1], "accept");
+    Test.assertEqual((choices[1] as Array)[1], "decline");
+    Test.assertEqual((choices[2] as Array)[1], "later");
+    return true;
+}
+
+//! Each answer is only its name: no line under it.
+(:test)
+function anAnswerIsOnlyItsName(logger as Test.Logger) as Boolean {
+    var choices = answerChoices((ask(false) as Dictionary)["ask"] as Dictionary);
+    Test.assertEqual((choices[0] as Array).size(), 2);
+    Test.assertEqual((choices[0] as Array)[0], "Accept");
+    Test.assertEqual((choices[1] as Array)[0], "Decline");
+    Test.assertEqual((choices[2] as Array)[0], "Decide later");
     return true;
 }
 
