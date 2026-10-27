@@ -6,7 +6,7 @@ import { dayItems } from "@/lib/checks";
 import { watchSummary } from "@/lib/garmin";
 import { mergeData } from "@/lib/merge";
 import { effortToSave } from "@/lib/effort";
-import { LOAD_COLOUR, LOAD_WORDS, applyShiftBody, blockCount, blockTimes, describeSignal, forgetShiftBodies, parseShiftBody, shiftBodyDue, shiftWindow } from "@/lib/shift-body";
+import { LOAD_COLOUR, LOAD_WORDS, applyShiftBody, blockCount, blockTimes, describeSignal, forgetShiftBodies, parseShiftBody, shiftBodyDue, shiftWindow, timeMarks } from "@/lib/shift-body";
 import { teamView } from "@/lib/team";
 import type { DataSlice, Load, Shift } from "@/lib/types";
 import { cleanData } from "@/lib/validate";
@@ -145,6 +145,25 @@ describe("the calendar shows them along each shift", () => {
       expect(lab(LOAD_COLOUR[i])[0]).toBeLessThan(lab(LOAD_COLOUR[i - 1])[0]);
     }
     expect(distance(LOAD_COLOUR[0], "#FFFDFA")).toBeGreaterThan(30);
+  });
+
+  it("labels the graph's time axis with the start, each hour and the end", () => {
+    expect(timeMarks({ start: "10:00", end: "14:00" })).toEqual([
+      { at: 0, label: "10 am" },
+      { at: 0.25, label: "11 am" },
+      { at: 0.5, label: "12 pm" },
+      { at: 0.75, label: "1 pm" },
+      { at: 1, label: "2 pm" },
+    ]);
+  });
+
+  it("keeps an hour mark at least half an hour from the start and end, so labels don't overlap", () => {
+    expect(timeMarks({ start: "16:30", end: "18:45" }).map((m) => m.label)).toEqual(["4:30 pm", "5 pm", "6 pm", "6:45 pm"]);
+    expect(timeMarks({ start: "16:45", end: "18:20" }).map((m) => m.label)).toEqual(["4:45 pm", "6:20 pm"]);
+  });
+
+  it("marks every second hour on a long shift, past midnight too", () => {
+    expect(timeMarks({ start: "22:00", end: "08:00" }).map((m) => m.label)).toEqual(["10 pm", "12 am", "2 am", "4 am", "6 am", "8 am"]);
   });
 
   it("sums a shift up in one plain sentence per signal, with where the peak was", () => {
