@@ -125,10 +125,26 @@ describe("the calendar shows them along each shift", () => {
     expect(dayItems(stored(), "2026-10-22").find((it) => it.id === "s-thu-am")?.body?.stress).toHaveLength(19);
   });
 
-  it("names Garmin's stress bands and the heart-rate-reserve bands in words, on one grey ramp", () => {
+  it("names Garmin's stress bands and the heart-rate-reserve bands in words, on one yellow-green-blue ramp", () => {
     expect(LOAD_WORDS.stress).toEqual(["Resting", "Low", "Medium", "High"]);
     expect(LOAD_WORDS.heart).toEqual(["Very light", "Light", "Moderate", "Vigorous"]);
-    expect(LOAD_COLOUR).toEqual(["#E2E2DE", "#B9BAB4", "#8E908A", "#62645F"]);
+    expect(LOAD_COLOUR).toEqual(["#A1DAB4", "#41B6C4", "#2C7FB8", "#253494"]);
+  });
+
+  it("keeps every level easy to tell from the next one and from the page, and darker for more", () => {
+    const lab = (hex: string): [number, number, number] => {
+      const lin = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+      const [r, g, b] = lin;
+      const f = (t: number) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+      const x = f((0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047), y = f(0.2126 * r + 0.7152 * g + 0.0722 * b), z = f((0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883);
+      return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+    };
+    const distance = (a: string, b: string) => Math.hypot(...lab(a).map((v, i) => v - lab(b)[i]));
+    for (let i = 1; i < LOAD_COLOUR.length; i++) {
+      expect(distance(LOAD_COLOUR[i - 1], LOAD_COLOUR[i])).toBeGreaterThan(30);
+      expect(lab(LOAD_COLOUR[i])[0]).toBeLessThan(lab(LOAD_COLOUR[i - 1])[0]);
+    }
+    expect(distance(LOAD_COLOUR[0], "#FFFDFA")).toBeGreaterThan(30);
   });
 
   it("sums a shift up in one plain sentence per signal, with where the peak was", () => {
