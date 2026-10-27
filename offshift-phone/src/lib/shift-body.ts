@@ -70,6 +70,11 @@ export function timeMarks(shift: Pick<Shift, "start" | "end">): { at: number; la
   return marks;
 }
 
+/** Whether the watch read anything during a shift, so the 3D week can mark it. A shift of nothing but gaps has nothing to show. */
+export function hasReading(body: ShiftBody | undefined): boolean {
+  return !!body && [...body.stress, ...body.heart].some((v) => v !== null);
+}
+
 /** When the shift ran, as instants in seconds, so the watch can read exactly those hours without knowing the zone. */
 export function shiftWindow(shift: Pick<Shift, "date" | "start" | "end">, timeZone: string): { from: number; to: number } {
   const endDate = minutes(shift.end) <= minutes(shift.start) ? addDays(shift.date, 1) : shift.date;
