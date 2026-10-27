@@ -124,12 +124,12 @@ The worker can still see Garmin's own numbers in Garmin's widgets. Offshift adds
 | Decision | Why | Sources |
 | --- | --- | --- |
 | A ribbon down the front of each shift's block, one cell per 15 minutes | Height already means time in the 3D week, so each cell sits exactly where its quarter hour is. The reading and the schedule are one object. | On-calendar visualisation (Huang, Tory & Bartram, 2016); juxtaposition (Gleicher et al., 2011) |
-| One grey ramp, evenly darker for more | Sequential, single hue; darker reads as more on a light ground; no red or green verdicts | Harrower & Brewer (2003); Schloss et al. (2019) via Sibrel et al. (2020) |
+| One yellow-green-blue ramp (ColorBrewer YlGnBu), darker for more. Grey until 27 Oct | Sequential; darker reads as more on a light ground; no red or green verdicts. The four greys were only about 15 apart in CIELAB ΔE, and the lightest only 10 from the page, so levels blurred in small cells and Resting looked empty. YlGnBu steps are 33 to 45 apart, it stays clear of the violet ratings and amber asks, and it reads with colour-blind vision. A test keeps every step more than 30 apart | Harrower & Brewer (2003); Schloss et al. (2019) via Sibrel et al. (2020) |
 | Hatched cells for no reading | Missing must look missing, never low | Song & Szafir (2019) |
 | One signal at a time, chosen by the worker (Stress or Heart) | Showing everything overwhelms | Jones & Kelly (2017) |
-| Violet for the worker's word, grey for the watch | Two channels that never mix: how the work felt, and what the body did | 23 Oct rationale, §4.4 and §6 |
-| The same strips flat in 2D: day list, shift form, ask | 3D shows the shape of the week; 2D is for reading values | Munzner (2014); Kraus et al. (2020) |
-| One plain sentence per signal: what it mostly was, its peak and when | For people who don't read charts; it names no cause and gives no advice | Krosnick & Presser (2010); Baumer (2015) |
+| Violet for the worker's word, yellow-green-blue for the watch | Two channels that never mix: how the work felt, and what the body did | 23 Oct rationale, §4.4 and §6 |
+| In 2D (day list, shift form, the ask's past shifts) a bar graph instead of a strip: one bar per 15 minutes, taller and darker for more, a hatched stub for no reading, and the start, each hour and the end underneath. The 3D ribbon stays a strip | 3D shows the shape of the week; 2D is for reading values. Length is read more accurately than shade, and the time labels show *when* without counting cells | Munzner (2014); Kraus et al. (2020) |
+| One plain sentence per signal: what it mostly was, its peak and when. Since 27 Oct only in the graph's screen-reader label, and on hover in the 3D week | For people who don't read charts; it names no cause and gives no advice. Shown on screen it repeated what the labelled graph already says | Krosnick & Presser (2010); Baumer (2015) |
 | Small multiples of the last four shifts at that workplace on an ask | The same view repeated, so like is compared with like at the moment of decision. Grouping by a shared feature (here, the workplace) helps people see patterns. | Tufte (1990); Epstein et al. (2014) |
 
 **Forms we considered.** We looked at chart templates in [Flourish](https://flourish.studio) (line charts, heatmaps, small multiples):
@@ -140,6 +140,12 @@ The worker can still see Garmin's own numbers in Garmin's widgets. Offshift adds
 - **A strip of cells per shift.** Chosen. It is a heatmap that follows the shift's own length.
 
 Offshift draws the strips itself rather than embedding Flourish, so the readings never leave the worker's calendar.
+
+**Update, 27 October.** After a review of the strips on a local copy with made-up readings, three changes:
+
+- **Colour:** the grey ramp became yellow-green-blue (table above). Alternatives compared were blues, viridis (its darkest step is purple, which clashes with the violet ratings) and yellow-orange-brown (it reads as heat and warning).
+- **Bar graph in 2D:** the flat strips became bar graphs with times along the bottom (table above). The 3D ribbon stays a strip, since a graph doesn't fit on a block's face.
+- **Less text on an ask:** the Past shifts check no longer shows its summary sentence (*"Your last three shifts at Café…"*) when there are shifts to show; the graphs carry it. "Nothing is sent to …" under the answer buttons was removed too. Nothing is sent to the manager either way. The section is unchanged where there are no past shifts yet.
 
 ## 6. How this links to our own field data
 
