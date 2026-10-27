@@ -738,7 +738,7 @@ class WeekScene {
   /**
    * What the watch read during a shift, down the front of its block: one cell per 15 minutes from the shift's start,
    * darker for more of the signal the worker picked, hatched where the watch had no reading. Height already means time,
-   * so each cell sits exactly where its quarter hour is. Unlit, so the greys keep their values; outlined so the palest
+   * so each cell sits exactly where its quarter hour is. Unlit, so the colours keep their values; outlined so the palest
    * still stands off the violet of a rated shift.
    */
   addRibbon(mesh: THREE.Mesh, levels: (Load | null)[], it: DayItem, s: number, e: number, w: number) {

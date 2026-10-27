@@ -39,8 +39,12 @@ export const SIGNAL_SOURCE: Record<ShiftSignal, string> = {
 /** What darker means, for the key: "darker: more stress". */
 export const SIGNAL_MEANING: Record<ShiftSignal, string> = { stress: "more stress", heart: "harder heart work" };
 
-/** One neutral grey, evenly darker for more. No hue, so it never competes with the violet work ratings and reads the same with colour-blind vision. */
-export const LOAD_COLOUR = ["#E2E2DE", "#B9BAB4", "#8E908A", "#62645F"] as const;
+/**
+ * ColorBrewer's yellow-green-blue (YlGnBu), darker for more. Each step is easy to tell from the next even in a small
+ * cell, which the old greys weren't; it has no red, stays clear of the violet work ratings and the amber asks, and
+ * reads with colour-blind vision.
+ */
+export const LOAD_COLOUR = ["#A1DAB4", "#41B6C4", "#2C7FB8", "#253494"] as const;
 
 /** How many 15-minute blocks a shift has. A shift that ends before it starts runs past midnight. */
 export function blockCount(shift: Pick<Shift, "start" | "end">): number {
