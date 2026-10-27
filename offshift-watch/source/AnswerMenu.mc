@@ -1,14 +1,14 @@
 import Toybox.Lang;
 import Toybox.WatchUi;
 
-//! The same three answers as the calendar: label, line under it, and the answer the server takes.
+//! The same three answers as the calendar: label and the answer the server takes. No line under them.
 function answerChoices(ask as Dictionary) as Array {
     var choices = [
-        ["Accept", "Puts it on your week", "accept"],
-        ["Decline", "Takes it off your week", "decline"]
+        ["Accept", "accept"],
+        ["Decline", "decline"]
     ];
     if (!"deferred".equals(ask["status"])) {
-        choices.add(["Decide later", "Stays on your week", "later"]);
+        choices.add(["Decide later", "later"]);
     }
     return choices;
 }
@@ -23,7 +23,7 @@ function pushAnswerMenu(model as OffshiftModel, ask as Dictionary) as Void {
     var choices = answerChoices(ask);
     for (var i = 0; i < choices.size(); i++) {
         var c = choices[i] as Array;
-        menu.addItem(new WatchUi.MenuItem(c[0] as String, c[1] as String, c[2] as String, null));
+        menu.addItem(new WatchUi.MenuItem(c[0] as String, null, c[1] as String, null));
     }
     WatchUi.pushView(menu, new AnswerMenuDelegate(model), WatchUi.SLIDE_UP);
 }
