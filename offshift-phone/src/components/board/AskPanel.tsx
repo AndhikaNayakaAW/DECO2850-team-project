@@ -84,16 +84,13 @@ export default function AskPanel({
           <div className="decisions" role="group" aria-label="Your answer">
             <button className={`btn take${suggested === "accept" ? " suggested" : ""}`} onClick={() => answer("accept")}>
               <b>Accept</b>
-              <small>Puts it on your week</small>
             </button>
             <button className={`btn decline${suggested === "decline" ? " suggested" : ""}`} onClick={() => answer("decline")}>
               <b>Decline</b>
-              <small>Takes it off your week</small>
             </button>
             {offer.status === "pending" && (
               <button className="btn later" onClick={() => answer("later")}>
-                <b>Later</b>
-                <small>Stays on your week, see-through</small>
+                <b>Decide later</b>
               </button>
             )}
           </div>
