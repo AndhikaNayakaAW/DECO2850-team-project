@@ -5,8 +5,8 @@ import * as THREE from "three";
 import { throwSpeed } from "@/lib/gestures";
 import { DAYS, elapsedMinutes, fromMinutes, minutes } from "@/lib/logic";
 import { EFFORT_COLOUR, EFFORT_WORD } from "@/lib/effort";
-import { LOAD_COLOUR, SIGNAL_NAME, hasReading, timeMarks } from "@/lib/shift-body";
-import type { Day, DayItem, DayView, ShiftSignal } from "@/lib/types";
+import { LOAD_COLOUR, describeSignal } from "@/lib/shift-body";
+import type { Day, DayItem, DayView, Load, ShiftSignal } from "@/lib/types";
 
 const H0 = 6;
 const H1 = 24;
@@ -70,6 +70,8 @@ interface Block {
   /** The label's measured size at each level of detail, read once. */
   sizes?: Partial<Record<"full" | "mid" | "compact", { w: number; h: number }>>;
   kind: DayItem["kind"];
+  /** What the watch read during a shift, for the tooltip. */
+  note?: string;
 }
 
 interface Grab {
@@ -140,11 +142,11 @@ class WeekScene {
   target = new THREE.Vector3(0, 1.8, 0);
   orbit = { theta: 0.4, phi: 1.2, r: 24 };
   baseTheta = 0.4;
-  /** Which of the watch's readings a shift's tooltip graphs, chosen by the worker; null shows none. */
+  /** Which of the watch's readings the shifts carry, chosen by the worker; null draws none. */
   bodySignal: ShiftSignal | null = "stress";
-  /** The dot on a shift the watch read: the ramp's middle blue on a white rim, so it shows on every violet. */
-  dotMat = new THREE.MeshBasicMaterial({ color: LOAD_COLOUR[2] });
-  dotRim = new THREE.MeshBasicMaterial({ color: 0xfffdfa });
+  ribbonMats = new Map<string, THREE.MeshBasicMaterial>();
+  hatch: THREE.CanvasTexture | null = null;
+  ribbonEdge = new THREE.LineBasicMaterial({ color: 0x374938 });
   zoom = 1;
   pointers = new Map<number, { x: number; y: number }>();
   pinchDist = 0;
@@ -374,7 +376,10 @@ class WeekScene {
         const entry: Block = { mesh, day, s, e, label: `${it.label}${it.source && !it.label.includes(it.source) ? ` · ${it.source}` : ""}`, offerId: it.offerId, item: it, delay: known(it.id) ? -10 : di * 0.09 + ii * 0.07, home: mesh.position.clone(), layer: this.layerFor(it.kind), kind: it.kind };
         // Colour is never the only cue: the word goes on the label too.
         if (it.kind === "shift" && it.effort) entry.label = `${entry.label} · ${EFFORT_WORD[it.effort]}`;
-        if (it.kind === "shift" && hasReading(it.body)) this.addDot(mesh, h, w);
+        if (it.kind === "shift" && it.body && this.bodySignal) {
+          this.addRibbon(mesh, it.body[this.bodySignal], it, s, e, w);
+          entry.note = describeSignal(it.body[this.bodySignal], this.bodySignal) ?? undefined;
+        }
         if (it.kind === "offer") {
           const edges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.0, h + 0.06, 1.0)), this.edge);
           edges.position.set(0, h / 2, 0);
@@ -731,18 +736,64 @@ class WeekScene {
   }
 
   /**
-   * A small dot on the front of a shift the watch read. The 3D week shows the shape of the week and each shift's rating;
-   * the reading itself is a bar graph in the tooltip on hover or tap, where its levels and times can be read
-   * (Munzner, 2014: 3D for shape, 2D for values).
+   * What the watch read during a shift, down the front of its block: one cell per 15 minutes from the shift's start,
+   * darker for more of the signal the worker picked, hatched where the watch had no reading. Height already means time,
+   * so each cell sits exactly where its quarter hour is. Unlit, so the colours keep their values; outlined so the palest
+   * still stands off the violet of a rated shift.
    */
-  addDot(mesh: THREE.Mesh, h: number, w: number) {
-    const y = Math.max(h / 2, h - 0.16);
-    const rim = new THREE.Mesh(new THREE.CircleGeometry(0.11, 24), this.dotRim);
-    rim.position.set(w / 2 - 0.16, y, w / 2 + 0.004);
-    const dot = new THREE.Mesh(new THREE.CircleGeometry(0.08, 24), this.dotMat);
-    dot.position.set(0, 0, 0.001);
-    rim.add(dot);
-    mesh.add(rim);
+  addRibbon(mesh: THREE.Mesh, levels: (Load | null)[], it: DayItem, s: number, e: number, w: number) {
+    const start = hours(it.start);
+    const length = elapsedMinutes(it.start, it.end) / 60;
+    const width = Math.min(0.34, w * 0.4);
+    const z = w / 2 + 0.004;
+    const ribbon = new THREE.Group();
+    let top = 0;
+    let bottom = Infinity;
+    levels.forEach((v, i) => {
+      const a = Math.max(s, start + i * 0.25);
+      const b = Math.min(e, start + Math.min((i + 1) * 0.25, length));
+      if (b <= a) return;
+      const h = (b - a) * UNIT;
+      const y = (a - s) * UNIT;
+      const cell = new THREE.Mesh(new THREE.PlaneGeometry(width, Math.max(0.002, h - 0.006)), this.ribbonMat(v));
+      cell.position.set(0, y + h / 2, z);
+      ribbon.add(cell);
+      bottom = Math.min(bottom, y);
+      top = Math.max(top, y + h);
+    });
+    if (!ribbon.children.length) return;
+    const outline = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(width + 0.02, top - bottom + 0.012)), this.ribbonEdge);
+    outline.position.set(0, (top + bottom) / 2, z + 0.001);
+    ribbon.add(outline);
+    mesh.add(ribbon);
+  }
+
+  ribbonMat(level: Load | null) {
+    const key = String(level);
+    let m = this.ribbonMats.get(key);
+    if (!m) {
+      if (level === null && !this.hatch) {
+        const c = document.createElement("canvas");
+        c.width = c.height = 32;
+        const g = c.getContext("2d")!;
+        g.fillStyle = "#ffffff";
+        g.fillRect(0, 0, 32, 32);
+        g.strokeStyle = "#5c5c57";
+        g.lineWidth = 3;
+        for (let i = -32; i <= 32; i += 10) {
+          g.beginPath();
+          g.moveTo(i, 32);
+          g.lineTo(i + 32, 0);
+          g.stroke();
+        }
+        this.hatch = new THREE.CanvasTexture(c);
+        this.hatch.wrapS = this.hatch.wrapT = THREE.RepeatWrapping;
+        this.hatch.repeat.set(1.2, 0.25);
+      }
+      m = new THREE.MeshBasicMaterial({ color: level === null ? "#F5F2ED" : LOAD_COLOUR[level], map: level === null ? this.hatch : null });
+      this.ribbonMats.set(key, m);
+    }
+    return m;
   }
 
   baseMat(day: DayView) {
@@ -830,64 +881,18 @@ class WeekScene {
     this.tip.className = `tip${b.offer ? " offer" : ""}`;
     const head = document.createElement("b");
     head.textContent = `${b.day.day} ${b.day.dayNum} · ${b.rest || !b.item ? `${fmt(b.s)}–${fmt(b.e)}` : timeText(b.item)}`;
-    const graph = this.tipGraph(b);
-    if (graph) this.tip.classList.add("graph");
-    this.tip.replaceChildren(head, b.label, ...(graph ? [graph] : []));
-    this.tip.hidden = false;
-    this.placeTip();
-  }
-
-  /** Puts the tooltip above the pointer, or below it when there isn't room, and keeps it inside the stage. */
-  placeTip() {
-    const r = this.canvas.getBoundingClientRect();
-    const w = this.tip.offsetWidth;
-    const h = this.tip.offsetHeight;
-    const below = this.pointer.y - h - 14 < 0;
-    this.tip.classList.toggle("below", below);
-    this.tip.style.left = `${Math.min(r.width - w / 2 - 4, Math.max(w / 2 + 4, this.pointer.x))}px`;
+    this.tip.replaceChildren(head, b.label, ...(b.note ? [document.createElement("br"), b.note] : []));
+    this.tip.style.left = `${this.pointer.x}px`;
     this.tip.style.top = `${this.pointer.y}px`;
-  }
-
-  /** The chosen reading of a shift as a bar graph with its times, the same as the day list's, or null when there is none. */
-  tipGraph(b: Block): HTMLElement | null {
-    const it = b.item;
-    const sig = this.bodySignal;
-    if (!it || it.kind !== "shift" || !sig || !hasReading(it.body)) return null;
-    const levels = it.body![sig];
-    const box = document.createElement("span");
-    box.className = "tip-graph";
-    const name = document.createElement("span");
-    name.className = "tip-sig";
-    name.textContent = SIGNAL_NAME[sig];
-    const bars = document.createElement("span");
-    bars.className = "bars";
-    levels.forEach((v) => {
-      const bar = document.createElement("i");
-      if (v === null) bar.className = "none";
-      else {
-        bar.style.height = `${(v + 1) * 25}%`;
-        bar.style.background = LOAD_COLOUR[v];
-      }
-      bars.append(bar);
-    });
-    const axis = document.createElement("span");
-    axis.className = "axis";
-    const marks = timeMarks(it);
-    marks.forEach((m, i) => {
-      const t = document.createElement("span");
-      t.textContent = m.label;
-      t.style.left = `${m.at * 100}%`;
-      if (i === 0) t.className = "first";
-      else if (i === marks.length - 1) t.className = "last";
-      axis.append(t);
-    });
-    box.append(name, bars, axis);
-    return box;
+    this.tip.hidden = false;
   }
 
   setHover(b: Block | null) {
     if (this.hovered === b) {
-      if (b) this.placeTip();
+      if (b) {
+        this.tip.style.left = `${this.pointer.x}px`;
+        this.tip.style.top = `${this.pointer.y}px`;
+      }
       return;
     }
     this.hovered = b;
@@ -1441,8 +1446,9 @@ class WeekScene {
     this.clearPreview();
     this.clearCreateGhost();
     this.connectors.forEach((l) => l.geometry.dispose());
-    this.dotMat.dispose();
-    this.dotRim.dispose();
+    this.ribbonMats.forEach((m) => m.dispose());
+    this.hatch?.dispose();
+    this.ribbonEdge.dispose();
     this.dashMat.dispose();
     Object.values(this.mats).forEach((m) => m?.dispose());
     this.guide?.dispose();

@@ -323,10 +323,7 @@ export default function CalendarBoard() {
           <div className="stage-legends">
           {anyBody && (
             <div className="effort-legend band-legend" role="group" aria-label="Your watch during each shift">
-              <span>
-                <i className="swatch reading-dot" aria-hidden="true" />
-                Your watch read this shift. Hover or tap it for
-              </span>
+              <span>Down each shift: your watch</span>
               {SHIFT_SIGNALS.map((sig) => (
                 <button key={sig} type="button" aria-pressed={bodySignal === sig} className={bodySignal === sig ? "on" : ""} onClick={() => chooseSignal(sig)}>
                   {SIGNAL_NAME[sig]}

@@ -6,7 +6,7 @@ import { dayItems } from "@/lib/checks";
 import { watchSummary } from "@/lib/garmin";
 import { mergeData } from "@/lib/merge";
 import { effortToSave } from "@/lib/effort";
-import { LOAD_COLOUR, LOAD_WORDS, applyShiftBody, blockCount, blockTimes, describeSignal, forgetShiftBodies, hasReading, parseShiftBody, shiftBodyDue, shiftWindow, timeMarks } from "@/lib/shift-body";
+import { LOAD_COLOUR, LOAD_WORDS, applyShiftBody, blockCount, blockTimes, describeSignal, forgetShiftBodies, parseShiftBody, shiftBodyDue, shiftWindow, timeMarks } from "@/lib/shift-body";
 import { teamView } from "@/lib/team";
 import type { DataSlice, Load, Shift } from "@/lib/types";
 import { cleanData } from "@/lib/validate";
@@ -145,14 +145,6 @@ describe("the calendar shows them along each shift", () => {
       expect(lab(LOAD_COLOUR[i])[0]).toBeLessThan(lab(LOAD_COLOUR[i - 1])[0]);
     }
     expect(distance(LOAD_COLOUR[0], "#FFFDFA")).toBeGreaterThan(30);
-  });
-
-  it("marks a shift in the 3D week only when the watch actually read something during it", () => {
-    const at = "2026-10-22T03:00:00.000Z";
-    expect(hasReading({ receivedAt: at, stress: [null, 1, null], heart: [null, null, null] })).toBe(true);
-    expect(hasReading({ receivedAt: at, stress: [null, null], heart: [null, 2] })).toBe(true);
-    expect(hasReading({ receivedAt: at, stress: [null, null], heart: [null, null] })).toBe(false);
-    expect(hasReading(undefined)).toBe(false);
   });
 
   it("labels the graph's time axis with the start, each hour and the end", () => {
