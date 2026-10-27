@@ -36,7 +36,7 @@ Open `/calendar?reset=1` to start a new session, and let the worker add their ow
 
 After a finished shift, the worker can rate the work **Light**, **Steady**, **Busy** or **Hard**, or skip. The watch prompts about 15 minutes after the shift; a completed shift can also be rated or changed on the calendar. This is the shift's only rating.
 
-On the watch, body sharing is optional. When enabled, the watch reads only the finished shift's hours and sends one level per 15 minutes for stress and heart rate. Raw values stay on the watch. Use **Down each shift** to switch the calendar ribbons between Stress and Heart; missing readings are hatched. Open another ask at the same workplace to compare **Past shifts**. Turning sharing off removes every shift's readings.
+On the watch, body sharing is optional. When enabled, the watch reads only the finished shift's hours and sends one level per 15 minutes for stress and heart rate. Raw values stay on the watch. A blue dot marks each shift the watch read; hover or tap it to see that shift's graph, and use the **Stress** and **Heart** buttons under the week to switch between them. Missing readings are hatched. Open another ask at the same workplace to compare **Past shifts**. Turning sharing off removes every shift's readings.
 
 The watch's Last shift details show whether the upload was saved. The current native build must be installed separately; updating the website does not install it. The calendar polls every two seconds with Redis, and the watch every five seconds while open, subject to the paired phone's connection.
 
