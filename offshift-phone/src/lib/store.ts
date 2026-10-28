@@ -3,6 +3,7 @@ import { createJSONStorage, persist, type StateStorage } from "zustand/middlewar
 import { applyResponse, sendAsk, unanswer, type AskInput } from "./actions";
 import { uid } from "./ids";
 import { emptyData, exampleWeek } from "./session";
+import { clientSpace } from "./space";
 import type { DataSlice, Decision, Effort, PersonalEvent, Settings, Shift, UniEvent } from "./types";
 import { LOG_LIMIT, MESSAGE_LIMIT, cleanData } from "./validate";
 
@@ -166,7 +167,8 @@ export const useStore = create<Store>()(
       };
     },
     {
-      name: "offshift-calendar-v2",
+      // The demo page keeps its week apart, so it can never be taken for the participant's on this device.
+      name: clientSpace() === "demo" ? "offshift-demo-calendar-v2" : "offshift-calendar-v2",
       storage: createJSONStorage(safeStorage),
       skipHydration: true,
       partialize: (s) => pickData(s),

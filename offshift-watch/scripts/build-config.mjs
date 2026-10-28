@@ -5,11 +5,14 @@ export function deploymentUrls(input, accessCode = '', development = false) {
   const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
   if (url.protocol !== 'https:' && !(development && loopback && url.protocol === 'http:')) throw new Error('A device release requires HTTPS; HTTP is only allowed for explicit loopback simulation.');
   let path = url.pathname.replace(/\/+$/, '');
+  // The exhibition demo build reads the demo week: /demo after the site, or after /w/<code>.
+  const demo = /\/demo$/.test(path);
+  if (demo) path = path.slice(0, -'/demo'.length);
   if (['', '/calendar', '/watch', '/team'].includes(path)) path = '';
-  else if (!/^\/w\/[^/]+$/.test(path)) throw new Error('Use the site origin, /calendar, or an existing /w/<code> route.');
+  else if (!/^\/w\/[^/]+$/.test(path)) throw new Error('Use the site origin, /calendar, /demo, or an existing /w/<code> route.');
   if (accessCode && path) throw new Error('Supply the access code separately or in the URL, not both.');
   if (accessCode) path = `/w/${encodeURIComponent(accessCode)}`;
-  const baseUrl = `${url.origin}${path}`;
+  const baseUrl = `${url.origin}${path}${demo ? '/demo' : ''}`;
   return { baseUrl, endpoint: `${baseUrl}/api/watch`, origin: url.origin, protected: !!path };
 }
 export function propertiesXml(baseUrl) {

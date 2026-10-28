@@ -9,21 +9,26 @@ import { ACCESS_COOKIE, accessCode, codeMatches, hasAccess, safeNext } from "@/l
 export function proxy(req: NextRequest) {
   const code = accessCode();
   const { pathname, search } = req.nextUrl;
-  const watch = /^\/w\/([^/]+)\/api\/watch$/.exec(pathname);
+  // The exhibition's demo watch build has /demo after the site (and after /w/<code>): it reads the demo week.
+  const watch = /^(?:\/w\/([^/]+))?(\/demo)?\/api\/watch$/.exec(pathname);
+  const coded = !!watch && watch[1] !== undefined;
+  const demo = !!watch && watch[2] !== undefined;
+  const target = new URL(`${demo ? "/api/demo/watch" : "/api/watch"}${search}`, req.url);
   if (!code) {
     // Existing watches have the old address compiled in. Keep their connection after opening the site.
-    if (watch) return NextResponse.rewrite(new URL(`/api/watch${search}`, req.url));
+    if (coded || demo) return NextResponse.rewrite(target);
     if (pathname === "/access") return NextResponse.redirect(new URL(safeNext(req.nextUrl.searchParams.get("next")), req.url));
     return NextResponse.next();
   }
 
-  if (watch) {
+  if (coded) {
     let given = "";
     try {
-      given = decodeURIComponent(watch[1]);
+      given = decodeURIComponent(watch![1]);
     } catch {}
-    return codeMatches(given, code) ? NextResponse.rewrite(new URL(`/api/watch${search}`, req.url)) : NextResponse.json({ error: "Wrong access code" }, { status: 401 });
+    return codeMatches(given, code) ? NextResponse.rewrite(target) : NextResponse.json({ error: "Wrong access code" }, { status: 401 });
   }
+  if (demo) return NextResponse.json({ error: "Enter the access code first" }, { status: 401 });
   if (pathname === "/access" || pathname === "/api/access") return NextResponse.next();
   if (hasAccess(req.cookies.get(ACCESS_COOKIE)?.value, code)) return NextResponse.next();
   if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Enter the access code first" }, { status: 401 });

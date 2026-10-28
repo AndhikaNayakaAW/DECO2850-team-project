@@ -1,4 +1,5 @@
 import { askProblem, type AskInput } from "./actions";
+import { apiBase, clientSpace } from "./space";
 import { addDays, type Now } from "./time";
 import type { DateKey } from "./types";
 
@@ -15,7 +16,7 @@ export async function submitTestOffer(input: AskInput, now: Pick<Now, "date" | "
   if (problem) throw new Error(problem);
   let response: Response;
   try {
-    response = await request("/api/team", {
+    response = await request(`${apiBase(clientSpace())}/team`, {
       method: "POST",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },

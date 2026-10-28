@@ -8,10 +8,14 @@ import { DATA_KEYS, UNLOADED, pickData, useStore } from "./store";
 import type { DataSlice } from "./types";
 import { cleanData } from "./validate";
 import { hidden, wait } from "./visible";
+import { apiBase, clientSpace } from "./space";
 
 const CLIENT = Math.random().toString(36).slice(2);
 /** Where this device keeps the last week it and the server agreed on, so a reload can merge edits made offline. */
-const META_KEY = "offshift-sync-v2";
+const SPACE = clientSpace();
+const META_KEY = SPACE === "demo" ? "offshift-demo-sync-v2" : "offshift-sync-v2";
+/** The demo page syncs with the demo week, never the participant's. */
+const STATE_URL = `${apiBase(SPACE)}/state`;
 /** Reflections and imported heart rate from the removed watch preview: nothing can show or clear them any more. */
 const REMOVED_PRIVATE_KEY = "offshift-private-watch-v1";
 
@@ -102,7 +106,7 @@ function adopt(server: DataSlice, v: number) {
   saveMeta();
 }
 
-/** Keeps the calendar and the watch on the same week through /api/state. */
+/** Keeps the calendar and the watch on the same week through /api/state (or /api/demo/state on the demo page). */
 export default function SyncProvider() {
   const [online, setOnlineState] = useState<boolean | null>(null);
   const [refused, setRefused] = useState(false);
@@ -145,7 +149,7 @@ export default function SyncProvider() {
       const abort = new AbortController();
       const timeout = setTimeout(() => abort.abort(), 15000);
       try {
-        const res = await fetch("/api/state", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ data: sent, base, baseVersion: version, client: CLIENT }), signal: abort.signal });
+        const res = await fetch(STATE_URL, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ data: sent, base, baseVersion: version, client: CLIENT }), signal: abort.signal });
         const j = (await res.json().catch(() => ({}))) as { version?: number; data?: unknown };
         if (res.status === 409) {
           // The server already holds a week this device never saw: take it rather than overwrite it.
@@ -194,7 +198,7 @@ export default function SyncProvider() {
       const abort = new AbortController();
       const timeout = setTimeout(() => abort.abort(), 8000);
       try {
-        const res = await fetch(`/api/state?since=${version}`, { cache: "no-store", signal: abort.signal });
+        const res = await fetch(`${STATE_URL}?since=${version}`, { cache: "no-store", signal: abort.signal });
         if (!res.ok) throw new Error(`state answered ${res.status}`);
         const j = (await res.json()) as { version: number; data?: unknown };
         setOnline(true);

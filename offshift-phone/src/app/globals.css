@@ -457,3 +457,10 @@ body:has(.sync-off) .board{padding-top:calc(max(16px,env(safe-area-inset-top)) +
 .wf-menu li small{display:block;font-size:7.5px;color:#8a8a8a}
 .wf-menu li.on{background:#2E6B34;color:#fff;font-size:12px;font-weight:600;margin:2px 16px;border-radius:9px;padding:5px 8px}
 .wf-menu li.on small{color:#d9ead3}
+
+/* ---------- exhibition demo (/demo): a small bar saying whose week this is, with Restart ---------- */
+.demo-bar{position:fixed;left:50%;transform:translateX(-50%);top:max(8px,env(safe-area-inset-top));z-index:140;display:flex;align-items:center;gap:12px;background:var(--lamp-soft);color:var(--ink-strong);border:1px solid var(--lamp);border-radius:999px;padding:6px 8px 6px 16px;font-size:13px;box-shadow:var(--shadow-sm);max-width:calc(100vw - 24px)}
+.demo-bar span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* The bar gets its own strip above the header, so it never covers the week's buttons. */
+.demo-on .board{padding-top:calc(max(16px,env(safe-area-inset-top)) + 44px)}
+@media (max-width:700px){.demo-on .board{padding-top:max(16px,env(safe-area-inset-top));padding-bottom:64px}.demo-bar{top:auto;bottom:max(10px,env(safe-area-inset-bottom))}}
