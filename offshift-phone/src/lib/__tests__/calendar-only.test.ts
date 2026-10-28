@@ -16,9 +16,9 @@ function files(dir: string): string[] {
 }
 
 describe("the week is the whole website", () => {
-  it("serves only the calendar, the access form and the redirect to the calendar", () => {
+  it("serves only the calendar, the field test week, the access form and the redirect to the calendar", () => {
     const pages = files(app).filter((f) => path.basename(f) === "page.tsx").map((f) => "/" + path.relative(app, path.dirname(f)).replaceAll("\\", "/"));
-    expect(pages.map((p) => p.replace(/\/$/, "") || "/").sort()).toEqual(["/", "/access", "/calendar"]);
+    expect(pages.map((p) => p.replace(/\/$/, "") || "/").sort()).toEqual(["/", "/access", "/calendar", "/field-testing"]);
   });
 
   it("links to no research console, watch preview or daily reflection", () => {
