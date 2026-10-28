@@ -124,6 +124,8 @@ class OffshiftModel {
             Application.Storage.setValue("glance", "Nothing waiting");
         }
         promptCheckIn(data);
+        // Before reading: a shift this watch has just read stays shown until the calendar has it too.
+        ShiftBody.keepFrom(data);
         readShift(data);
         if (ShiftBody.stillHeld(data)) {
             Application.Storage.setValue("forgetPending", true);

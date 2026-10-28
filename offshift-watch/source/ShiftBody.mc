@@ -162,8 +162,29 @@ module ShiftBody {
 
     //! Keeps the last shift read for the Last shift page and the glance. It stays on the watch.
     function remember(due as Dictionary, l as Dictionary) as Void {
-        Application.Storage.setValue("lastShift", { "title" => due["title"], "stress" => l["stress"], "heart" => l["heart"] });
-        Application.Storage.setValue("lastLine", "Last shift: stress " + summary(l["stress"] as Array<Number?>, "stress").toLower());
+        keep(due["title"] as String, l["stress"] as Array<Number?>, l["heart"] as Array<Number?>);
+    }
+
+    //! Keeps the calendar's latest shift with readings instead, once it names a different shift, so the Last shift
+    //! page and the glance name the same shift as the calendar, even when its readings didn't come from this watch
+    //! (the demo week brings its own). A summary without one, from an older calendar, leaves what the watch has.
+    function keepFrom(data as Dictionary) as Void {
+        var last = data["lastShift"];
+        if (!(last instanceof Dictionary) || !(last["id"] instanceof String) || !(last["title"] instanceof String)
+            || !(last["stress"] instanceof Array) || !(last["heart"] instanceof Array)) {
+            return;
+        }
+        var id = (last["id"] as String) + "@" + (last["title"] as String);
+        if (id.equals(Application.Storage.getValue("lastShiftKey"))) {
+            return;
+        }
+        keep(last["title"] as String, last["stress"] as Array<Number?>, last["heart"] as Array<Number?>);
+        Application.Storage.setValue("lastShiftKey", id);
+    }
+
+    function keep(title as String, stress as Array<Number?>, heart as Array<Number?>) as Void {
+        Application.Storage.setValue("lastShift", { "title" => title, "stress" => stress, "heart" => heart });
+        Application.Storage.setValue("lastLine", "Last shift: stress " + summary(stress, "stress").toLower());
     }
 
     function words(signal as String) as Array<String> {
