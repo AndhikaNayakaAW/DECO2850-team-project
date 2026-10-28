@@ -287,3 +287,36 @@ function theLastSendShowsOnTheWatch(logger as Test.Logger) as Boolean {
     Application.Storage.deleteValue("lastSend");
     return true;
 }
+
+//! The calendar's latest shift with readings replaces an older one this watch read, so the Last shift page and the
+//! glance name the same shift as the calendar, even when its readings came from elsewhere (the demo week brings its own).
+(:test)
+function lastShiftFollowsTheCalendar(logger as Test.Logger) as Boolean {
+    var key = Application.Storage.getValue("lastShiftKey") as Application.PropertyValueType?;
+    var shift = Application.Storage.getValue("lastShift") as Application.PropertyValueType?;
+    var line = Application.Storage.getValue("lastLine") as Application.PropertyValueType?;
+    Application.Storage.deleteValue("lastShiftKey");
+    Application.Storage.setValue("lastShift", { "title" => "Cafe, 7:15-11:15 pm", "stress" => [null, null], "heart" => [null, null] });
+    var calendar = { "lastShift" => { "id" => "s-1", "title" => "Cafe, 7:30-11:30 pm", "stress" => [3, 3, 2, null], "heart" => [2, 2, 1, null] } };
+    ShiftBody.keepFrom(calendar);
+    var kept = Application.Storage.getValue("lastShift") as Dictionary;
+    Test.assertEqual(kept["title"], "Cafe, 7:30-11:30 pm");
+    Test.assertEqual(ShiftBody.summary(kept["stress"] as Array<Number?>, "stress"), "Mostly high");
+    Test.assertEqual(Application.Storage.getValue("lastLine"), "Last shift: stress mostly high");
+    // A summary without one (an older calendar, or no readings yet) leaves what the watch has.
+    ShiftBody.keepFrom({ "lastShift" => null });
+    Test.assertEqual((Application.Storage.getValue("lastShift") as Dictionary)["title"], "Cafe, 7:30-11:30 pm");
+    restore("lastShiftKey", key);
+    restore("lastShift", shift);
+    restore("lastLine", line);
+    return true;
+}
+
+//! Puts back a stored value a test changed, or removes it if there was none.
+function restore(key as String, value as Application.PropertyValueType?) as Void {
+    if (value == null) {
+        Application.Storage.deleteValue(key);
+    } else {
+        Application.Storage.setValue(key, value);
+    }
+}
