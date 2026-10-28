@@ -14,7 +14,6 @@ The public prototype currently opens directly, without an access code. A deploym
 | :--- | :--- | :--- |
 | Main week | `/` or `/calendar` | Work, study, personal plans and waiting asks in the current week. **Test offer** sends a sample ask. |
 | New session | `/calendar?reset=1` | Empties the shared week on every open calendar before the next participant. |
-| Immersive week | `/calendar?immersive=1` | The wide, hands-free week. |
 | Optional access | `/access` | Enter a code if enabled; otherwise redirects to the calendar. |
 
 The research console (`/team`), the browser watch preview (`/watch`) and the daily reflection (`?view=day`) were removed on 23 Oct 2026. Old `/team` and `/watch` links open the week.

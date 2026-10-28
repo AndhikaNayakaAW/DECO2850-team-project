@@ -7,12 +7,11 @@ Offshift helps students who work casual shifts answer a shift ask on their own t
 - **`/calendar`** is the worker's week in 3D and the main screen. It works on a phone, an iPad or a laptop.
   - **+ Add**, or **+ Add to {day}** in the side panel, adds a shift, class, due date or plan. Tap anything in the side panel to change or delete it. A deletion can be undone for a few seconds.
   - **‹ Today ›** moves between weeks, and the arrow keys move the day.
-  - **In the 3D week**, drag to turn it and pinch or scroll to zoom. Hold a block still for a moment to pick it up. You can then move a plan to another day, or drop anything on the bin to remove it, and Undo is offered either way. A quick swipe only ever turns the view. Throwing an ask away opens it with Decline pointed out; nothing changes until you press it.
+  - **In the 3D week**, drag a plan with the mouse or a finger to move it to another day or time: a see-through copy shows where it will land, snapped to 15 minutes, and Undo is offered after it moves. Drag the background to turn the week, and scroll (or pinch on a touchscreen) to zoom. Shifts, classes and asks don't move: hold one still for a moment to pick it up. Drop anything on the bin to remove it, with Undo. Throwing an ask away opens it with Decline pointed out; nothing changes until you press it.
   - A waiting ask shows as an amber block, in the side list and as a pill in the header. Open it to see the Body, Week and Past shifts checks and press Accept, Decline or Decide later. Accept and Decline offer Undo for a few seconds. An ask kept for later stays on the week as a see-through block; press it to decide.
   - **A strip** of 15-minute cells runs down the front of each shift the watch read, darker on a yellow-green-blue scale for more. The block keeps the violet work rating, and hovering or tapping it adds a one-line summary. **Stress** and **Heart** below the week switch the signal. The day list, shift form and ask's past shifts show the readings as bars with the shift's start, hour marks and end: one per 15 minutes, taller and darker for more, hatched for missing samples. Summary sentences remain in accessible graph labels.
   - **⚙** opens settings: first name, days kept clear, and what counts as a late finish.
   - **Test offer** sends a sample ask, as a manager would. It reaches the calendar and the watch.
-  - **Immersive** opens the wide, hands-free week (`/calendar?immersive=1`), described below.
 - **`/api/state`** holds the shared week, and **`/api/watch`** is the watch's door. **`/api/team`** takes the asks that Test offer sends and returns the manager's view of the week, which never includes body readings, plans or private notes.
 
 The calendar is the whole website. The research console (`/team`), the browser watch preview (`/watch`) and the daily reflection (`?view=day`) were removed on 23 Oct 2026; old links to `/team` and `/watch` open the week. The voice assistant was removed the same day: Offshift never speaks or listens.
@@ -78,34 +77,6 @@ A real watch only talks to https. For local testing, run `npm run watch-gateway`
 ## Phone calendars
 
 Offshift doesn't read or write the phone's own calendar (Apple Calendar, Google Calendar or Outlook). The worker's week is entered in Offshift. A read-only calendar subscription could be added later if the team wants one.
-
-## Immersive view
-
-**Immersive** opens a wide 16:9 layout:
-
-- a gesture guide on the left;
-- the detailed week in the centre, where every block shows its title, time, category and status, and quiet-hour boundaries are drawn;
-- the selected block on the right;
-- captions along the bottom, shown on screen and never spoken.
-
-Every gesture has a button as well, and **Use touch controls** gives large touch buttons.
-
-Hand tracking is optional. It uses MediaPipe Hand Landmarker served from `public/mediapipe`, so no internet is needed. Turning the camera on asks for consent first. Video is processed in the browser and nothing is saved. Only hand positions are read: no faces, identity or expressions.
-
-| Gesture | What it does |
-| --- | --- |
-| Both palms open | Separates the week into layers |
-| Both hands closed | Combines the layers again |
-| Hands apart or together | Zooms |
-| Both hands move | Rotates and tilts the week |
-| Pinch | Selects a block |
-| Pinch and drag | Previews a move, snapped to 15 minutes |
-| Pinch and hold empty space | Starts a new event |
-| Thumbs up | Confirms |
-| Thumbs down | Cancels |
-| A held fist | Undoes |
-
-Nothing changes without a confirmation. Rostered shifts never move here: a dragged shift snaps back, and nothing goes to the manager.
 
 ## Tests
 

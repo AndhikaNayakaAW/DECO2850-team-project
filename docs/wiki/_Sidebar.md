@@ -18,7 +18,6 @@
 **Explore**
 
 - [Week calendar ↗](https://offshift-nine.vercel.app/calendar)
-- [Immersive week ↗](https://offshift-nine.vercel.app/calendar?immersive=1)
 - [Source code ↗](https://github.com/AndhikaNayakaAW/DECO2850-team-project)
 - [Research notes](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/pleasure-framework-iteration.md)
 - [Console concept](https://github.com/AndhikaNayakaAW/DECO2850-team-project/blob/main/docs/offshift-console.md)

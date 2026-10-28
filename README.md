@@ -41,7 +41,7 @@ The phone mock-up and its demo story are gone. Offshift is now a Garmin watch ap
 
 - [Garmin watch app](offshift-watch/README.md): the native fēnix 8 app, with a live connection to the calendar through `/api/watch`: build, install, pages, what it reads, privacy and tests.
 
-Immersive mode is at `/calendar?immersive=1`. The earlier browser watch preview and daily reflection are recorded in the [15 October contribution record](docs/contributions/2026-10-15-watch-reflection.md).
+The earlier browser watch preview and daily reflection are recorded in the [15 October contribution record](docs/contributions/2026-10-15-watch-reflection.md).
 
 ## Production deployment
 

@@ -58,7 +58,7 @@ vercel redeploy <deployment-url> --target production --scope andhikanayakaaws-pr
 vercel inspect <new-deployment-url> --scope andhikanayakaaws-projects
 ```
 
-Check `/calendar` and its immersive view, the `/team` and `/watch` redirects, and that `/api/state` reports Redis storage. Do not reset the live participant session as part of deployment verification. Garmin builds are installed separately.
+Check `/calendar`, the `/team` and `/watch` redirects, and that `/api/state` reports Redis storage. Do not reset the live participant session as part of deployment verification. Garmin builds are installed separately.
 
 The wiki is a separate Git repository. A main-repository push updates its source files but does not publish the wiki. From the repository root, run:
 
