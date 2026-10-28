@@ -99,7 +99,7 @@ The second brief asked how the watch's readings could sit on the same 3D week wi
 | Darker means more of what the label names | People read darker as more (Schloss et al., 2019, via Sibrel et al., 2020). So the band reads "more energy", "more stress" or "heart further above your usual", and the legend says which. No red or green, and no good or bad: ranges against the worker's own usual, never verdicts (Ravichandran et al., 2017; Consolvo et al., 2008). |
 | No reading is hatched, never the palest step; a stale reading is hatched over its tone | Missing data must look missing, not low (Song & Szafir, 2019). Today's reading older than 12 hours is shown but marked, matching the Body card. |
 | Last night's recharge bridges the gap between two days | Sleep belongs between days. Showing it as a bridge makes the sequence "shift ends, the night after, the next day" visible, which is where late closes and quick returns cost sleep (Vedaa et al., 2016; Schneider & Harknett, 2019). |
-| The worker picks one signal: Energy, Stress or Heart | Showing everything overwhelms (Jones & Kelly, 2017). Pulse ox and breathing are left out: they are single moments, and Garmin's pulse ox gave a reading in only 59% of attempts in a validation study (Carrier et al., 2025). |
+| The worker picks one signal: Energy, Stress or Heart | Showing everything overwhelms (Jones & Kelly, 2018). Pulse ox and breathing are left out: they are single moments, and Garmin's pulse ox gave a reading in only 59% of attempts in a validation study (Carrier et al., 2025). |
 | "Read flat" looks straight down | 2D beats 3D for reading and comparing values (Kraus et al., 2020; Munzner, 2014). From above the floor strips become a plain row, hours (which have no height from above) are hidden, and the day's name moves clear of the band. This is our proposal from the evidence, not a tested design. |
 | Keys under the week, never over it | A key on top hid the Monday to Thursday tiles on a laptop-sized window, so both keys sit below the 3D view. |
 | Private, and forgotten when sharing stops | The server keeps the latest reading of each day for 28 days, only while sharing is on. Turning sharing off on the watch clears every day, and the team view never sees them, like the existing body-reading rules. |
@@ -147,7 +147,7 @@ Intille, S., Haynes, C., Maniar, D., Ponnada, A., & Manjourides, J. (2016). µEM
 
 Javed, W., & Elmqvist, N. (2012). Exploring the design space of composite visualization. *Proc. IEEE PacificVis 2012*, 1-8. https://doi.org/10.1109/PacificVis.2012.6183556
 
-Jones, S. L., & Kelly, R. (2017). Dealing with information overload in multifaceted personal informatics systems. *Human-Computer Interaction, 33*(1), 1-48. https://doi.org/10.1080/07370024.2017.1302334
+Jones, S. L., & Kelly, R. (2018). Dealing with information overload in multifaceted personal informatics systems. *Human-Computer Interaction, 33*(1), 1-48. https://doi.org/10.1080/07370024.2017.1302334
 
 Kraus, M., Angerbauer, K., Buchmüller, J., Schweitzer, D., Keim, D. A., Sedlmair, M., & Fuchs, J. (2020). Assessing 2D and 3D heatmaps for comparative analysis: An empirical study. *Proc. CHI 2020*, 1-14. https://doi.org/10.1145/3313831.3376675
 

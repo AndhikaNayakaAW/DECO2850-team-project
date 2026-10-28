@@ -193,7 +193,7 @@ This section answers a narrower question: how to put body data *on* Offshift's T
 - **Calendar data as context for correlations (Bentley et al., 2013).** Health Mashups used calendar data as one of the context streams correlated with sleep, steps and mood, presented in sentences rather than charts.
 - **Cuts by day type (Epstein et al., 2014).** Grouping days by a shared feature (for example, day of week) and showing compact tables or graphs helped people find patterns; a selectable calendar was used for daily comparison.
 - **Always-visible, low-burden surfaces (Choe et al., 2015).** In SleepTight, home-screen widgets that kept sleep data visible raised diary compliance from 73% to 92% and "encouraged self-reflection". Body data that lives where people already look is more likely to be seen.
-- **Too many facets overload people (Jones & Kelly, 2017).** In a 3-month study of a multifaceted personal informatics system, showing every correlation overwhelmed participants; filtering cut what was shown by about 55% and raised the share rated interesting to about 81%. On the calendar, this argues for few signals and letting the worker choose which are visible.
+- **Too many facets overload people (Jones & Kelly, 2018).** In a 3-month study of a multifaceted personal informatics system, showing every correlation overwhelmed participants; filtering cut what was shown by about 55% and raised the share rated interesting to about 81%. On the calendar, this argues for few signals and letting the worker choose which are visible.
 - **Gap.** I found no published study of calendar heatmaps for *sleep or body data specifically*, and no study of how shift workers read biometric overlays next to a roster. Huang et al. (2016) is the closest evidence. This is worth testing directly (Section 7).
 
 ### 4b.3 3D: when it helps, when it hurts, and which channels are safe
@@ -239,7 +239,7 @@ A thin flat strip along the front edge of each day tile, split into one small ce
 
 **Option 2: Tinted day tile (superposition, calendar heatmap)**
 The whole base tile is shaded by one chosen signal (for example overnight recharge for the night before), the worker picks which signal via a toggle.
-- *Pros:* the most glanceable; strong precedent in calendar heatmaps (van Wijk & van Selow, 1999); one signal at a time reduces overload (Jones & Kelly, 2017).
+- *Pros:* the most glanceable; strong precedent in calendar heatmaps (van Wijk & van Selow, 1999); one signal at a time reduces overload (Jones & Kelly, 2018).
 - *Cons:* only one signal visible; the tile is partly hidden under blocks (occlusion); large tinted areas sit right under difficulty-coloured blocks and will visually compete; scene lighting changes apparent tile shade.
 - *Evidence:* van Wijk & van Selow (1999); Munzner (occlusion); Smart & Szafir (2019) (channel interference).
 
@@ -420,7 +420,7 @@ All sources were opened during this research. Where only an abstract or record w
 - Gleicher, M., Albers, D., Walker, R., Jusufi, I., Hansen, C. D., & Roberts, J. C. (2011). Visual comparison for information visualization. *Information Visualization, 10*(4), 289-309. https://doi.org/10.1177/1473871611416549 (abstract)
 - Harrower, M., & Brewer, C. A. (2003). ColorBrewer.org: An online tool for selecting colour schemes for maps. *The Cartographic Journal, 40*(1), 27-37. https://doi.org/10.1179/000870403235002042 (abstract)
 - Javed, W., & Elmqvist, N. (2012). Exploring the design space of composite visualization. In *Proceedings of IEEE Pacific Visualization Symposium 2012* (pp. 1-8). https://doi.org/10.1109/PacificVis.2012.6183556 (abstract; pattern descriptions via Deng et al. 2022 and Gleicher 2018)
-- Jones, S. L., & Kelly, R. (2017). Dealing with information overload in multifaceted personal informatics systems. *Human-Computer Interaction, 33*(1), 1-48. https://doi.org/10.1080/07370024.2017.1302334 (abstract)
+- Jones, S. L., & Kelly, R. (2018). Dealing with information overload in multifaceted personal informatics systems. *Human-Computer Interaction, 33*(1), 1-48. https://doi.org/10.1080/07370024.2017.1302334 (abstract)
 - Kraus, M., Angerbauer, K., Buchmüller, J., Schweitzer, D., Keim, D. A., Sedlmair, M., & Fuchs, J. (2020). Assessing 2D and 3D heatmaps for comparative analysis: An empirical study. In *Proceedings of CHI 2020* (pp. 1-14). ACM. https://doi.org/10.1145/3313831.3376675 (abstract)
 - Smart, S., & Szafir, D. A. (2019). Measuring the separability of shape, size, and color in scatterplots. In *Proceedings of CHI 2019* (pp. 1-14). ACM. https://doi.org/10.1145/3290605.3300899 (abstract)
 - Zacks, J., Levy, E., Tversky, B., & Schiano, D. J. (1998). Reading bar graphs: Effects of extraneous depth cues and graphical context. *Journal of Experimental Psychology: Applied, 4*(2), 119-138. https://doi.org/10.1037/1076-898X.4.2.119 (abstract)
