@@ -24,6 +24,13 @@ test('the simulator can explicitly opt into a loopback development server', () =
   assert.equal(deploymentUrls('http://127.0.0.1:3000/', '', true).endpoint, 'http://127.0.0.1:3000/api/watch');
   assert.throws(() => deploymentUrls('http://public.example', '', true), /HTTPS/);
 });
+test('an exhibition demo build talks to the demo week, never the participant\'s', () => {
+  assert.deepEqual(deploymentUrls('https://offshift-nine.vercel.app/demo'), {
+    baseUrl: 'https://offshift-nine.vercel.app/demo', endpoint: 'https://offshift-nine.vercel.app/demo/api/watch', origin: 'https://offshift-nine.vercel.app', protected: false,
+  });
+  assert.equal(deploymentUrls('https://offshift-nine.vercel.app/demo/', 'test-code').endpoint, 'https://offshift-nine.vercel.app/w/test-code/demo/api/watch');
+  assert.equal(deploymentUrls('https://offshift-nine.vercel.app/w/test-code/demo').endpoint, 'https://offshift-nine.vercel.app/w/test-code/demo/api/watch');
+});
 test('unknown paths, credentials and query tokens are rejected instead of silently leaking them', () => {
   for (const url of ['https://offshift-nine.vercel.app/other', 'https://user:secret@offshift-nine.vercel.app', 'https://offshift-nine.vercel.app?token=secret']) assert.throws(() => deploymentUrls(url));
 });
