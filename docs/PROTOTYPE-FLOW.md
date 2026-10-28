@@ -122,7 +122,7 @@ sequenceDiagram
 |---|---|---|
 | `/calendar` | The real prototype for a participant | The participant's week |
 | `/demo` | The exhibition demo. Opening it starts a fresh scenario | Its own demo week |
-| `/field-testing` | Field test F1's week, read only, with what his watch showed | A fixed copy, never saved |
+| `/field-testing` | Field test F1's six days, read only, with what his watch showed | A fixed copy, never saved |
 
 ### `/demo`, the exhibition demo
 
@@ -145,9 +145,9 @@ The **demo watch build** reads this demo week (its address is `https://offshift-
 4. Open Offshift on the watch: rate the shift, then answer Sam's ask. Watch the page update.
 5. Press **Restart** before the next visitor.
 
-### `/field-testing`, the field test week
+### `/field-testing`, the field test days
 
-One fast-food worker used Offshift for a week (19-25 October 2026): three Burger bar shifts, classes on Tuesday and Thursday, and a coding demo on Friday. The page shows his week in 3D with his ratings and readings, and below it every watch screen in time order (check-ins, two asks, his two declines, Sunday's shift read back in words). The 15-minute readings are a reconstruction from what he described, not the raw watch data, and names are changed.
+One fast-food worker used Offshift for six days, Friday 23 to Wednesday 28 October 2026: Burger bar shifts on Friday, Sunday and Tuesday afternoon, classes on Friday, Monday and Wednesday, and a coding demo on Tuesday morning. Tuesday was his most stressful day (the demo, then the shift), and Sunday's lunch rush came next. The page shows those six days in 3D with his ratings and readings, and below it every watch screen in time order (check-ins, two asks, his two declines, Tuesday's shift read back in words). The exact times, his ratings and the asks were filled in by the team to match his account; the 15-minute readings are a reconstruction from what he described, not the raw watch data; and names are changed.
 
 ![The field test page](https://raw.githubusercontent.com/AndhikaNayakaAW/DECO2850-team-project/main/docs/design/assets/flow-field-testing.png)
 
