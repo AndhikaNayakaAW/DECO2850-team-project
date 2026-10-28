@@ -2,7 +2,8 @@ import { EFFORTS, EFFORT_WORD } from "@/lib/effort";
 import type { WatchScreen } from "@/lib/field-test";
 import type { Decision, Effort } from "@/lib/types";
 
-const EFFORT_HINT: Record<Effort, string> = { light: "Easy going", steady: "A normal shift", busy: "Fast, lots to do", hard: "Asked a lot of you" };
+/** The check-in menu's second lines, word for word from the watch app (CheckIn.mc). */
+const EFFORT_HINT: Record<Effort, string> = { light: "Less than usual", steady: "A normal shift", busy: "Fast, lots to do", hard: "Asked a lot of you" };
 const ANSWERS: { d: Decision; label: string }[] = [
   { d: "accept", label: "Accept" },
   { d: "decline", label: "Decline" },
