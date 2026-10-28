@@ -126,10 +126,11 @@ sequenceDiagram
 
 ### `/demo`, the exhibition demo
 
-Opening https://offshift-nine.vercel.app/demo resets the demo week to this scenario, built around the moment you open it:
+Opening https://offshift-nine.vercel.app/demo resets the demo week to this scenario, built around the moment you open it. It was designed for the exhibition, 10 am to 2 pm on Thursday 29 October 2026, when the shift that just ended is a morning one, but it works whenever it opens:
 
-- A 4-hour Cafe shift ended about 20 minutes ago with stress mostly high, so the watch asks "How was the work?".
-- Two earlier Cafe shifts were Hard and Busy.
+- A 4-hour Cafe shift ended about 20 minutes ago with stress mostly high, so the watch asks "How was the work?". The watch's Last shift page shows the same shift, with the calendar's times.
+- Three earlier Cafe shifts were Steady and Busy (last week) and Hard (two days ago).
+- The same classes and plans repeat last week, this week and next week: lectures on Monday, Tuesday and Friday, a Wednesday tutorial, a Thursday practical, the gym on Saturday and a call home on Sunday. Shifts don't repeat, and next week has none.
 - Sam asks to cover **tonight**, 5-10 pm (or tomorrow evening once it's after 4 pm). It clashes with "Study for the assignment" at 7 pm, and the next day starts with a 9 am lecture.
 
 The **demo watch build** reads this demo week (its address is `https://offshift-nine.vercel.app/demo`), so answering on the watch updates the page within seconds. **Restart** in the bar at the top starts the scenario over for the next visitor.
