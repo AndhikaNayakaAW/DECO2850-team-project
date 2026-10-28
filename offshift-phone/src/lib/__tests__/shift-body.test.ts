@@ -184,7 +184,7 @@ describe("the calendar shows them along each shift", () => {
 
 describe("only the shift's heart rate and stress", () => {
   it("leaves out the all-day readings: no Body Battery, sleep, breathing, pulse ox, recovery or daily band", () => {
-    for (const f of ["components/board/CalendarBoard.tsx", "components/board/Week3D.tsx", "components/board/AskPanel.tsx", "components/board/ItemForm.tsx", "components/board/Immersive.tsx", "lib/checks.ts", "lib/garmin.ts"]) {
+    for (const f of ["components/board/CalendarBoard.tsx", "components/board/Week3D.tsx", "components/board/AskPanel.tsx", "components/board/ItemForm.tsx", "lib/checks.ts", "lib/garmin.ts"]) {
       expect(readFileSync(src(f), "utf8")).not.toMatch(/Body Battery|recharge|pulse ?ox|breathing|BodyCard|bodyDays|wearable|Read flat/i);
     }
     for (const gone of ["lib/body-week.ts", "lib/body.ts", "components/board/BodyCard.tsx"]) expect(existsSync(src(gone))).toBe(false);
@@ -286,10 +286,6 @@ describe("a shift's readings stay right through edits and sharing off", () => {
     expect(effortToSave(undefined, undefined)).toBeUndefined();
     expect(effortToSave(undefined, "busy")).toBe("busy");
     expect(effortToSave("busy", undefined)).toBeNull();
-  });
-
-  it("draws in immersive mode the signal the worker chose", () => {
-    expect(readFileSync(src("components/board/Immersive.tsx"), "utf8")).not.toMatch(/bodySignal="stress"/);
   });
 });
 

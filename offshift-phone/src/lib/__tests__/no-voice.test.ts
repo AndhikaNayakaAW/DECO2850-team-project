@@ -21,7 +21,7 @@ describe("Offshift never speaks or listens", () => {
     expect({ ...pkg.dependencies, ...pkg.devDependencies }).not.toHaveProperty("@anthropic-ai/sdk");
   });
 
-  it("never uses speech output or the microphone, in the calendar or in immersive mode", () => {
+  it("never uses speech output or the microphone anywhere in the calendar", () => {
     const voice = shipped(src).filter((f) => /speechSynthesis|SpeechRecognition|@\/lib\/speech|@\/lib\/assistant/.test(readFileSync(f, "utf8")));
     expect(voice.map((f) => path.relative(src, f))).toEqual([]);
   });

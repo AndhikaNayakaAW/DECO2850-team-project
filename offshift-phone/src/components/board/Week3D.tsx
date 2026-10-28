@@ -2,9 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import { throwSpeed } from "@/lib/gestures";
+import { throwSpeed } from "@/lib/flick";
 import { DAYS, elapsedMinutes, fromMinutes, minutes } from "@/lib/logic";
 import { EFFORT_COLOUR, EFFORT_WORD } from "@/lib/effort";
+import { canDrag } from "@/lib/move";
 import { LOAD_COLOUR, describeSignal } from "@/lib/shift-body";
 import type { Day, DayItem, DayView, Load, ShiftSignal } from "@/lib/types";
 
@@ -27,25 +28,6 @@ export interface SlotTarget {
   day: Day;
   start: string;
   end: string;
-}
-
-/** What the immersive view drives on the scene. */
-export interface SceneHandle {
-  setExploded: (v: boolean) => void;
-  isExploded: () => boolean;
-  setSelectedItem: (id: string | null) => void;
-  hitAt: (nx: number, ny: number) => { itemId?: string; day?: Day; time?: string } | null;
-  startPreview: (itemId: string) => boolean;
-  movePreview: (nx: number, ny: number) => SlotTarget | null;
-  endPreview: () => SlotTarget | null;
-  clearPreview: () => void;
-  showCreateGhost: (nx: number, ny: number, durationMin: number) => SlotTarget | null;
-  clearCreateGhost: () => void;
-  setZoomLevel: (v01: number) => void;
-  zoomBy: (factor: number) => void;
-  nudgeOrbit: (dTheta: number, dPhi: number) => void;
-  resetView: () => void;
-  hoverAt: (nx: number, ny: number, visible: boolean) => void;
 }
 
 export interface DropTarget {
@@ -187,22 +169,18 @@ class WeekScene {
   mo: MutationObserver | null = null;
   tmp = new THREE.Vector3();
   editable = false;
-  mode: "board" | "immersive" = "board";
   detail = false;
   exploded = false;
   selectedId: string | null = null;
   selEdges: THREE.LineSegments | null = null;
-  thetaTarget = 0.4;
-  phiTarget = 1.2;
-  zoomTarget = 1;
   preview: { block: Block; ghost: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>; target: SlotTarget | null; durationMin: number } | null = null;
-  createGhost: { mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>; target: SlotTarget | null } | null = null;
   connectors: THREE.Line[] = [];
   dashMat = new THREE.LineDashedMaterial({ color: 0x647c5f, dashSize: 0.12, gapSize: 0.08, transparent: true, opacity: 0.7 });
   slowFrames = 0;
   onSelect: ((id: string | null) => void) | null = null;
   onPreviewEnd: ((t: SlotTarget, itemId: string) => void) | null = null;
-  mouseDrag: { block: Block; moved: boolean } | null = null;
+  /** A plan being dragged to a new day and time, and whether it is over the bin. */
+  mouseDrag: { block: Block; moved: boolean; overBin: boolean } | null = null;
   /** Label styles from before the last rebuild, by item id. */
   labelStyles = new Map<string, string>();
   /** A block is only picked up after it's held still for a moment; a quick swipe across it turns the view instead. */
@@ -324,7 +302,6 @@ class WeekScene {
     });
     this.connectors = [];
     this.clearPreview();
-    this.clearCreateGhost();
     this.selEdges = null;
     this.labels.innerHTML = "";
     this.dayLabels = [];
@@ -595,28 +572,6 @@ class WeekScene {
     this.start();
   }
 
-  /** The hand is the pointer: light up whatever block it is over, no cursor drawn. */
-  hoverAt(nx: number, ny: number, visible: boolean) {
-    if (!visible) {
-      this.ndc.set(-2, -2);
-      if (!this.dragging && !this.grab) this.setHover(null);
-      return;
-    }
-    this.pointer.x = nx * this.w;
-    this.pointer.y = ny * this.h;
-    this.ndc.set(nx * 2 - 1, -(ny * 2 - 1));
-    this.start();
-  }
-
-  /** Where a normalised stage point lands: a block, or a day and snapped time on the week plane. */
-  hitAt(nx: number, ny: number): { itemId?: string; day?: Day; time?: string } | null {
-    this.ndc.set(nx * 2 - 1, -(ny * 2 - 1));
-    const hit = this.hitBlock();
-    if (hit?.item) return { itemId: hit.item.id, day: hit.day.day, time: fromMinutes(Math.round(hit.s * 60)) };
-    const slot = this.slotAt(nx, ny, 0, 0);
-    return slot ? { day: slot.day, time: slot.start } : null;
-  }
-
   slotAt(nx: number, ny: number, zPlane: number, durationMin: number): SlotTarget | null {
     this.ndc.set(nx * 2 - 1, -(ny * 2 - 1));
     this.ray.setFromCamera(this.ndc, this.camera);
@@ -674,64 +629,6 @@ class WeekScene {
     this.scene.remove(this.preview.ghost);
     this.preview.ghost.material.dispose();
     this.preview = null;
-    this.start();
-  }
-
-  /* ---------- create ghost ---------- */
-
-  showCreateGhost(nx: number, ny: number, durationMin: number): SlotTarget | null {
-    const slot = this.slotAt(nx, ny, 0.14, durationMin);
-    if (!slot) return this.createGhost?.target || null;
-    if (!this.createGhost) {
-      const h = (durationMin / 60) * UNIT;
-      const geo = new THREE.BoxGeometry(0.72, h, 0.72);
-      geo.translate(0, h / 2, 0);
-      const m = this.mats.personal!.clone();
-      m.transparent = true;
-      m.opacity = 0.45;
-      m.emissive.setHex(HOLO);
-      m.emissiveIntensity = 0.5;
-      const mesh = new THREE.Mesh(geo, m);
-      mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo), this.holoEdge));
-      this.scene.add(mesh);
-      this.createGhost = { mesh, target: slot };
-    }
-    const di = DAYS.indexOf(slot.day);
-    this.createGhost.mesh.position.set((di - 3) * SPACING + 0.12, this.yOf(minutes(slot.start) / 60), 0.14);
-    this.createGhost.target = slot;
-    this.start();
-    return slot;
-  }
-
-  clearCreateGhost() {
-    if (!this.createGhost) return;
-    this.scene.remove(this.createGhost.mesh);
-    this.createGhost.mesh.geometry.dispose();
-    this.createGhost.mesh.material.dispose();
-    this.createGhost = null;
-    this.start();
-  }
-
-  /* ---------- smoothed camera control ---------- */
-
-  setZoomLevel(v01: number) {
-    const v = Math.max(0, Math.min(1, v01));
-    this.zoomTarget = ZOOM_MAX - v * (ZOOM_MAX - ZOOM_MIN);
-    this.lastInteract = this.now();
-    this.start();
-  }
-
-  zoomBy(factor: number) {
-    this.zoomTarget = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, this.zoomTarget * factor));
-    this.lastInteract = this.now();
-    this.start();
-  }
-
-  nudgeOrbit(dTheta: number, dPhi: number) {
-    this.thetaTarget += dTheta;
-    this.baseTheta = this.thetaTarget;
-    this.phiTarget = Math.min(1.5, Math.max(0.55, this.phiTarget + dPhi));
-    this.lastInteract = this.now();
     this.start();
   }
 
@@ -836,7 +733,6 @@ class WeekScene {
 
   setZoom(z: number) {
     this.zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
-    this.zoomTarget = this.zoom;
     this.lastInteract = this.now();
     this.start();
   }
@@ -844,11 +740,8 @@ class WeekScene {
   resetView() {
     this.baseTheta = 0.4;
     this.orbit.theta = 0.4;
-    this.thetaTarget = 0.4;
     this.orbit.phi = 1.2;
-    this.phiTarget = 1.2;
-    this.zoom = this.mode === "immersive" ? 0.85 : 1;
-    this.zoomTarget = this.zoom;
+    this.zoom = 1;
     this.lastInteract = this.now();
     this.start();
   }
@@ -971,11 +864,7 @@ class WeekScene {
     if (g.samples.length > 16) g.samples.shift();
     const di = Math.max(0, Math.min(6, Math.round(g.block.mesh.position.x / SPACING + 3)));
     g.targetDay = di;
-    let overBin = false;
-    if (this.bin) {
-      const r = this.bin.getBoundingClientRect();
-      overBin = e.clientX >= r.left - 16 && e.clientX <= r.right + 16 && e.clientY >= r.top - 16 && e.clientY <= r.bottom + 16;
-    }
+    const overBin = this.overBin(e);
     g.remove = overBin;
     this.bin?.classList.toggle("active", overBin);
     const mat = g.block.mesh.material;
@@ -1042,6 +931,13 @@ class WeekScene {
     this.start();
   }
 
+  /** Whether the pointer is over the bin, with a little room around it. */
+  overBin(e: PointerEvent): boolean {
+    if (!this.bin) return false;
+    const r = this.bin.getBoundingClientRect();
+    return e.clientX >= r.left - 16 && e.clientX <= r.right + 16 && e.clientY >= r.top - 16 && e.clientY <= r.bottom + 16;
+  }
+
   shatter(block: Block) {
     const box = new THREE.Box3().setFromObject(block.mesh);
     const size = box.getSize(new THREE.Vector3());
@@ -1083,10 +979,13 @@ class WeekScene {
       if (!md.moved && Math.hypot(e.clientX - this.last.x, e.clientY - this.last.y) > 6) {
         md.moved = true;
         this.startPreview(md.block.item!.id);
+        this.stage.classList.add("grabbing");
       }
       if (md.moved) {
         const r = this.canvas.getBoundingClientRect();
         this.movePreview((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
+        md.overBin = this.overBin(e);
+        this.bin?.classList.toggle("active", md.overBin);
       }
       return;
     }
@@ -1133,10 +1032,10 @@ class WeekScene {
     } catch {}
     if (this.grab || this.mouseDrag) return;
     this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (this.pointers.size === 1 && this.mode === "immersive") {
+    if (this.pointers.size === 1 && this.editable) {
       const hit = this.hitBlock();
-      if (hit?.item && !hit.rest && hit.kind !== "boundary" && hit.kind !== "travel") {
-        this.mouseDrag = { block: hit, moved: false };
+      if (hit?.item && !hit.rest && canDrag(hit.item)) {
+        this.mouseDrag = { block: hit, moved: false, overBin: false };
         this.last = { x: e.clientX, y: e.clientY };
         this.start();
         return;
@@ -1178,12 +1077,17 @@ class WeekScene {
       const md = this.mouseDrag;
       this.mouseDrag = null;
       this.pointers.delete(e.pointerId);
+      this.stage.classList.remove("grabbing");
+      this.bin?.classList.remove("active");
       if (md.moved) {
         const t = this.endPreview();
-        if (t && md.block.item) this.onPreviewEnd?.(t, md.block.item.id);
-        else this.clearPreview();
+        this.clearPreview();
+        if (md.overBin && md.block.item) this.onRemove({ item: md.block.item, from: md.block.day.day });
+        else if (t && md.block.item) this.onPreviewEnd?.(t, md.block.item.id);
       } else {
-        if (md.block.offer && md.block.offerId) this.onTap(md.block.offerId);
+        // A tap on a plan selects its day, as a tap on any other block does.
+        this.onDayTap(md.block.day.day);
+        if (e.pointerType === "touch") this.showTip(md.block);
         this.onSelect?.(md.block.item?.id || null);
       }
       return;
@@ -1231,7 +1135,6 @@ class WeekScene {
           const b = this.bases.find((x) => x.mesh === baseHits[0].object);
           if (b) this.onDayTap(b.day.day);
         }
-        if (this.mode === "immersive") this.onSelect?.(null);
       }
     }
   };
@@ -1240,6 +1143,8 @@ class WeekScene {
     if (this.mouseDrag) {
       this.mouseDrag = null;
       this.clearPreview();
+      this.stage.classList.remove("grabbing");
+      this.bin?.classList.remove("active");
     }
     if (this.grab) this.endGrab(false);
     this.pointers.delete(e.pointerId);
@@ -1251,7 +1156,7 @@ class WeekScene {
   };
   /** While a block is held, a finger moving it must not scroll the page instead. */
   onTouchMove = (e: TouchEvent) => {
-    if (this.grab) e.preventDefault();
+    if (this.grab || this.mouseDrag) e.preventDefault();
   };
   onLeave = () => {
     this.ndc.set(-2, -2);
@@ -1301,19 +1206,8 @@ class WeekScene {
     const t = this.now();
     const dt = Math.min(0.05, t - this.lastFrame || 0.016);
     this.lastFrame = t;
-    const busy = !!this.grab || this.fx.length > 0 || this.returning.length > 0 || !!this.preview || !!this.createGhost || !!this.mouseDrag;
-    if (this.mode === "immersive") {
-      // gesture and button driven targets ease in; mouse drag writes orbit directly
-      const k = this.reduced ? 1 : 0.14;
-      if (!this.dragging) {
-        this.orbit.theta += (this.thetaTarget - this.orbit.theta) * k;
-        this.orbit.phi += (this.phiTarget - this.orbit.phi) * k;
-      } else {
-        this.thetaTarget = this.orbit.theta;
-        this.phiTarget = this.orbit.phi;
-      }
-      this.zoom += (this.zoomTarget - this.zoom) * k;
-    } else if (!this.reduced && !this.dragging && !busy && t - this.lastInteract > 3) {
+    const busy = !!this.grab || this.fx.length > 0 || this.returning.length > 0 || !!this.preview || !!this.mouseDrag;
+    if (!this.reduced && !this.dragging && !busy && t - this.lastInteract > 3) {
       const sway = this.baseTheta + Math.sin((t - this.lastInteract - 3) * 0.22) * 0.15;
       this.orbit.theta += (sway - this.orbit.theta) * 0.05;
     }
@@ -1347,7 +1241,7 @@ class WeekScene {
       b.mesh.scale.x += (sx - b.mesh.scale.x) * 0.18;
       b.mesh.scale.z += (sz - b.mesh.scale.z) * 0.18;
       b.mesh.scale.y = Math.max(0.001, grow);
-      if (!b.rest && !b.offer && !grabbed) b.mesh.material.emissiveIntensity = b === this.hovered ? (this.mode === "immersive" ? 0.4 : 0.18) : 0;
+      if (!b.rest && !b.offer && !grabbed) b.mesh.material.emissiveIntensity = b === this.hovered ? 0.18 : 0;
     });
     if (this.ring.visible && !this.reduced) {
       const p = 1 + 0.06 * Math.sin(t * 5);
@@ -1379,7 +1273,6 @@ class WeekScene {
       return true;
     });
     if (this.preview && !this.reduced) this.preview.ghost.material.emissiveIntensity = 0.35 + 0.25 * (0.5 + 0.5 * Math.sin(t * 5));
-    if (this.createGhost && !this.reduced) this.createGhost.mesh.material.emissiveIntensity = 0.35 + 0.25 * (0.5 + 0.5 * Math.sin(t * 5));
     this.dayLabels.forEach((l) => this.placeLabel(l));
     // A short stage keeps only the quarter-day hours, so the axis never piles up.
     const sparse = this.h < 520;
@@ -1398,9 +1291,8 @@ class WeekScene {
         this.slowFrames = 0;
       }
     } else this.slowFrames = Math.max(0, this.slowFrames - 1);
-    const cameraMoving = this.mode === "immersive" && (Math.abs(this.thetaTarget - this.orbit.theta) > 1e-3 || Math.abs(this.phiTarget - this.orbit.phi) > 1e-3 || Math.abs(this.zoomTarget - this.zoom) > 1e-3);
-    const quiet = !this.dragging && !busy && !settling && !cameraMoving && !this.grab && !this.fx.length && !this.returning.length;
-    const settled = quiet && ((this.reduced || this.mode === "immersive") ? t - this.lastInteract > 0.5 && t - this.started > 1 : t - this.lastInteract > 30 && t - this.started > 3);
+    const quiet = !this.dragging && !busy && !settling && !this.grab && !this.fx.length && !this.returning.length;
+    const settled = quiet && (this.reduced ? t - this.lastInteract > 0.5 && t - this.started > 1 : t - this.lastInteract > 30 && t - this.started > 3);
     if (!settled) this.raf = requestAnimationFrame(this.frame);
     else this.running = false;
   };
@@ -1444,7 +1336,6 @@ class WeekScene {
       f.mesh.material.dispose();
     });
     this.clearPreview();
-    this.clearCreateGhost();
     this.connectors.forEach((l) => l.geometry.dispose());
     this.ribbonMats.forEach((m) => m.dispose());
     this.hatch?.dispose();
@@ -1503,12 +1394,10 @@ export default function Week3D({
   hint = "drag to orbit",
   editable = false,
   detail = false,
-  immersive = false,
   selectedId = null,
   bodySignal = null,
   onSelect,
   onPreviewEnd,
-  onReady,
 }: {
   days: DayView[];
   onOfferTap: (offerId: string) => void;
@@ -1521,13 +1410,11 @@ export default function Week3D({
   hint?: string;
   editable?: boolean;
   detail?: boolean;
-  immersive?: boolean;
   selectedId?: string | null;
   /** Which of the watch's readings to draw along each shift, or none. */
   bodySignal?: ShiftSignal | null;
   onSelect?: (id: string | null) => void;
   onPreviewEnd?: (target: SlotTarget, itemId: string) => void;
-  onReady?: (handle: SceneHandle) => void;
 }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const labelsRef = useRef<HTMLDivElement>(null);
@@ -1547,8 +1434,6 @@ export default function Week3D({
   selectRef.current = onSelect;
   const previewRef = useRef(onPreviewEnd);
   previewRef.current = onPreviewEnd;
-  const readyRef = useRef(onReady);
-  readyRef.current = onReady;
   const daysRef = useRef(days);
   daysRef.current = days;
   const key = JSON.stringify([bodySignal, days.map((d) => [d.date, d.rest, d.today, d.items.map((i) => [i.id, i.kind, i.start, i.end, i.label, i.offerId, i.workplaceIndex, i.protected, i.status, bodySignal && i.body ? i.body[bodySignal] : null])])]);
@@ -1576,36 +1461,14 @@ export default function Week3D({
         (t, to) => moveRef.current?.(t, to),
       );
       scene.editable = editable;
-      scene.mode = immersive ? "immersive" : "board";
-      scene.detail = detail || immersive;
+      scene.detail = detail;
       scene.onSelect = (id) => selectRef.current?.(id);
       scene.onPreviewEnd = (t, id) => previewRef.current?.(t, id);
       scene.selectedId = selectedId;
       scene.bodySignal = bodySignal;
-      if (immersive) {
-        scene.zoom = 0.85;
-        scene.zoomTarget = 0.85;
-      }
       sceneRef.current = scene;
       const w = window as unknown as { __weekScenes?: WeekScene[] };
       (w.__weekScenes ||= []).push(scene);
-      readyRef.current?.({
-        setExploded: (v) => scene.setExploded(v),
-        isExploded: () => scene.exploded,
-        setSelectedItem: (id) => scene.setSelectedItem(id),
-        hitAt: (nx, ny) => scene.hitAt(nx, ny),
-        startPreview: (id) => scene.startPreview(id),
-        movePreview: (nx, ny) => scene.movePreview(nx, ny),
-        endPreview: () => scene.endPreview(),
-        clearPreview: () => scene.clearPreview(),
-        showCreateGhost: (nx, ny, d) => scene.showCreateGhost(nx, ny, d),
-        clearCreateGhost: () => scene.clearCreateGhost(),
-        setZoomLevel: (v) => scene.setZoomLevel(v),
-        zoomBy: (f) => scene.zoomBy(f),
-        nudgeOrbit: (a, b) => scene.nudgeOrbit(a, b),
-        resetView: () => scene.resetView(),
-        hoverAt: (nx, ny, v) => scene.hoverAt(nx, ny, v),
-      });
       scene.selected = selectedDay ?? null;
       scene.setDays(daysRef.current);
       labels.hidden = false;

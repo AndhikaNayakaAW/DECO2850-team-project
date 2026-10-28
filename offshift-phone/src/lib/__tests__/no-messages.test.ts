@@ -20,9 +20,4 @@ describe("nothing in Offshift sends the manager a message", () => {
     const writers = shipped(src).filter((f) => /from:\s*"worker"/.test(readFileSync(f, "utf8")));
     expect(writers.map((f) => path.relative(src, f))).toEqual([]);
   });
-
-  it("never offers to send a request from immersive mode", () => {
-    const immersive = readFileSync(path.join(src, "components/board/Immersive.tsx"), "utf8");
-    expect(immersive).not.toMatch(/Send request|Request sent|send your manager/);
-  });
 });

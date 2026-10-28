@@ -2,22 +2,22 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AskPanel from "./AskPanel";
-import Immersive from "./Immersive";
 import ItemForm, { type ItemKindChoice, type ItemTarget, type Removed } from "./ItemForm";
 import { ListRow } from "./ListRow";
 import SettingsForm from "./SettingsForm";
 import TestOfferForm from "./TestOfferForm";
 import { Sheet } from "./Sheet";
-import Week3D, { type DropTarget, type SceneHandle } from "./Week3D";
+import Week3D, { type DropTarget } from "./Week3D";
 import { buildWeek, clashes, waitingAsks } from "@/lib/checks";
 import { EFFORTS, EFFORT_COLOUR, EFFORT_WORD } from "@/lib/effort";
-import { DAY_NAMES, dayIndex } from "@/lib/logic";
+import { DAY_NAMES, dayIndex, range12 } from "@/lib/logic";
+import { slotFacts, type Slot } from "@/lib/move";
 import { LOAD_COLOUR, LOAD_WORDS, SHIFT_SIGNALS, SIGNAL_MEANING, SIGNAL_NAME } from "@/lib/shift-body";
 import { useStore } from "@/lib/store";
 import { useSynced } from "@/lib/sync";
 import { useNow } from "@/lib/use-now";
-import { addDays, daysBetween, longDate, weekDates, weekLabel, weekStart, weekdayName } from "@/lib/time";
-import type { DateKey, Day, DayItem, Decision, ShiftSignal } from "@/lib/types";
+import { addDays, daysBetween, isClock, longDate, weekDates, weekLabel, weekStart, weekdayName } from "@/lib/time";
+import type { DateKey, Day, DayItem, Decision, PersonalEvent, ShiftSignal } from "@/lib/types";
 
 const KINDS: { kind: string; label: string; cls: string }[] = [
   { kind: "shift", label: "Work", cls: "shift" },
@@ -27,7 +27,9 @@ const KINDS: { kind: string; label: string; cls: string }[] = [
 ];
 
 type SheetState = { type: "item"; target: ItemTarget } | { type: "settings" } | { type: "test-offer" } | null;
-type Undo = Removed | { kind: "moved"; id: string; title: string; from: DateKey; to: DateKey } | { kind: "answer"; offerId: string; text: string };
+/** Where a plan sits, so a move can be undone to the same day and time. */
+type Placed = { date: DateKey; start: string; end: string };
+type Undo = Removed | { kind: "moved"; id: string; title: string; from: Placed; to: Placed; note?: string } | { kind: "answer"; offerId: string; text: string };
 
 function kindOf(it: DayItem): ItemKindChoice | null {
   if (it.kind === "shift") return "shift";
@@ -60,7 +62,6 @@ export default function CalendarBoard() {
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [sheet, setSheet] = useState<SheetState>(null);
   const [undo, setUndo] = useState<Undo | null>(null);
-  const [immersive, setImmersive] = useState(false);
   /** Which of the watch's readings the shifts carry: the worker's choice, remembered on this device. One at a time, so the week stays readable. */
   const [bodySignal, setBodySignal] = useState<ShiftSignal>(() => {
     try {
@@ -70,21 +71,11 @@ export default function CalendarBoard() {
       return "stress";
     }
   });
-  const scene = useRef<SceneHandle | null>(null);
-  const immersiveRef = useRef(false);
-  immersiveRef.current = immersive;
 
   const weekAnchor = anchor ?? now.date;
   const dates = useMemo(() => weekDates(weekAnchor), [weekAnchor]);
   const selected = picked && dates.includes(picked) ? picked : dates.includes(now.date) ? now.date : dates[0];
   const dateOfDay = useCallback((day: Day) => dates[dayIndex(day)], [dates]);
-
-  useEffect(() => {
-    // exhibit mode: /calendar?immersive=1 opens straight into the immersive week
-    try {
-      if (new URLSearchParams(window.location.search).get("immersive") === "1") setImmersive(true);
-    } catch {}
-  }, []);
 
   useEffect(() => {
     if (!state.toast) return;
@@ -177,18 +168,32 @@ export default function CalendarBoard() {
     }
   }
 
+  /** Puts a plan on a new day and time at once. The Undo bar says where, and what the new slot overlaps, as a fact. */
+  function moveTo(p: PersonalEvent, to: Slot) {
+    const date = dateOfDay(to.day);
+    if (!isClock(to.start) || !isClock(to.end) || to.start === to.end) return;
+    if (p.date === date && p.start === to.start && p.end === to.end) return;
+    updatePersonal(p.id, { date, start: to.start, end: to.end });
+    const from = { date: p.date, start: p.start, end: p.end };
+    setUndo({ kind: "moved", id: p.id, title: p.title, from, to: { date, start: to.start, end: to.end }, note: slotFacts(p.id, to, week)[0] });
+  }
+
+  /** A plan held and dropped on another day keeps its times. */
   function handleMove({ item }: DropTarget, to: Day) {
     if (item.kind !== "personal") return;
     const p = useStore.getState().personal.find((x) => x.id === item.id);
-    const date = dateOfDay(to);
-    if (!p || p.date === date) return;
-    updatePersonal(p.id, { date });
-    setUndo({ kind: "moved", id: p.id, title: p.title, from: p.date, to: date });
+    if (p) moveTo(p, { day: to, start: p.start, end: p.end });
+  }
+
+  /** A plan dragged to a new day and time. */
+  function handleDrop(to: Slot, itemId: string) {
+    const p = useStore.getState().personal.find((x) => x.id === itemId);
+    if (p) moveTo(p, to);
   }
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (immersiveRef.current || sheet) return;
+      if (sheet) return;
       const target = e.target as HTMLElement | null;
       if (target && typeof target.closest === "function" && target.closest("input, textarea, select, [contenteditable]")) return;
       if (e.key === "ArrowRight") goToDate(addDays(selected, 1));
@@ -198,17 +203,6 @@ export default function CalendarBoard() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [goToDate, selected, sheet]);
-
-  function exitImmersive() {
-    setImmersive(false);
-    try {
-      const params = new URLSearchParams(window.location.search);
-      if (params.has("immersive")) {
-        params.delete("immersive");
-        window.history.replaceState(null, "", `${window.location.pathname}${params.toString() ? `?${params}` : ""}`);
-      }
-    } catch {}
-  }
 
   if (!hydrated)
     return (
@@ -278,36 +272,19 @@ export default function CalendarBoard() {
           <button className="btn neutral test-offer" onClick={() => setSheet({ type: "test-offer" })}>
             Test offer
           </button>
-          <button className="btn neutral" onClick={() => setImmersive(true)}>
-            Immersive
-          </button>
           <button className="btn ghost icon" onClick={() => setSheet({ type: "settings" })} aria-label="Settings">
             ⚙
           </button>
         </div>
       </header>
 
-      {immersive && (
-        <Immersive
-          onExit={exitImmersive}
-          weekAnchor={weekAnchor}
-          now={now}
-          bodySignal={bodySignal}
-          onOpenAsk={(id) => {
-            exitImmersive();
-            openAsk(id);
-          }}
-        />
-      )}
-
-      <div className="board-main" hidden={immersive}>
+      <div className="board-main">
         <div className="stage-wrap-3d">
           <Week3D
             className="big"
             height="100%"
             detail
             days={days}
-            onReady={(h) => (scene.current = h)}
             selectedDay={view.day}
             onDayTap={(d) => {
               setPicked(dateOfDay(d));
@@ -316,9 +293,10 @@ export default function CalendarBoard() {
             onOfferTap={openAsk}
             onRemove={handleRemove}
             onMove={handleMove}
+            onPreviewEnd={handleDrop}
             bodySignal={bodySignal}
             editable
-            hint="hold a block to pick it up · move plans between days · bin to remove · pinch to zoom"
+            hint="drag a plan to a new day or time · drop on the bin to remove · drag the background to turn"
           />
           <div className="stage-legends">
           {anyBody && (
@@ -433,11 +411,11 @@ export default function CalendarBoard() {
 
       {undo && (
         <div className="undo" role="status">
-          <span>{undo.kind === "answer" ? undo.text : undo.kind === "moved" ? `Moved ${undo.title} to ${weekdayName(undo.to)}` : `Removed ${"workplace" in undo.item ? `${undo.item.workplace} shift` : undo.item.title}`}</span>
+          <span>{undo.kind === "answer" ? undo.text : undo.kind === "moved" ? `Moved ${undo.title} to ${weekdayName(undo.to.date)}, ${range12(undo.to.start, undo.to.end)}.${undo.note ? ` ${undo.note}` : ""}` : `Removed ${"workplace" in undo.item ? `${undo.item.workplace} shift` : undo.item.title}`}</span>
           <button
             onClick={() => {
               if (undo.kind === "answer") unanswerOffer(undo.offerId);
-              else if (undo.kind === "moved") updatePersonal(undo.id, { date: undo.from });
+              else if (undo.kind === "moved") updatePersonal(undo.id, { date: undo.from.date, start: undo.from.start, end: undo.from.end });
               else restore(undo.kind, undo.item);
               setUndo(null);
             }}
