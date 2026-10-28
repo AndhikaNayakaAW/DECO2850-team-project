@@ -35,9 +35,9 @@ describe("the field test days (F1)", () => {
   });
 
   it("has classes on Friday, Monday and Wednesday, and the demo on Tuesday morning", () => {
-    const classDays = [...new Set(data.uni.filter((u) => u.type === "class").map((u) => weekdayName(u.date)))];
+    const classDays = [...new Set(data.uni.filter((u) => u.title !== "Coding demo").map((u) => weekdayName(u.date)))];
     expect(classDays).toEqual(["Friday", "Monday", "Wednesday"]);
-    const demo = data.uni.find((u) => u.type === "due")!;
+    const demo = data.uni.find((u) => u.title === "Coding demo")!;
     expect([weekdayName(demo.date), demo.start < "12:00"]).toEqual(["Tuesday", true]);
   });
 
@@ -84,6 +84,7 @@ describe("what his watch showed those six days", () => {
     const around = screen("around") as { lines: string[] }[];
     expect(around[0].lines[0]).toBe("Last at Burger bar: Steady");
     expect(around[0].lines).toContain("7pm clash: Demo prep");
+    expect(around[0].lines).toContain("Tue starts 9am");
     expect(around[1].lines[0]).toBe("Last 2 at Burger bar: Busy, Steady");
   });
 

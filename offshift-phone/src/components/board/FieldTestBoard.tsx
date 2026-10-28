@@ -4,25 +4,25 @@ import { useMemo, useState } from "react";
 import { ListRow } from "./ListRow";
 import { WatchFace } from "./WatchFace";
 import Week3D from "./Week3D";
-import { buildWeek } from "@/lib/checks";
+import { dayView } from "@/lib/checks";
 import { EFFORTS, EFFORT_COLOUR, EFFORT_WORD } from "@/lib/effort";
-import { FIELD_TEST_WEEK, fieldTestData, fieldTestMoments } from "@/lib/field-test";
-import { DAY_NAMES, clock12, dayIndex, range12 } from "@/lib/logic";
+import { FIELD_TEST_DAYS, fieldTestData, fieldTestMoments } from "@/lib/field-test";
+import { DAY_NAMES, clock12, range12 } from "@/lib/logic";
 import { LOAD_COLOUR, LOAD_WORDS, SHIFT_SIGNALS, SIGNAL_MEANING, SIGNAL_NAME } from "@/lib/shift-body";
-import { addDays, longDate, nowIn, weekDates, weekLabel, weekdayName } from "@/lib/time";
+import { addDays, longDate, nowIn, weekdayName } from "@/lib/time";
 import type { DateKey, ShiftSignal } from "@/lib/types";
 
-/** After the week ended, so every shift, rating and answer is in the past. */
-const AFTER = { date: "2026-10-26", time: "09:00" };
+/** After the six days ended, so every shift, rating and answer is in the past. */
+const AFTER = { date: "2026-10-29", time: "09:00" };
 const STATUS: Record<string, string> = { declined: "He declined", accepted: "He accepted", deferred: "He kept it for later", pending: "Waiting" };
 
 /** The field-test week, read only: the 3D week with his ratings and readings, and what his watch showed. */
 export default function FieldTestBoard() {
   const data = useMemo(fieldTestData, []);
   const moments = useMemo(fieldTestMoments, []);
-  const dates = useMemo(() => weekDates(FIELD_TEST_WEEK), []);
-  const week = useMemo(() => buildWeek(data, FIELD_TEST_WEEK, AFTER), [data]);
-  const [selected, setSelected] = useState<DateKey>(FIELD_TEST_WEEK);
+  const dates = FIELD_TEST_DAYS;
+  const week = useMemo(() => dates.map((d) => dayView(data, d, AFTER)), [data, dates]);
+  const [selected, setSelected] = useState<DateKey>(dates[0]);
   const [signal, setSignal] = useState<ShiftSignal>("stress");
   const view = week.find((d) => d.date === selected) ?? week[0];
   const items = view.items.filter((it) => it.kind !== "rest");
@@ -33,11 +33,11 @@ export default function FieldTestBoard() {
     <div className="board field-board">
       <header className="board-head">
         <div className="board-title">
-          <div className="eyebrow">Field test F1 · {weekLabel(FIELD_TEST_WEEK)} 2026</div>
-          <h1>His week, on his wrist</h1>
+          <div className="eyebrow">Field test F1 · Fri 23 to Wed 28 Oct 2026</div>
+          <h1>His six days, on his wrist</h1>
         </div>
         <p className="field-intro">
-          One fast-food worker used Offshift for a week: three Burger bar shifts, classes on Tuesday and Thursday, and a coding demo on Friday. Tap a day to see it.
+          One fast-food worker used Offshift for six days: Burger bar shifts on Friday, Sunday and Tuesday afternoon, classes on Friday, Monday and Wednesday, and a coding demo on Tuesday morning. Tap a day to see it.
         </p>
         <a className="btn ghost small" href="/calendar">
           Your week
@@ -52,7 +52,7 @@ export default function FieldTestBoard() {
             detail
             days={week}
             selectedDay={view.day}
-            onDayTap={(d) => setSelected(dates[dayIndex(d)])}
+            onDayTap={(d) => setSelected(week.find((v) => v.day === d)?.date ?? dates[0])}
             onOfferTap={() => {}}
             bodySignal={signal}
             hint="drag to turn the week · tap a day"
@@ -98,7 +98,7 @@ export default function FieldTestBoard() {
               <button onClick={() => setSelected(addDays(selected, -1))} disabled={selected === dates[0]} aria-label="Previous day">
                 ‹
               </button>
-              <button onClick={() => setSelected(addDays(selected, 1))} disabled={selected === dates[6]} aria-label="Next day">
+              <button onClick={() => setSelected(addDays(selected, 1))} disabled={selected === dates[dates.length - 1]} aria-label="Next day">
                 ›
               </button>
             </div>
@@ -152,7 +152,7 @@ export default function FieldTestBoard() {
           ))}
         </ol>
         <p className="field-note">
-          Rebuilt from the field-test notes. His shifts, classes, ratings and answers are as he reported them. The 15-minute readings are a reconstruction of what he described, not the raw watch data. The workplace and the manager&apos;s name are changed. Nothing here is saved or sent anywhere.
+          Rebuilt from the field-test notes. His days, shifts, classes and demo are as he reported them. The exact times, his ratings and the two asks were filled in by the team to match his account, and the 15-minute readings are a reconstruction of what he described, not the raw watch data. The workplace and the manager&apos;s name are changed. Nothing here is saved or sent anywhere.
         </p>
       </section>
     </div>

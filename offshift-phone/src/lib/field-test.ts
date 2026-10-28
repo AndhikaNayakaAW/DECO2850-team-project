@@ -1,43 +1,46 @@
 /**
- * Field test F1, 19 to 25 October 2026: one fast-food worker's week with Offshift, for the /field-testing page.
- * Rebuilt from the field-test notes: his shifts, classes, demo, ratings and answers are as he reported them. The
- * 15-minute readings are a reconstruction of what he described (stress high on Monday, lower on Sunday), not the raw
- * watch data. The workplace is anonymised as "Burger bar", as on the posters. Read only: it never reaches a session.
+ * Field test F1, Friday 23 to Wednesday 28 October 2026: six days of one fast-food worker's life with Offshift, for the
+ * /field-testing page. His days are as he reported them: shifts on Friday, Sunday and Tuesday afternoon, classes on
+ * Friday, Monday and Wednesday, and a coding demo on Tuesday morning, which made Tuesday his most stressful day, with
+ * Sunday's lunch rush next. The exact times, his ratings and the two asks were filled in by the team to match that
+ * account, and the 15-minute readings are a reconstruction of what he described, not the raw watch data. The
+ * workplace is anonymised as "Burger bar", as on the posters. Read only: it never reaches a session.
  */
 import { watchSummary } from "./garmin";
 import { shiftBodyLines } from "./shift-body";
-import { instantOf, nowIn } from "./time";
+import { addDays, instantOf, nowIn } from "./time";
 import type { DataSlice, DateKey, Decision, Effort, OfferStatus } from "./types";
 
-export const FIELD_TEST_WEEK: DateKey = "2026-10-19";
+/** The six days, Friday to Wednesday. */
+export const FIELD_TEST_DAYS: DateKey[] = Array.from({ length: 6 }, (_, i) => addDays("2026-10-23", i));
 const TZ = "Australia/Brisbane";
 const n = null;
 
 export function fieldTestData(): DataSlice {
   return {
     schema: 2,
-    sessionStartedAt: "2026-10-18T14:00:00.000Z",
+    sessionStartedAt: "2026-10-22T14:00:00.000Z",
     shifts: [
-      { id: "f1-mon", date: "2026-10-19", start: "16:00", end: "22:00", workplace: "Burger bar", effort: "hard",
-        body: { receivedAt: "2026-10-19T12:20:00.000Z", stress: [2, 2, 2, 3, 3, 3, 3, 3, 3, 3, n, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 2, 2], heart: [1, 2, 2, 2, 2, 3, 3, 3, 2, 2, 3, 3, 3, 3, 2, 2, 2, 3, 3, 2, 2, 2, 1, 1] } },
-      { id: "f1-wed", date: "2026-10-21", start: "17:00", end: "22:00", workplace: "Burger bar", effort: "busy",
-        body: { receivedAt: "2026-10-21T12:20:00.000Z", stress: [1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 2, 2, 2, n, n, 2, 2, 1, 1], heart: [1, 1, 2, 2, 2, 2, 2, 3, 3, 2, 2, 2, 2, 1, 2, 2, 1, 1, 1, 1] } },
-      { id: "f1-sun", date: "2026-10-25", start: "10:00", end: "15:00", workplace: "Burger bar", effort: "steady",
-        body: { receivedAt: "2026-10-25T05:20:00.000Z", stress: [0, 1, 1, 1, 1, 1, 2, 2, 1, 1, n, 1, 0, 1, 1, 1, 1, 0, 0, 0], heart: [1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0] } },
+      { id: "f1-fri", date: "2026-10-23", start: "17:00", end: "22:00", workplace: "Burger bar", effort: "steady",
+        body: { receivedAt: "2026-10-23T12:20:00.000Z", stress: [1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, n, 1, 1, 1, 0, 1, 0, 0], heart: [1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0] } },
+      { id: "f1-sun", date: "2026-10-25", start: "11:00", end: "17:00", workplace: "Burger bar", effort: "busy",
+        body: { receivedAt: "2026-10-25T07:20:00.000Z", stress: [1, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, n, 2, 2, 3, 3, 2, 2, 2, 1, 1], heart: [1, 2, 2, 2, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 2, 1, 1, 1] } },
+      { id: "f1-tue", date: "2026-10-27", start: "13:00", end: "18:00", workplace: "Burger bar", effort: "hard",
+        body: { receivedAt: "2026-10-27T08:20:00.000Z", stress: [3, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, n, 3, 3, 3, 3, 3, 2, 2], heart: [2, 2, 3, 3, 3, 3, 2, 3, 3, 3, 3, 2, 2, 3, 3, 3, 2, 2, 2, 1] } },
     ],
     uni: [
-      { id: "f1-u1", date: "2026-10-20", start: "10:00", end: "12:00", title: "Lecture", type: "class" },
-      { id: "f1-u2", date: "2026-10-20", start: "14:00", end: "16:00", title: "Tutorial", type: "class" },
-      { id: "f1-u3", date: "2026-10-22", start: "09:00", end: "11:00", title: "Lecture", type: "class" },
-      { id: "f1-u4", date: "2026-10-22", start: "13:00", end: "15:00", title: "Practical", type: "class" },
-      { id: "f1-u5", date: "2026-10-23", start: "13:00", end: "14:00", title: "Coding tutorial demo", type: "due" },
+      { id: "f1-u1", date: "2026-10-23", start: "09:00", end: "11:00", title: "Lecture", type: "class" },
+      { id: "f1-u2", date: "2026-10-26", start: "10:00", end: "12:00", title: "Lecture", type: "class" },
+      { id: "f1-u3", date: "2026-10-26", start: "14:00", end: "16:00", title: "Tutorial", type: "class" },
+      { id: "f1-u4", date: "2026-10-27", start: "09:00", end: "10:00", title: "Coding demo", type: "class" },
+      { id: "f1-u5", date: "2026-10-28", start: "09:00", end: "11:00", title: "Lecture", type: "class" },
     ],
-    personal: [{ id: "f1-p1", date: "2026-10-22", start: "18:00", end: "22:00", title: "Demo prep", category: "study", importance: "important" }],
+    personal: [{ id: "f1-p1", date: "2026-10-26", start: "19:00", end: "22:00", title: "Demo prep", category: "study", importance: "important" }],
     offers: [
-      { id: "f1-o1", from: "Sam", workplace: "Burger bar", date: "2026-10-22", start: "17:00", end: "22:00", note: "Can you cover Thursday night?",
-        sentAt: "2026-10-20T08:00:00.000Z", status: "declined", repliedAt: "2026-10-20T08:04:00.000Z" },
-      { id: "f1-o2", from: "Sam", workplace: "Burger bar", date: "2026-10-24", start: "17:00", end: "22:00", note: "Can you do Saturday night?",
-        sentAt: "2026-10-24T01:00:00.000Z", status: "declined", repliedAt: "2026-10-24T03:30:00.000Z" },
+      { id: "f1-o1", from: "Sam", workplace: "Burger bar", date: "2026-10-26", start: "17:00", end: "22:00", note: "Can you cover Monday night?",
+        sentAt: "2026-10-24T08:00:00.000Z", status: "declined", repliedAt: "2026-10-24T08:03:00.000Z" },
+      { id: "f1-o2", from: "Sam", workplace: "Burger bar", date: "2026-10-28", start: "17:00", end: "22:00", note: "Can you do Wednesday night?",
+        sentAt: "2026-10-26T09:30:00.000Z", status: "declined", repliedAt: "2026-10-27T09:10:00.000Z" },
     ],
     messages: [],
     sync: [],
