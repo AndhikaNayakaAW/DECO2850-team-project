@@ -3,11 +3,11 @@ import { applyResponse } from "./actions";
 import { dayItems, eventsFor, isRestDay, offerImpact, waitingAsks } from "./checks";
 import { EFFORT_WORD, checkInDue } from "./effort";
 import { clock12, minutes, range12 } from "./logic";
-import { pastShifts } from "./past-shifts";
+import { lastReadShift, pastShifts } from "./past-shifts";
 import { quietUntil } from "./quiet";
 import { shiftBodyDue, shiftWindow } from "./shift-body";
 import { addDays, nowIn, weekdayOf, whenWord, type Now } from "./time";
-import type { DataSlice, Decision, Offer, OfferStatus } from "./types";
+import type { DataSlice, Decision, Load, Offer, OfferStatus } from "./types";
 
 export const WATCH_DECISIONS: Decision[] = ["accept", "decline", "later"];
 
@@ -52,6 +52,8 @@ export interface WatchSummary {
   shiftBody: { id: string; title: string; from: number; to: number } | null;
   /** How many shifts carry readings. With sharing off on the watch this should be 0, or the watch asks the calendar to forget again. */
   readings: number;
+  /** The latest finished shift with readings, for the Last shift page, so the watch names the same shift as the calendar. Older builds ignore it. */
+  lastShift: { id: string; title: string; stress: (Load | null)[]; heart: (Load | null)[] } | null;
 }
 
 /** Letters that don't split into a plain letter and an accent. */
@@ -156,6 +158,7 @@ export function watchSummary(data: DataSlice, atTime: Date = new Date()): WatchS
     .at(-1);
   const due = checkInDue(data, atTime);
   const read = shiftBodyDue(data, atTime);
+  const lastRead = lastReadShift(data, now);
   const title = (s: { workplace: string; start: string; end: string }) => ascii(`${s.workplace || "Work"}, ${watchRange(s.start, s.end)}`);
   return {
     clock: now.time,
@@ -163,6 +166,7 @@ export function watchSummary(data: DataSlice, atTime: Date = new Date()): WatchS
     checkIn: due ? { id: due.id, title: title(due) } : null,
     shiftBody: read ? { id: read.id, title: title(read), ...shiftWindow(read, data.settings.timeZone) } : null,
     readings: data.shifts.filter((s) => s.body).length,
+    lastShift: lastRead?.body ? { id: lastRead.id, title: title(lastRead), stress: lastRead.body.stress, heart: lastRead.body.heart } : null,
     today: todayLines(data, now.date),
     waiting: open.length,
     replied: last ? { from: ascii(last.from) || "Your manager", time: ascii(range12(last.start, last.end)), status: STATUS_WORDS[last.status] } : null,

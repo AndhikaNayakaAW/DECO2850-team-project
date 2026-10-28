@@ -19,9 +19,24 @@ function samePlace(a: string, b: string): boolean {
   return a.trim().toLowerCase() === b.trim().toLowerCase();
 }
 
-function ended(shift: Shift, now: When): boolean {
+/** When a shift ends, in minutes: the next morning when it runs past midnight. */
+function endsAt(shift: Shift): number {
   const endDate = minutes(shift.end) <= minutes(shift.start) ? addDays(shift.date, 1) : shift.date;
-  return stamp(endDate, shift.end) <= stamp(now.date, now.time);
+  return stamp(endDate, shift.end);
+}
+
+function ended(shift: Shift, now: When): boolean {
+  return endsAt(shift) <= stamp(now.date, now.time);
+}
+
+/**
+ * The most recent finished shift that has the watch's readings. The watch's Last shift page shows it, so the watch
+ * names the same shift as the calendar, even when the readings came from elsewhere (the demo week brings its own).
+ */
+export function lastReadShift(data: Pick<DataSlice, "shifts">, now: When): Shift | null {
+  return data.shifts
+    .filter((s) => s.body && ended(s, now))
+    .reduce<Shift | null>((last, s) => (!last || endsAt(s) > endsAt(last) ? s : last), null);
 }
 
 function joinAnd(parts: string[]): string {
