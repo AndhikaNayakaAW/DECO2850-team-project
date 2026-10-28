@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { demoWeek } from "@/lib/demo";
 import { applyWatchAnswer, ascii, watchRange, watchSummary } from "@/lib/garmin";
 import { emptyData } from "@/lib/session";
+import { forgetShiftBodies } from "@/lib/shift-body";
+import { instantOf } from "@/lib/time";
 import { AT, ask, week } from "./fixture";
+
+const LUNCH = new Date(instantOf("2026-10-29", "13:00", "Australia/Brisbane"));
 
 const asciiOnly = /^[\x20-\x7E]*$/;
 function allStrings(v: unknown): string[] {
@@ -32,6 +37,15 @@ describe("what the watch receives", () => {
     const later = ask({ id: "o-sat", date: "2026-10-24", sentAt: "2026-10-22T03:00:00.000Z" });
     expect(watchSummary({ ...week(), offers: [later, ask()] }, AT).ask?.id).toBe("o-thu");
     expect(watchSummary(emptyData(AT), AT)).toMatchObject({ ask: null, today: [], waiting: 0, replied: null });
+  });
+  it("names the latest finished shift with readings for the Last shift page, and nothing without one", () => {
+    const d = demoWeek(LUNCH);
+    const latest = [...d.shifts].sort((a, b) => `${b.date} ${b.start}`.localeCompare(`${a.date} ${a.start}`))[0];
+    // Whatever order the week stores its shifts in.
+    expect(watchSummary({ ...d, shifts: [...d.shifts].reverse() }, LUNCH).lastShift?.id).toBe(latest.id);
+    // Sharing turned off forgets the readings, so there is no last shift to show.
+    expect(watchSummary(forgetShiftBodies(d, LUNCH), LUNCH).lastShift).toBeNull();
+    expect(watchSummary(emptyData(AT), AT).lastShift).toBeNull();
   });
   it("never sends money or the old demo names", () => {
     expect(JSON.stringify(watchSummary(week(), AT))).not.toMatch(/\$|rent|essentials|Dinda|Jess|Pandora/i);

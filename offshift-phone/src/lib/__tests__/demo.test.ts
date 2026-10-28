@@ -47,6 +47,14 @@ describe("the exhibition demo week", () => {
     expect(watchSummary(rated, LUNCH).ask?.past).toBe("Last 3 at Cafe: Hard, Hard, Busy");
   });
 
+  it("shows the shift that just ended on the watch's Last shift page, with the calendar's times and readings", () => {
+    // Opened at 11:59 pm on Wednesday, the shift that just ended is 7:30-11:30 pm on the calendar.
+    const d = demoWeek(at("2026-10-28", "23:59"));
+    const just = d.shifts.find((s) => s.date === "2026-10-28")!;
+    expect([just.start, just.end]).toEqual(["19:30", "23:30"]);
+    expect(watchSummary(d, at("2026-10-29", "00:01")).lastShift).toEqual({ id: just.id, title: "Cafe, 7:30-11:30 pm", stress: just.body!.stress, heart: just.body!.heart });
+  });
+
   it("puts the next morning's lecture in the ask's week lines", () => {
     // Thursday 29 October: the ask is tonight, Friday starts with a 9 am lecture.
     expect(watchSummary(demoWeek(LUNCH), LUNCH).ask?.week).toContain("Fri starts 9am");
