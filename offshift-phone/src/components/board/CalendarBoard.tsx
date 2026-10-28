@@ -2,16 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AskPanel from "./AskPanel";
-import { BodyGraph } from "./BodyGraph";
 import Immersive from "./Immersive";
 import ItemForm, { type ItemKindChoice, type ItemTarget, type Removed } from "./ItemForm";
+import { ListRow } from "./ListRow";
 import SettingsForm from "./SettingsForm";
 import TestOfferForm from "./TestOfferForm";
 import { Sheet } from "./Sheet";
 import Week3D, { type DropTarget, type SceneHandle } from "./Week3D";
 import { buildWeek, clashes, waitingAsks } from "@/lib/checks";
 import { EFFORTS, EFFORT_COLOUR, EFFORT_WORD } from "@/lib/effort";
-import { DAY_NAMES, clock12, dayIndex } from "@/lib/logic";
+import { DAY_NAMES, dayIndex } from "@/lib/logic";
 import { LOAD_COLOUR, LOAD_WORDS, SHIFT_SIGNALS, SIGNAL_MEANING, SIGNAL_NAME } from "@/lib/shift-body";
 import { useStore } from "@/lib/store";
 import { useSynced } from "@/lib/sync";
@@ -488,25 +488,3 @@ export default function CalendarBoard() {
     </div>
   );
 }
-
-function ListRow({ it, clash, signal, onOpen }: { it: DayItem; clash?: string; signal: ShiftSignal; onOpen: () => void }) {
-  const cls = it.kind === "shift" && (it.workplaceIndex ?? 0) % 2 === 1 ? "mcd" : it.kind;
-  const time = it.kind === "due" ? `Due\n${clock12(it.start)}` : `${clock12(it.start)}\n${clock12(it.end)}`;
-  return (
-    <button className={`cal-ev ${cls}${it.later ? " later" : ""}`} style={it.effort ? { borderLeftColor: EFFORT_COLOUR[it.effort] } : undefined} onClick={onOpen} aria-label={`${it.label}, ${it.kind === "due" ? `due ${clock12(it.start)}` : `${clock12(it.start)} to ${clock12(it.end)}`}${it.kind === "offer" ? ". Open the ask" : ". Change it"}`}>
-      <span className="tm">{time}</span>
-      <span className="ev-body">
-        <b>{it.label}</b>
-        <span className="src">{it.kind === "offer" ? (it.later ? "Kept for later · press to decide" : "Ask · open it") : it.status || it.source}</span>
-        {it.body && (
-          <span className="ev-body-reading">
-            <BodyGraph levels={it.body[signal]} signal={signal} shift={it} />
-          </span>
-        )}
-        {it.warn && <span className="warn-tag">{it.warn}</span>}
-        {clash && <span className="clash">Clashes with {clash}</span>}
-      </span>
-    </button>
-  );
-}
-

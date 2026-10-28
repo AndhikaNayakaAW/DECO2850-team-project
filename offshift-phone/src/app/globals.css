@@ -415,3 +415,45 @@ body:has(.sync-off) .board{padding-top:calc(max(16px,env(safe-area-inset-top)) +
 .board-strip{margin-inline:-8px}
 .cal-week{gap:2px}
 .contents{display:contents;border:0;margin:0;padding:0;min-width:0}
+
+/* ---------- field test page (/field-testing): the board, then the watch moments below it ---------- */
+.field-board{height:auto;min-height:100dvh;overflow:visible}
+.field-board .board-main{height:min(76dvh,820px);flex:none}
+.field-intro{flex:1 1 22rem;max-width:44rem;color:var(--ink-2);font-size:14.5px;line-height:1.45}
+.cal-ev.read-only{cursor:default}
+.cal-ev.read-only:active{transform:none}
+.field-ask{border:1px dashed var(--lamp);background:var(--lamp-soft);border-radius:12px;padding:9px 12px;font-size:13.5px;display:flex;flex-direction:column;gap:3px}
+.field-ask span{color:var(--ink-2);font-size:12.5px;line-height:1.35}
+.field-watch{background:var(--surface);border:1px solid var(--line);border-radius:28px;padding:20px 22px;box-shadow:var(--shadow-sm);-webkit-user-select:text;user-select:text}
+.field-watch h2{font-size:24px;font-weight:800;letter-spacing:-.02em;margin:2px 0 14px}
+.field-moments{list-style:none;padding:0 2px 6px;margin:0;display:grid;grid-auto-flow:column;grid-auto-columns:200px;gap:16px;overflow-x:auto;scroll-snap-type:x proximity}
+.field-moments li{scroll-snap-align:start}
+.field-moments button{width:100%;display:flex;flex-direction:column;align-items:center;gap:8px;background:none;border:1px solid transparent;border-radius:18px;padding:10px 6px;font:inherit;color:inherit;cursor:pointer;text-align:center}
+.field-moments button:hover{background:var(--surface-2)}
+.field-moments button.on{border-color:var(--lamp);background:var(--lamp-soft)}
+.field-when{font-family:var(--font-mono);font-size:11.5px;color:var(--lamp-ink);letter-spacing:.04em;text-transform:uppercase}
+.field-cap{font-size:13px;line-height:1.35;color:var(--ink-strong)}
+.field-note{margin-top:12px;font-size:12.5px;color:var(--ink-2);line-height:1.45;max-width:60rem}
+@media (orientation:portrait),(max-width:900px){.field-board .board-main{height:auto;grid-template-rows:62dvh auto}}
+
+/* A drawing of the Offshift watch app: its layout and colours, the watch text inside. */
+.wf-bezel{width:180px;height:180px;border-radius:50%;background:#2a2a2a;padding:9px;box-shadow:0 6px 18px rgba(0,0,0,.22),inset 0 0 0 3px #4a4a4a;flex:none}
+.wf-face{width:162px;height:162px;border-radius:50%;overflow:hidden;position:relative;background:#F5F2ED;color:#374938;font-family:system-ui,"Segoe UI",Roboto,Arial,sans-serif;text-align:center}
+.wf-brand{position:absolute;top:13px;width:100%;font-size:8px;font-weight:700;letter-spacing:.08em}
+.wf-head{position:absolute;top:25px;width:100%;font-size:8px;font-weight:700;letter-spacing:.08em;color:#8A6520}
+.wf-bar{position:absolute;top:38px;left:70px;width:22px;height:3px;border-radius:2px;background:#8A6520}
+.wf-card{position:absolute;left:16px;right:16px;top:47px;bottom:34px;background:#FFFDFA;border-radius:14px;display:flex;flex-direction:column;justify-content:center;gap:3px;padding:0 6px}
+.wf-muted{color:#566C51;font-size:9px}
+.wf-strong{color:#1D2A25;font-size:13px;font-weight:700;line-height:1.1}
+.wf-time{color:#8A6520;font-size:16px;font-weight:700}
+.wf-ink{color:#374938;font-size:9px;line-height:1.25}
+.wf-ink.b{color:#1D2A25;font-weight:600}
+.wf-ink.small{font-size:8px}
+.wf-hint{position:absolute;bottom:17px;width:100%;font-size:8px;color:#566C51}
+.wf-menu{background:#000;color:#fff}
+.wf-mt{position:absolute;top:18px;width:100%;font-size:9px;font-weight:600;color:#9BD18B;padding:0 30px;line-height:1.2}
+.wf-menu ul{list-style:none;padding:0;margin:0;position:absolute;top:40px;width:100%}
+.wf-menu li{font-size:10px;color:#bdbdbd;padding:3px 24px;line-height:1.15}
+.wf-menu li small{display:block;font-size:7.5px;color:#8a8a8a}
+.wf-menu li.on{background:#2E6B34;color:#fff;font-size:12px;font-weight:600;margin:2px 16px;border-radius:9px;padding:5px 8px}
+.wf-menu li.on small{color:#d9ead3}
